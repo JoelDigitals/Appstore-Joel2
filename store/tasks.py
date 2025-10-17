@@ -460,7 +460,6 @@ def start_background_check_version(version_id):
         version.save()
         #time.sleep(random.randint(1, 2) * 60)
 
-        version.checking_status = 'passed'
         version.approved = True
         version.checking_log = "Erfolgreich geprüft:\n" + "\n".join(log)
         version.save()
@@ -496,8 +495,11 @@ def start_background_check_version(version_id):
             log.append(f"Gefundene vorherige Version: {old_version.version_number}")
         else:
             log.append("Keine vorherige Version gefunden (Erstveröffentlichung).")
+            version.app.published = True
+            version.app.save()
   
         version.new_version = True  # Markiere die neue Version als neu
+        version.checking_status = 'passed'
         version.checking_progress = 5  # Update den Fortschritt
         version.save()
 
