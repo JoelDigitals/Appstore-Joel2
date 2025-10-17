@@ -72,7 +72,7 @@ def start_background_check(version_id):
     file_path = version.file.path
     log = []
     dev = version.app.developer
-    notification = NotificationSettings.objects.filter(user=dev.user.user).first()
+    notification = NotificationSettings.objects.filter(user=dev.user).first()
 
     def fail(msg):
         log.append(f"*** FEHLER: {msg}")
@@ -94,7 +94,7 @@ def start_background_check(version_id):
             
         if notification.push_notifications:
             create_notification(
-                user=dev.user.user,
+                user=dev.user,
                 title=f"Prüfung fehlgeschlagen: {version.app.name}",
                 message=msg,
                 app=version.app,
@@ -233,7 +233,7 @@ def start_background_check(version_id):
 
         if notification.push_notifications:
             create_notification(
-                user=dev.user.user,
+                user=dev.user,
                 title=f"Prüfung erfolgreich: {version.app.name}",
                 message=message,
                 app=version.app,
@@ -263,7 +263,7 @@ def start_background_check(version_id):
 
         if notification.push_notifications:
             create_notification(
-                user=dev.user.user,
+                user=dev.user,
                 title=f"{version.app.name} ist jetzt veröffentlicht",
                 message="Ihre App wurde soeben freigegeben und ist jetzt öffentlich sichtbar.",
                 app=version.app,
@@ -279,7 +279,7 @@ def start_background_check(version_id):
         version.save()
         if notification.email_notifications:
             send_check_email(
-                user=dev.user.user,
+                user=dev.user,
                 subject=f"Unerwarteter Fehler bei der Prüfung: {version.app.name}",
                 message="Die App-Prüfung ist aufgrund eines unerwarteten Fehlers fehlgeschlagen.",
                 log_lines=log,
@@ -290,7 +290,7 @@ def start_background_check(version_id):
             )
         if notification.push_notifications:
             create_notification(
-                user=dev.user.user,
+                user=dev.user,
                 title=f"Prüfung fehlgeschlagen: {version.app.name}",
                 message=error_message,
                 app=version.app,
@@ -343,7 +343,7 @@ def start_background_check_version(version_id):
 
         if notification.push_notifications:
             create_notification(
-                user=dev.user.user,
+                user=dev.user,
                 title=f"Prüfung fehlgeschlagen: {version.app.name}",
                 message=msg,
                 app=version.app,
@@ -481,7 +481,7 @@ def start_background_check_version(version_id):
 
         if notification.push_notifications:
             create_notification(
-                user=dev.user.user,
+                user=dev.user,
                 title=f"Prüfung erfolgreich: {version}",
                 message=message,
                 app=version.app,
@@ -514,7 +514,7 @@ def start_background_check_version(version_id):
 
         if notification.push_notifications:
             create_notification(
-                user=dev.user.user,
+                user=dev.user,
                 title=f"{version} ist jetzt veröffentlicht",
                 message="Ihre Version wurde soeben freigegeben und ist jetzt öffentlich sichtbar.",
                 app=version.app,
@@ -530,7 +530,7 @@ def start_background_check_version(version_id):
         version.save()
         if notification.email_notifications:
             send_check_email(
-                user=dev.user.user,
+                user=dev.user,
                 subject=f"Unerwarteter Fehler bei der Prüfung: {version.app.name}",
                 message="Die App-Prüfung ist aufgrund eines unerwarteten Fehlers fehlgeschlagen.",
                 log_lines=log,
@@ -541,7 +541,7 @@ def start_background_check_version(version_id):
             )
         if notification.push_notifications:
             create_notification(
-                user=dev.user.user,
+                user=dev.user,
                 title=f"Prüfung fehlgeschlagen: {version.app.name}",
                 message=error_message,
                 app=version.app,
