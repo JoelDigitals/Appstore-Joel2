@@ -1,0 +1,964 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Appstore{% endblock %}</title>
+
+  <!-- Favicon + Logo -->
+  <link rel="icon" type="image/png" href="https://jds-appstore.onrender.com/static/images/logo.png" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #121212;
+      color: #f5f5f5;
+      font-family: 'Roboto', sans-serif;
+      display: flex;
+      flex-direction: column;
+      font-size: 1rem;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body > .container {
+      flex: 1 0 auto;
+      padding-left: 1rem;
+      padding-right: 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    footer {
+      flex-shrink: 0;
+      background-color: #1f1f1f;
+      color: #aaa;
+      padding: 1rem 1rem;
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.9rem;
+    }
+
+    nav.navbar {
+      background-color: #1f1f1f;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .navbar-brand, .nav-link, footer a {
+      color: #f5f5f5 !important;
+    }
+
+    .navbar-nav .nav-link:hover {
+      color: #0d6efd !important;
+    }
+
+    a {
+      color: #0d6efd;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .btn-outline-light:hover {
+      background-color: #f5f5f5;
+      color: #121212;
+    }
+
+    input.form-control {
+      background-color: #1e1e1e;
+      border: 1px solid #444;
+      color: #f5f5f5;
+      min-width: 0; /* verhindert Überlauf bei Flexbox */
+    }
+
+    input.form-control::placeholder {
+      color: #aaa;
+    }
+
+    .btn-outline-light {
+      border-color: #aaa;
+      white-space: nowrap;
+    }
+
+    .btn-outline-light:hover {
+      border-color: #fff;
+    }
+
+    /* Karten mit dunklem Hintergrund */
+    .card-dark {
+      background-color: #1e1e1e;
+      border: 1px solid #333;
+      color: #eee;
+      border-radius: 12px;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .card-dark:hover {
+      box-shadow: 0 0 10px #0d6efd;
+    }
+
+    .card-dark img {
+      border-radius: 10px;
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    hr {
+      border-top: 1px solid #333;
+    }
+
+    .auth-container {
+        max-width: 500px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #1c1c1c;
+        color: white;
+        border-radius: 10px;
+        box-shadow: 0 0 10px #000;
+    }
+
+    .auth-info-box {
+        background-color: #333;
+        border-left: 4px solid #f39c12;
+        padding: 10px 15px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .alert-info {
+      background-color: rgba(13, 110, 253, 0.15);
+      color: #0d6efd;
+      border-color: #0d6efd;
+      border-radius: 10px;
+    }
+    
+    #download-area {
+      position: fixed;
+      top: 60px; /* unter Navbar */
+      right: 20px;
+      width: 300px;
+      max-height: 400px;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #0d6efd;
+      overflow-y: auto;
+      z-index: 1050;
+      display: none;
+      flex-direction: column;
+      padding: 10px;
+    }
+    #download-area.show {
+      display: flex;
+    }
+    #download-area header {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      color: #0d6efd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #download-area ul {
+      list-style: none;
+      margin: 0; padding: 0;
+      flex: 1 1 auto;
+      overflow-y: auto;
+    }
+    #download-area ul li {
+      margin-bottom: 6px;
+    }
+    #download-area ul li a {
+      color: #fff;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    #download-toggle-btn {
+      cursor: pointer;
+      color: #0d6efd;
+      font-size: 1.4rem;
+      position: relative;
+    }
+    l {
+      color #000000
+    }
+    #download-toggle-btn .badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      font-size: 0.7rem;
+    }
+
+    #fallback-message {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      border-radius: 5px;
+    }
+    #fallback-message a {
+      color: #0056b3;
+      text-decoration: underline;
+    }
+
+    /* Responsive Anpassungen */
+
+    @media (max-width: 576px) {
+      body > .container {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+      }
+
+      .navbar-nav {
+        text-align: center;
+      }
+
+      .navbar-nav .nav-link {
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      form.d-flex {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      form.d-flex input.form-control {
+        width: 100%;
+      }
+
+      form.d-flex button {
+        width: 100%;
+      }
+    }
+    /* ---------- KACHELN ---------- */
+  .updates {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .update-card {
+    background: #1e1e1e;;
+    padding: 18px;
+    border-left: 6px solid #2196f3;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+
+  .update-card.warnung {
+    border-color: #ff9800;
+    background-color: #fffaf0;
+  }
+
+  .update-card.kritisch {
+    border-color: #f44336;
+    background-color: #fff5f5;
+  }
+
+  .update-card h3 {
+    margin: 0 0 6px 0;
+    color #000000
+    font-size: 1.1rem;
+  }
+
+  .update-card small {
+    color: #b8b0b0ff;
+    font-size: 0.85rem;
+  }
+
+  .update-card p {
+    margin: 8px 0;
+    color: #000000
+    font-size: 0.95rem;
+  }
+
+  .update-card a {
+    font-size: 0.9rem;
+    color: #1976d2;
+  }
+
+  /* ---------- ROADMAP-ZEITLINIE ---------- */
+  /* --------------------------------------------------
+   ROADMAP-ZEITLINIE
+-------------------------------------------------- */
+.roadmap {
+  position: relative;
+  margin-left: 30px;
+  padding-left: 20px;
+  /* Standard-Linienfarbe */
+  border-left: 4px solid #ccc;
+  overflow: hidden;            /* verhindert Überlauf der Animationen */
+}
+
+/* Grüne Linie, wenn alles erledigt ist */
+.roadmap.finished {
+  border-left-color: #4caf50;
+}
+
+/* Einzelner Eintrag */
+.roadmap-entry {
+  position: relative;
+  margin-bottom: 30px;
+  padding-left: 10px;
+
+  /* sanftes Einblenden */
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* Staggered-Delays für fließendes Erscheinen */
+.roadmap-entry:nth-child(1) { animation-delay: 0.1s; }
+.roadmap-entry:nth-child(2) { animation-delay: 0.2s; }
+.roadmap-entry:nth-child(3) { animation-delay: 0.3s; }
+.roadmap-entry:nth-child(4) { animation-delay: 0.4s; }
+.roadmap-entry:nth-child(5) { animation-delay: 0.5s; }
+.roadmap-entry:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Kreis (bleibt immer ganz) --- */
+.roadmap-entry::before {
+  content: "";
+  position: absolute;
+  left: -34px;          /* zentriert auf der Linie */
+  top: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  box-shadow: 0 0 0 2px currentColor; /* nimmt Farbe des Status an */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Farben der Kreise nach Status */
+.roadmap-entry.geplant   { --dot-color: #9e9e9e; }
+.roadmap-entry.in_arbeit { --dot-color: #2196f3; }
+.roadmap-entry.abgeschlossen { --dot-color: #4caf50; }
+
+.roadmap-entry::before {
+  background-color: var(--dot-color);
+  color: var(--dot-color);   /* wird für die Box-Shadow-Linie verwendet */
+}
+
+/* --------------------------------------------------
+   Optional: Überschriften & Text
+-------------------------------------------------- */
+.roadmap-entry h4 {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+}
+
+.roadmap-entry small {
+  color: #d1d1d1ff;
+  font-size: 0.85rem;
+}
+
+.roadmap-entry p {
+  margin: 6px 0 0 0;
+  color: #ffffffff;
+}
+  </style>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<script>
+  // Schlüssel für localStorage
+  const DOWNLOAD_STORAGE_KEY = 'jds_downloads';
+  const DOWNLOAD_STORAGE_TTL = 20 * 60 * 1000; // 20 Minuten in ms
+
+  // Lädt die Downloads aus localStorage, filtert alte heraus
+  function loadDownloads() {
+    let downloads = JSON.parse(localStorage.getItem(DOWNLOAD_STORAGE_KEY) || '[]');
+    const now = Date.now();
+    downloads = downloads.filter(item => (now - item.time) < DOWNLOAD_STORAGE_TTL);
+    localStorage.setItem(DOWNLOAD_STORAGE_KEY, JSON.stringify(downloads));
+    return downloads;
+  }
+
+  // Fügt einen neuen Download hinzu (aufrufen wenn neue Datei runtergeladen)
+  function addDownload(name, url) {
+    let downloads = loadDownloads();
+    downloads.push({name, url, time: Date.now()});
+    localStorage.setItem(DOWNLOAD_STORAGE_KEY, JSON.stringify(downloads));
+    renderDownloads();
+  }
+
+  // Rendert die Downloadliste in den Bereich
+  function renderDownloads() {
+    const container = document.getElementById('download-list');
+    const downloads = loadDownloads();
+    container.innerHTML = '';
+
+    if (downloads.length === 0) {
+      container.innerHTML = '<li style="color:#888;">Keine Downloads</li>';
+      document.getElementById('download-badge').style.display = 'none';
+    } else {
+      downloads.forEach((dl, i) => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.textContent = dl.name;
+        a.href = dl.url;
+        a.target = '_blank'; // öffnet in neuem Tab / Download-Dialog
+        li.appendChild(a);
+        container.appendChild(li);
+      });
+      // Badge anzeigen mit Anzahl
+      document.getElementById('download-badge').style.display = 'inline-block';
+      document.getElementById('download-badge').textContent = downloads.length;
+    }
+  }
+
+  // Toggle Downloadbereich ein/ausblenden
+  function toggleDownloadArea() {
+    const area = document.getElementById('download-area');
+    area.classList.toggle('show');
+    if (area.classList.contains('show')) {
+      renderDownloads();
+    }
+  }
+
+  // Löschen aller Downloads (auch in localStorage)
+  function clearDownloads() {
+    localStorage.removeItem(DOWNLOAD_STORAGE_KEY);
+    renderDownloads();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderDownloads();
+  });
+</script>
+<script>
+  // Manuell toggle, da Bootstrap Dropdown sonst bei Klick schließt
+  function toggleDownloadArea(event) {
+    event.preventDefault();
+    const dropdownMenu = document.getElementById('download-area');
+    const isShown = dropdownMenu.classList.contains('show');
+    if (isShown) {
+      bootstrap.Dropdown.getInstance(document.getElementById('downloadToggle')).hide();
+    } else {
+      bootstrap.Dropdown.getOrCreateInstance(document.getElementById('downloadToggle')).show();
+    }
+  }
+
+  function clearDownloads() {
+    const list = document.getElementById('download-list');
+    list.innerHTML = '';
+    const badge = document.getElementById('download-badge');
+    badge.style.display = 'none';
+  }
+</script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark mb-4">
+  <div class="container">
+    <a class="navbar-brand fw-bold d-flex align-items-center" href="{% url 'home' %}">
+      <img src="{% static 'images/logo.png' %}" alt="JDS Logo" style="height: 30px; margin-right: 8px;">
+    </a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Navigation umschalten">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Rechts fester Bereich -->
+    <div class="d-flex align-items-center order-lg-2 ms-auto gap-3">
+    
+      <!-- Benachrichtigungen -->
+      {% if user.is_authenticated %}
+      <div class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle position-relative p-0" href="#" role="button" data-bs-toggle="dropdown"
+           aria-expanded="false" id="notificationsDropdown" title="Benachrichtigungen">
+          <i class="bi bi-bell text-white fs-5"></i>
+          <span id="notifBadge"
+                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                style="display: {% if notifications_count > 0 %}inline{% else %}none{% endif %};">
+            {{ notifications_count }}
+            <span class="visually-hidden">ungelesene Benachrichtigungen</span>
+          </span>
+        </a>
+        <ul id="notifDropdown" class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown"
+            style="min-width: 300px; max-height: 400px; overflow-y: auto;">
+          <li><h6 class="dropdown-header">Benachrichtigungen</h6></li>
+          {% if notifications %}
+            <a class="dropdown-item small" href="{% url 'mark_all_notifications_read' %}">
+              <strong>Alle gelesen</strong>
+            </a>
+            {% for notif in notifications %}
+              <li>
+                <a class="dropdown-item small" href="{% url 'notification_detail' notif.id %}">
+                  {% if not notif.read and notif.user %}
+                    <span class="badge bg-primary me-2">Neu</span>
+                  {% endif %}
+                  {{ notif.message|truncatechars:60 }}<br>
+                  <small class="text-muted">{{ notif.created_at|date:"d.m.Y H:i" }}</small>
+                </a>
+              </li>
+            {% endfor %}
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-center" href="{% url 'notifications_all' %}">Alle anzeigen</a></li>
+          {% else %}
+            <li><span class="dropdown-item small text-muted">Keine neuen Benachrichtigungen</span></li>
+            <li><a class="dropdown-item text-center" href="{% url 'notifications_all' %}">Alle anzeigen</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    
+      <!-- Benutzer Avatar -->
+      <div class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle d-flex align-items-center p-0" href="#" id="userDropdown"
+           role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          {% if user.profile.avatar %}
+            <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="rounded-circle"
+                 style="width: 36px; height: 36px; object-fit: cover;">
+          {% else %}
+            <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center"
+                 style="width: 36px; height: 36px; font-weight: bold;">
+              {{ user.first_name|default:user.username|slice:":1"|upper }}
+            </div>
+          {% endif %}
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+          <li><h6 class="dropdown-header">Hallo, {{ user.first_name|default:user.username }}!</h6></li>
+          <li><a class="dropdown-item" href="{% url 'edit_user_profile' %}"><i class="bi bi-person me-2"></i> Profil bearbeiten</a></li>
+          <li><a class="dropdown-item" href="{% url 'my_installed_apps' %}"><i class="bi bi-download me-2"></i> Meine Apps</a></li>
+          <li><a class="dropdown-item" href="{% url 'user_settings' %}"><i class="bi bi-gear me-2"></i> Einstellungen</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'developer_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+          {% if user.is_superuser %}
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-shield-lock me-2"></i> Admin-Bereich</a></li>
+          {% endif %}
+          {% if user.is_staff %}
+            <li><a class="dropdown-item" href="{% url 'admin_media' %}"><i class="bi bi-folder2-open me-2"></i> Media-Dateien</a></li>
+          {% endif %}
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+        </ul>
+      </div>
+      {% else %}
+        <a href="{% url 'login' %}" class="btn btn-outline-light">Login</a>
+      {% endif %}
+    </div>
+    
+
+    <!-- Nav-Inhalt -->
+    <div id="navbarNav" class="collapse navbar-collapse order-lg-1">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a href="{% url 'jds_apps' %}" class="nav-link">JDS Appstore Download</a></li>
+        <li class="nav-item"><a href="{% url 'infopage' %}" class="nav-link">Infos</a></li>
+        <li class="nav-item"><a href="{% url 'developer_list' %}" class="nav-link">Entwickler</a></li>
+        <li class="nav-item"><a href="{% url 'platform' 'windows' %}" class="nav-link">Windows</a></li>
+        <li class="nav-item"><a href="{% url 'platform' 'linux' %}" class="nav-link">Linux</a></li>
+        <li class="nav-item"><a href="{% url 'platform' 'android' %}" class="nav-link">Android</a></li>
+        <li class="nav-item"><a href="{% url 'platform' 'ios' %}" class="nav-link">iOS</a></li>
+        <li class="nav-item"><a href="{% url 'platform' 'macos' %}" class="nav-link">Mac</a></li>
+      </ul>
+      <form method="get" action="{% url 'home' %}" class="d-flex me-3" role="search" autocomplete="off">
+        <input class="form-control me-2" type="search" name="q" placeholder="Suche Apps" value="{{ request.GET.q|default:'' }}" aria-label="Suche Apps" />
+        <button class="btn btn-outline-light" type="submit">Suchen</button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<div id="fallback-message">
+  App scheint nicht installiert zu sein. <a href="https://jds-appstore.onrender.com/jds-appstore/" target="_blank">Jetzt installieren</a>
+</div>
+
+<script>
+function openMedainApp() {
+  const fallbackMessage = document.getElementById("fallback-message");
+  const now = Date.now();
+  
+  // Verlängere Timeout auf 2.5 Sekunden
+  const timeout = setTimeout(() => {
+    const elapsed = Date.now() - now;
+    if (elapsed < 2500) {
+      fallbackMessage.style.display = "block";
+    }
+  }, 2500);
+
+  // Korrigierter Intent-URI (verwende den offiziellen Scheme)
+  window.location.href = "intent://start#Intent;scheme=median;package=co.median.android.ljrnrp;end";
+}
+</script>
+
+<div id="notification-banner" style="display:none; position: fixed; bottom: 0; left: 0; right: 0; background: #222; border-top: 1px solid #444; padding: 15px; z-index: 9998; font-size: 14px; color: white;">
+  <div style="max-width: 900px; margin: auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div style="flex: 1;">
+      <strong>Möchtest du Benachrichtigungen erhalten?</strong><br>
+      Aktiviere Push-Benachrichtigungen, um über Updates, neue Apps und wichtige Informationen informiert zu werden.
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 5px; min-width: 180px;">
+      <button onclick="enableNotifications()" class="btn btn-sm btn-primary">Benachrichtigungen aktivieren</button>
+      <button onclick="dismissNotificationBanner()" class="btn btn-sm btn-secondary" style="background-color: #444; color: #fff;">Nicht jetzt</button>
+    </div>
+  </div>
+</div>
+
+<div id="cookie-banner" style="display:none; position: fixed; bottom: 0; left: 0; right: 0; background: #333333; border-top: 1px solid #555555; padding: 20px; z-index: 9999; font-size: 14px; color: white;">
+    <div style="max-width: 900px; margin: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div style="flex: 1;">
+                <p id="cookie-message" style="color: white;"></p>
+                <div id="cookie-options" style="margin-top: 10px; color: white;">
+                    <label><input type="checkbox" id="essential" disabled checked> <span id="label-essential"></span></label><br>
+                    <label><input type="checkbox" id="functional"> <span id="label-functional"></span></label><br>
+                    <label><input type="checkbox" id="analytics"> <span id="label-analytics"></span></label><br>
+                    <label><input type="checkbox" id="marketing"> <span id="label-marketing"></span></label>
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; min-width: 200px;">
+                <select id="language-select" onchange="setLanguage(this.value)" style="color: black; padding: 5px;">
+                    <option value="en">English</option>
+                    <option value="de">Deutsch</option>
+                    <option value="fr">Français</option>
+                </select>
+                <button onclick="acceptAll()" class="button">Alle akzeptieren</button>
+                <button onclick="savePreferences()" class="button">Einstellungen speichern</button>
+                <button onclick="rejectEssentials()" class="button" style="background-color: #555;">Nur Essenzielle</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="container">
+  {% block content %}
+  {% endblock %}
+</div>
+
+<footer>
+  &copy; {{ now.year }} Joel Digitals &middot; 
+  <a href="https://joel-digitals.onrender.com/imprint" target="_blank" rel="noopener">Impressum</a> &middot; 
+  <a href="https://joel-digitals.onrender.com/privacy" target="_blank" rel="noopener">Datenschutz</a> &middot; 
+  <a href="https://joel-digitals.onrender.com/terms" target="_blank" rel="noopener">AGB</a>
+
+  <br>
+  <p>Version 1.0.0.0</p>
+  <br>    
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const translations = {
+        de: {
+            message: "Wir verwenden Cookies, um Ihre Erfahrung zu verbessern. Sie können auswählen, welchen Kategorien Sie zustimmen.",
+            labels: {
+                essential: "Essenzielle Cookies (immer aktiv)",
+                functional: "Funktionale Cookies (z. B. Warenkorb speichern)",
+                analytics: "Analyse-Cookies (z. B. Besucherzahlen messen)",
+                marketing: "Marketing-Cookies (z. B. für Werbung & Tracking)"
+            },
+            buttons: {
+                acceptAll: "Alle akzeptieren",
+                save: "Einstellungen speichern",
+                essentialsOnly: "Nur Essenzielle"
+            }
+        },
+        en: {
+            message: "We use cookies to improve your experience. You can choose which categories to allow.",
+            labels: {
+                essential: "Essential cookies (always active)",
+                functional: "Functional cookies (e.g., save cart)",
+                analytics: "Analytics cookies (e.g., visitor stats)",
+                marketing: "Marketing cookies (e.g., ads & tracking)"
+            },
+            buttons: {
+                acceptAll: "Accept all",
+                save: "Save preferences",
+                essentialsOnly: "Essentials only"
+            }
+        },
+        fr: {
+            message: "Nous utilisons des cookies pour améliorer votre expérience. Choisissez les catégories que vous souhaitez autoriser.",
+            labels: {
+                essential: "Cookies essentiels (toujours actifs)",
+                functional: "Cookies fonctionnels (ex. panier)",
+                analytics: "Cookies d’analyse (ex. nombre de visiteurs)",
+                marketing: "Cookies marketing (ex. publicité)"
+            },
+            buttons: {
+                acceptAll: "Tout accepter",
+                save: "Enregistrer",
+                essentialsOnly: "Essentiels uniquement"
+            }
+        }
+    };
+
+    let currentLang = 'de';
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        const t = translations[lang];
+        document.getElementById('cookie-message').innerText = t.message;
+        document.getElementById('label-essential').innerText = t.labels.essential;
+        document.getElementById('label-functional').innerText = t.labels.functional;
+        document.getElementById('label-analytics').innerText = t.labels.analytics;
+        document.getElementById('label-marketing').innerText = t.labels.marketing;
+        document.querySelector("button[onclick='acceptAll()']").innerText = t.buttons.acceptAll;
+        document.querySelector("button[onclick='savePreferences()']").innerText = t.buttons.save;
+        document.querySelector("button[onclick='rejectEssentials()']").innerText = t.buttons.essentialsOnly;
+    }
+
+    function showBannerIfNeeded() {
+        if (!localStorage.getItem('cookieConsent')) {
+            document.getElementById('cookie-banner').style.display = 'block';
+            setLanguage(currentLang);
+        }
+    }
+
+    function savePreferences() {
+        const consent = {
+            essential: true,
+            functional: document.getElementById('functional').checked,
+            analytics: document.getElementById('analytics').checked,
+            marketing: document.getElementById('marketing').checked
+        };
+        localStorage.setItem('cookieConsent', JSON.stringify(consent));
+        document.getElementById('cookie-banner').style.display = 'none';
+    }
+
+    function acceptAll() {
+        document.getElementById('functional').checked = true;
+        document.getElementById('analytics').checked = true;
+        document.getElementById('marketing').checked = true;
+        savePreferences();
+    }
+
+    function rejectEssentials() {
+        document.getElementById('functional').checked = false;
+        document.getElementById('analytics').checked = false;
+        document.getElementById('marketing').checked = false;
+        savePreferences();
+    }
+
+    document.addEventListener('DOMContentLoaded', showBannerIfNeeded);
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    if ('Notification' in window) {
+      const notifPermission = Notification.permission;
+      const bannerDismissed = localStorage.getItem("notifBannerDismissed");
+
+      if (notifPermission === "default" && !bannerDismissed) {
+        document.getElementById("notification-banner").style.display = "block";
+      }
+    }
+  });
+
+  function enableNotifications() {
+    Notification.requestPermission().then(permission => {
+      localStorage.setItem("notifBannerDismissed", "true");
+      document.getElementById("notification-banner").style.display = "none";
+
+      if (permission === "granted") {
+        // Optional: Ein Beispiel zeigen oder registrieren
+        new Notification("Benachrichtigungen aktiviert! 🎉", {
+          body: "Du erhältst nun wichtige Updates.",
+          icon: "/static/images/logo.png"
+        });
+
+        // Hier kannst du zusätzlich deinen ServiceWorker registrieren
+        // navigator.serviceWorker.register('/sw.js');
+      }
+    });
+  }
+
+  function dismissNotificationBanner() {
+    localStorage.setItem("notifBannerDismissed", "true");
+    document.getElementById("notification-banner").style.display = "none";
+  }
+</script>
+
+
+{% if user.is_authenticated %}
+<script>
+  async function fetchNotifications() {
+    try {
+      const response = await fetch("{% url 'notifications_check' %}", {
+        method: "GET",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json"
+        },
+        credentials: "same-origin"
+      });
+
+      if (!response.ok) throw new Error("Netzwerkfehler");
+
+      const data = await response.json();
+
+      // Badge aktualisieren
+      const badge = document.getElementById("notifBadge");
+      if (data.count > 0) {
+        badge.style.display = "inline";
+        badge.textContent = data.count;
+        const sr = document.createElement("span");
+        sr.className = "visually-hidden";
+        sr.textContent = "ungelesene Benachrichtigungen";
+        badge.appendChild(sr);
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Dropdown aktualisieren
+      const dropdown = document.getElementById("notifDropdown");
+      // Zuerst alle bisherigen Benachrichtigungen entfernen außer Header und "Alle anzeigen"
+      dropdown.querySelectorAll("li:not(:first-child):not(:last-child):not(:nth-last-child(2))").forEach(el => el.remove());
+
+      if (data.notifications.length > 0) {
+        data.notifications.forEach(notif => {
+          const li = document.createElement("li");
+          const a = document.createElement("a");
+          a.className = "dropdown-item small";
+          a.href = "#";  // ggf. anpassen, wenn Links vorhanden
+          a.innerHTML = `${notif.message.substring(0, 60)}<br><small class="text-muted">${notif.created_at}</small>`;
+          li.appendChild(a);
+          // Vor dem letzten Divider einfügen
+          const divider = dropdown.querySelector("li.dropdown-divider");
+          dropdown.insertBefore(li, divider);
+        });
+      } else {
+        const li = document.createElement("li");
+        li.innerHTML = '<span class="dropdown-item small text-muted">Keine neuen Benachrichtigungen</span>';
+        const divider = dropdown.querySelector("li.dropdown-divider");
+        dropdown.insertBefore(li, divider);
+      }
+    } catch (error) {
+      console.error("Fehler beim Laden der Benachrichtigungen:", error);
+    }
+  }
+
+  // Initiales Laden + alle 15 Sekunden neu laden
+  fetchNotifications();
+  setInterval(fetchNotifications, 15000);
+</script>
+{% endif %}
+
+<script>
+  // Prüfe lokalen Speicher
+  const pushPermissionStored = localStorage.getItem('pushAllowed');
+
+  function showPushRequestBanner() {
+    // Einfacher Banner am unteren Rand (Style kannst du anpassen)
+    const banner = document.createElement('div');
+    banner.id = 'pushRequestBanner';
+    banner.style = `
+      position: fixed; bottom: 0; left: 0; right: 0; background: #222; color: white; 
+      padding: 15px; text-align: center; z-index: 10000; font-family: Roboto, sans-serif;
+    `;
+    banner.innerHTML = `
+      <span>Möchtest du Push-Benachrichtigungen aktivieren?</span>
+      <button id="allowPushBtn" style="margin-left:1rem; padding: 5px 10px;">Erlauben</button>
+      <button id="denyPushBtn" style="margin-left:1rem; padding: 5px 10px;">Ablehnen</button>
+    `;
+    document.body.appendChild(banner);
+
+    document.getElementById('allowPushBtn').onclick = async () => {
+      const perm = await Notification.requestPermission();
+      if (perm === 'granted') {
+        subscribeUserToPush();
+        localStorage.setItem('pushAllowed', 'true');
+      } else {
+        localStorage.setItem('pushAllowed', 'false');
+      }
+      banner.remove();
+    };
+
+    document.getElementById('denyPushBtn').onclick = () => {
+      localStorage.setItem('pushAllowed', 'false');
+      banner.remove();
+    };
+  }
+
+  async function subscribeUserToPush() {
+    if (!('serviceWorker' in navigator)) {
+      console.warn('Service Worker nicht unterstützt');
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+
+      // VAPID-Public-Key vom Backend abrufen oder hier hardcoden
+      const vapidPublicKey = "{{ vapid_public_key }}"; // Django Context-Variable (string base64url)
+
+      const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedVapidKey
+      });
+
+      // Subscription an Backend senden
+      await fetch("{% url 'push_subscribe' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(subscription.toJSON())
+      });
+
+      console.log('Push-Benachrichtigung registriert');
+    } catch (err) {
+      console.error('Fehler bei der Push-Registrierung:', err);
+    }
+  }
+
+  // Hilfsfunktion: Base64URL zu Uint8Array (für VAPID-Key)
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+      .replace(/\-/g, '+')
+      .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for(let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  // Hauptlogik: Prüfen ob gefragt werden muss
+  if (pushPermissionStored === null) {
+    // Noch nicht entschieden
+    if (Notification.permission === 'default') {
+      // Noch nie gefragt → Banner anzeigen
+      showPushRequestBanner();
+    } else if (Notification.permission === 'denied') {
+      // Nutzer hat Browserseitig abgelehnt, trotzdem localStorage speichern, damit kein Banner
+      localStorage.setItem('pushAllowed', 'false');
+    } else if (Notification.permission === 'granted') {
+      localStorage.setItem('pushAllowed', 'true');
+      // Optional: direkt abonnieren, wenn noch nicht geschehen
+      subscribeUserToPush();
+    }
+  }
+</script>
+</body>
+</html>

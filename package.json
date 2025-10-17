@@ -1,0 +1,23 @@
+{
+  "name": "jds-appstore",
+  "version": "1.0.0",
+  "description": "JDS Appstore Desktop App",
+  "author": "Joel Digitals",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "26.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.joeldigitals.jdsappstore",
+    "productName": "JDS AppStore",
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    }
+  }
+}

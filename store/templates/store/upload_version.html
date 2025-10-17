@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Neue Version hochladen - {{ app.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1>Neue Version für {{ app.name }} hochladen</h1>
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success">Hochladen und prüfen</button>
+  </form>
+</div>
+{% endblock %}

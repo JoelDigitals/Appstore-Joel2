@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5 text-white text-center">
+  <h1 class="mb-4">🔍 Status der App-Prüfung</h1>
+
+  <!-- Start Button -->
+  <button id="startCheckBtn" class="btn btn-success mb-4">
+    🔄 Überprüfung starten
+  </button>
+
+  <!-- Fortschrittsanzeige -->
+  <div id="progressSteps">
+    <div class="step" data-step="1" id="step-1">📁 Dateiüberprüfung...</div>
+    <div class="step" data-step="2" id="step-2">🧩 Strukturprüfung...</div>
+    <div class="step" data-step="3" id="step-3">🔒 Sicherheitsprüfung...</div>
+    <div class="step" data-step="4" id="step-4">🧪 Qualitätsprüfung...</div>
+    <div class="step" data-step="5" id="step-5">🚀 Veröffentlichung...</div>
+  </div>
+
+  <div class="mt-4">
+    <p id="currentStatus">⏳ Warten auf Start...</p>
+  </div>
+
+  <!-- Optional: kleine Spiele während Wartezeit -->
+  <div class="games-link text-center">
+    <p class="mt-4">Du wartest? Zeit für eine Runde!</p>
+    <div class="d-flex flex-wrap justify-content-center gap-2">
+      <a href="{% static 'games/tetris.html' %}" target="_blank" class="btn btn-outline-light">🎮 Tetris</a>
+      <a href="{% static 'games/pong.html' %}" target="_blank" class="btn btn-outline-light">🏓 Pong</a>
+      <a href="{% static 'games/flappy.html' %}" target="_blank" class="btn btn-outline-light">🐤 Flappy Bird</a>
+      <a href="{% static 'games/2048.html' %}" target="_blank" class="btn btn-outline-light">2048</a>
+      <a href="{% static 'games/blockblast.html' %}" target="_blank" class="btn btn-outline-light">🎨 Blocky Blast Puzzle</a>
+      <a href="{% static 'games/snake.html' %}" target="_blank" class="btn btn-outline-light">🐍 Snake</a>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const startBtn = document.getElementById('startCheckBtn');
+  const statusText = document.getElementById('currentStatus');
+
+  // Starte manuell
+  startBtn.addEventListener('click', () => {
+    startBtn.disabled = true;
+    statusText.textContent = "🔄 Prüfung wird gestartet...";
+    fetch("{% url 'start_version_check_api' version.id %}", {
+      method: "POST",
+      headers: { "X-CSRFToken": getCookie("csrftoken") }
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.status === "running") {
+        statusText.textContent = "✅ Prüfung läuft!";
+        checkStatus();
+      } else {
+        statusText.textContent = d.message;
+      }
+    });
+  });
+
+  // Regelmäßige Status-Abfrage
+  function checkStatus() {
+    fetch("{% url 'version_status_data' version.id %}")
+      .then(r => r.json())
+      .then(data => {
+        updateSteps(data.progress);
+        statusText.textContent = `Status: ${data.status}`;
+
+        if (data.status === "running") {
+          setTimeout(checkStatus, 5000);
+        } else if (data.status === "passed") {
+          statusText.textContent = "🎉 App wurde erfolgreich geprüft und veröffentlicht!";
+          updateSteps(5);
+        } else if (data.status === "failed") {
+          statusText.textContent = "❌ Prüfung fehlgeschlagen.";
+        }
+      });
+  }
+
+  // Steps visuell markieren
+  function updateSteps(progress) {
+    document.querySelectorAll(".step").forEach(el => {
+      const stepNum = parseInt(el.getAttribute("data-step"));
+      if (stepNum <= progress) {
+        el.classList.add("completed");
+      } else {
+        el.classList.remove("completed");
+      }
+    });
+  }
+
+  // CSRF Helper
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + "=")) {
+          cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  // Direkt beim Laden Status prüfen (falls schon läuft)
+  checkStatus();
+});
+</script>
+
+<style>
+.step {
+  margin: 15px auto;
+  max-width: 600px;
+  padding: 15px;
+  background: #1f1f1f;
+  border-left: 6px solid #555;
+  border-radius: 6px;
+  text-align: left;
+  transition: all 0.3s ease;
+}
+.step.completed {
+  background: #1b3;
+  border-left-color: #3f6;
+  color: #fff;
+  font-weight: bold;
+}
+#currentStatus {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+</style>
+{% endblock %}

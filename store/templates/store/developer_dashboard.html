@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard – {{ developer.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">Willkommen, {{ developer.name }}</h2>
+
+  <p>Verwalte deine Apps, lade neue Versionen hoch oder bearbeite bestehende Apps.</p>
+  <a href="{% url 'create_app' %}" class="btn btn-primary mb-4">Neue App erstellen</a>
+  <a href="{% url 'edit_developer' developer.id %}" class="btn btn-warning mb-4">Profil bearbeiten</a>
+  <a href="{% url 'delete_developer' developer.id %}" class="btn btn-danger mb-4">Profil löschen</a>
+
+  <h4>Deine Apps</h4>
+  {% if apps_with_latest %}
+    <ul class="list-group">
+    {% for entry in apps_with_latest %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <strong>{{ entry.app.name }}</strong><br />
+          <small>Plattform: {{ entry.app.platform }}</small><br />
+          <small>{{ entry.app.description|truncatewords:20|linebreaks }}</small>
+        </div>
+        <a href="{% url 'app_detail_dev' entry.app.id %}" class="btn btn-sm btn-outline-primary">Details</a>
+      </li>
+    {% endfor %}
+    </ul>
+  {% else %}
+    <p>Du hast noch keine Apps.</p>
+  {% endif %}
+</div>
+{% endblock %}

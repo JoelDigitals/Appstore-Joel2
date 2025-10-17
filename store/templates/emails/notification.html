@@ -1,0 +1,292 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Statusmeldung – JDS AppStore</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0d0d0d;
+      color: #e0e0e0;
+      padding: 30px 10px;
+    }
+
+    a {
+      color: #64b5f6;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      max-width: 820px;
+      margin: auto;
+      background: linear-gradient(180deg, #1c1c1c 0%, #151515 100%);
+      border-radius: 16px;
+      padding: 35px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+      border: 1px solid #2a2a2a;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header img {
+      height: 70px;
+      margin-bottom: 15px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .details {
+      text-align: center;
+      color: #bbbbbb;
+      font-size: 15px;
+      margin-bottom: 25px;
+    }
+
+    .status-box {
+      border-radius: 10px;
+      padding: 18px 20px;
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 30px;
+      text-align: center;
+      letter-spacing: 0.2px;
+    }
+
+    .status-error {
+      background: linear-gradient(135deg, #b00020 0%, #d32f2f 100%);
+      color: #fff;
+    }
+
+    .status-success {
+      background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+      color: #fff;
+    }
+
+    .message {
+      line-height: 1.7;
+      font-size: 15px;
+      background: #222;
+      border-radius: 8px;
+      padding: 15px 20px;
+      color: #ddd;
+      margin-bottom: 35px;
+      border-left: 4px solid #2196f3;
+    }
+
+    h3 {
+      color: #ffffff;
+      border-bottom: 1px solid #333;
+      padding-bottom: 6px;
+      margin-top: 40px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .log {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 15px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+      color: #ccc;
+      margin-bottom: 25px;
+    }
+
+    ul {
+      margin: 12px 0 0;
+      padding-left: 20px;
+      line-height: 1.6;
+    }
+
+    .button {
+      display: inline-block;
+      background: linear-gradient(135deg, #2196f3, #1976d2);
+      color: #fff;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .button:hover {
+      background: linear-gradient(135deg, #42a5f5, #1e88e5);
+      transform: translateY(-1px);
+    }
+
+    .app-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .app-card {
+      background-color: #242424;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+      transition: transform 0.25s ease;
+    }
+
+    .app-card:hover {
+      transform: scale(1.04);
+    }
+
+    .app-card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+    }
+
+    .app-card .info {
+      padding: 10px;
+      text-align: center;
+    }
+
+    .app-card .info h4 {
+      margin: 6px 0 0;
+      font-size: 15px;
+      color: #f5f5f5;
+    }
+
+    .social-links a {
+      color: #64b5f6;
+      margin-right: 12px;
+      font-size: 14px;
+    }
+
+    .footer {
+      margin-top: 50px;
+      font-size: 12px;
+      text-align: center;
+      color: #777;
+      border-top: 1px solid #222;
+      padding-top: 15px;
+    }
+
+    .next-steps, .tips, .support, .products, .latest-apps {
+      margin-bottom: 35px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="{% static 'images/logo.png' %}" alt="AppStore Logo">
+      <div class="title">{{ subject }}</div>
+    </div>
+
+    <div class="details">
+      <strong>App:</strong> {{ version.app.name }}<br>
+      <strong>Version:</strong> {{ version.version_number }}
+    </div>
+
+    {% if level == "error" %}
+      <div class="status-box status-error">❌ FEHLER: {{ error_msg }}</div>
+    {% elif level == "success_1" or level == "success_2" %}
+      <div class="status-box status-success">✅ Alles hat funktioniert!</div>
+    {% endif %}
+
+    <div class="message">{{ message|linebreaksbr }}</div>
+
+    <h3>Prüfprotokoll</h3>
+    <div class="log">{{ log_text }}</div>
+
+    {% if level == "success_1" or level == "success_2" %}
+      <div class="next-steps">
+        {% if level == "success_1" %}
+          <h1 class="text-red-600 font-bold text-2xl">
+            WICHTIG!!: NICHT die Status-Seite schließen!!
+          </h1><br>
+        {% endif %}
+
+        <h3>Wie geht es weiter?</h3>
+        <ul>
+          <li>Verwalten Sie Ihre App bequem im <a href="https://jds-appstore.de/developer/apps/{{ app.id }}/">Entwicklerbereich</a>.</li>
+          <li>Fügen Sie Screenshots, Beschreibungen oder neue Versionen hinzu.</li>
+          <li>Teilen Sie Ihre App mit der Community und gewinnen Sie Nutzer!</li>
+        </ul>
+        <div style="text-align:center; margin-top:20px;">
+          <a class="button" href="https://jds-appstore.de/developer/apps/{{ app.id }}/">Zum Entwicklerbereich</a>
+        </div>
+        {% if level == "success_2" %}
+          <p style="margin-top:15px; text-align:center;">✔️ Sie können diese Seite nun schließen.</p>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if level == "error" %}
+      <div class="tips">
+        <h3>Tipps zur Fehlerbehebung</h3>
+        <ul>
+          <li>Überprüfen Sie die Struktur und Benennung Ihrer Dateien.</li>
+          <li>Stellen Sie sicher, dass alle Pflichtfelder korrekt ausgefüllt sind.</li>
+          <li>Lesen Sie das Prüfprotokoll sorgfältig – Details helfen bei der Lösung.</li>
+          <li>Laden Sie eine neue, korrigierte Version hoch.</li>
+        </ul>
+      </div>
+    {% endif %}
+
+    <div class="support">
+      <h3>Support & Kontakt</h3>
+      <p>Bei Fragen oder Problemen steht Ihnen unser <a href="https://joel-digitals.de/contact">Support</a> gerne zur Verfügung.</p>
+      <div class="social-links">
+        Folgen Sie uns:
+        <a href="https://instagram.com/" target="_blank">Instagram</a> |
+        <a href="https://twitter.com/" target="_blank">Twitter/X</a> |
+        <a href="https://joel-digitals.de/wiki" target="_blank">Wiki</a>
+      </div>
+    </div>
+
+    <div class="products">
+      <h3>Weitere Produkte von Joel Digitals</h3>
+      <ul>
+        <li><a href="https://joel-digitals.de/de/our-apps/JDS-AppStore/">JDS AppStore</a></li>
+        <li><a href="https://joel-digitals.de/status">Statusüberwachung</a></li>
+        <li><a href="https://joel-digitals.de/de/our-apps/ManagementApp/">JDS Management</a></li>
+      </ul>
+    </div>
+
+    <div class="latest-apps">
+      <h3>Neue Apps im AppStore</h3>
+      <div class="app-list">
+        {% for app in latest_apps %}
+          <a class="app-card" href="{{ app.link }}">
+            <img src="{{ app.image_url }}" alt="{{ app.name }}">
+            <div class="info">
+              <h4>{{ app.name }}</h4>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+      <div class="more-apps-link" style="text-align:center; margin-top:25px;">
+        <a class="button" href="https://jds-appstore.de/">Alle Apps ansehen</a>
+      </div>
+    </div>
+
+    <div class="footer">
+      Diese Nachricht wurde automatisch generiert – bitte nicht darauf antworten.<br>
+      © 2025 Joel Digitals · <a href="https://joel-digitals.de/impressum" style="color:#777;">Impressum</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+{% load static filename_filters %}
+
+{% block title %}{{ app.name }} – Joel Appstore{% endblock %}
+
+{% block content %}
+<div class="container my-5 text-white">
+  <div class="row">
+    <div class="col-lg-9">
+
+      <!-- App Kopfbereich -->
+      <div class="d-flex flex-column flex-md-row align-items-start gap-4 mb-5">
+        <!-- App Icon mit Fortschrittskreis -->
+        <div id="icon-container" class="position-relative" style="width: 100px; height: 100px;">
+          <img id="app-icon" src="{{ app.icon.url }}" alt="{{ app.name }} Icon" class="rounded shadow w-100 h-100" style="transition: transform 0.3s ease;">
+          <canvas id="progress-circle" width="100" height="100" class="position-absolute top-0 start-0" style="pointer-events:none;"></canvas>
+          <div id="progress-text" class="position-absolute top-50 start-50 translate-middle text-white fw-bold d-none" style="user-select:none;">0%</div>
+        </div>
+
+        <!-- App Info -->
+        <div class="flex-grow-1">
+          <h1 class="display-5 fw-bold text-light mb-2">{{ app.name }}</h1>
+          <p class="mb-1 text-light">
+            von <a href="{% url 'developer_detail' app.developer.name %}" class="text-decoration-underline link-light">{{ app.developer.name }}</a>
+          </p>
+        
+          <p class="text-light small mb-1">
+            {{ app.platform|title }} • {{ app.language }} • Ab {{ app.age_rating }} • {{ app.download_count|default:"0" }} Downloads
+          </p>
+          <p class="text-light small mb-3">
+            Kategorie:
+            {% if app.category %}
+              {{ app.category }}
+            {% else %}
+              Unbekannt
+            {% endif %}
+          </p>
+       
+          <!-- Download Button -->
+          {% if latest_version %}
+            {% if user.is_authenticated %}
+              {% if user_installed_version and user_installed_version.id == latest_version.id %}
+                <button class="btn btn-secondary btn-lg rounded-pill" disabled>
+                  Installiert
+                </button>
+              {% else %}
+                <button id="downloadBtn" class="btn btn-success btn-lg rounded-pill">
+                  {% if user_installed_version %}
+                    Aktualisieren
+                  {% else %}
+                    Download
+                  {% endif %}
+                </button>
+              {% endif %}
+            {% else %}
+              <a href="{% url 'login' %}" class="btn btn-primary btn-lg rounded-pill">Anmelden zum Download</a>
+            {% endif %}
+          {% endif %}
+          
+        </div>
+      </div>
+
+
+      <!-- Beschreibung in Card -->
+      {% with app.description|default_if_none:"" as full_desc %}
+        {% if full_desc|length > 250 %}
+          <div class="card bg-dark border-light mb-4 rounded text-white">
+            <div class="card-body" style="white-space: pre-wrap; word-break: break-word;">
+              <p class="fst-italic mb-2" id="descPreview">{{ full_desc|slice:":250" }}…</p>
+              <p class="fst-italic mb-2 d-none" id="descFull">{{ full_desc }}</p>
+              <button id="toggleDescBtn" class="btn btn-link p-0 text-decoration-underline text-light" type="button">mehr</button>
+            </div>
+          </div>
+        {% else %}
+          <div class="card bg-dark border-light mb-4 rounded text-white">
+            <div class="card-body" style="white-space: pre-wrap; word-break: break-word;">
+              <p class="fst-italic mb-2">{{ full_desc }}</p>
+            </div>
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- Screenshots -->
+      {% if app.screenshots.all %}
+      <div class="card bg-dark border-light mb-4 rounded text-white">
+        <div class="card-body">
+          <h4 class="card-title">Screenshots</h4>
+          <div class="row g-3">
+            {% for shot in app.screenshots.all %}
+            <div class="col-6 col-md-4 col-lg-3">
+              <div class="screenshot-thumb rounded shadow overflow-hidden" style="cursor: pointer;">
+                <a href="#" data-bs-toggle="modal" data-bs-target="#screenshotModal{{ shot.id }}">
+                  <img src="{{ shot.image.url }}" alt="Screenshot von {{ app.name }}" class="img-fluid rounded" />
+                </a>
+              </div>
+            </div>
+
+            <!-- Modal für Screenshot -->
+            <div class="modal fade" id="screenshotModal{{ shot.id }}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered modal-xl">
+                <div class="modal-content bg-dark border-light rounded">
+                  <div class="modal-body p-0 d-flex justify-content-center align-items-center" style="max-height: 90vh; overflow: hidden;">
+                    <img src="{{ shot.image.url }}" alt="Großer Screenshot von {{ app.name }}" 
+                         style="max-width: 100%; max-height: 90vh; object-fit: contain;" class="rounded" />
+                  </div>
+                  <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-light rounded-pill" data-bs-dismiss="modal">Schließen</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Neueste Version -->
+      {% if latest_version %}
+      <div class="card bg-dark border-light mb-4 rounded text-white">
+        <div class="card-body">
+          <h4 class="card-title">Neueste Version</h4>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <strong class="fs-4">{{ latest_version.version_number }}</strong><br>
+              <small class="text-light">Veröffentlicht am {{ latest_version.uploaded_at|date:"d.m.Y" }}</small>
+            </div>
+            <div>
+              {% if latest_version.release_notes %}
+                <button class="btn btn-outline-light btn-sm rounded-pill" type="button" data-bs-toggle="collapse" data-bs-target="#releaseNotesCollapse" aria-expanded="false" aria-controls="releaseNotesCollapse">
+                  Release Notes anzeigen
+                </button>
+              {% endif %}
+              {% if app.versions.count > 1 %}
+                <button type="button" class="btn btn-outline-light btn-sm rounded-pill ms-2" data-bs-toggle="modal" data-bs-target="#alleVersionenModal">
+                  Mehr Versionen anzeigen
+                </button>
+              {% endif %}
+            </div>
+          </div>
+          {% if latest_version.release_notes %}
+          <div class="collapse mt-3" id="releaseNotesCollapse">
+            <p style="white-space: pre-wrap; word-break: break-word;">{{ latest_version.release_notes }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="text-end mt-4">
+        <a href="{% url 'home' %}" class="btn btn-outline-light rounded-pill">Zurück zum App Store</a>
+      </div>
+    </div>
+
+    {% if suggestions %}
+    <div class="col-lg-3 mt-4 mt-lg-0">
+      <div class="card bg-dark border-light rounded text-white">
+        <div class="card-body">
+          <h5 class="card-title">Ähnliche Apps</h5>
+          {% for suggestion in suggestions %}
+            <a href="{% url 'app_detail' suggestion.id %}" class="d-block text-decoration-none mb-3 p-2 rounded hover-bg-light">
+              <div class="d-flex align-items-center">
+                <img src="{{ suggestion.icon.url }}" alt="{{ suggestion.name }}" class="img-fluid rounded shadow me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                <div>
+                  <strong>{{ suggestion.name }}</strong><br>
+                  <small>Ab {{ suggestion.age_rating }} • {{ suggestion.developer.name }}</small>
+                </div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal für alle Versionen -->
+<div class="modal fade" id="alleVersionenModal" tabindex="-1" aria-labelledby="alleVersionenModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content bg-dark text-white border-light rounded">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title" id="alleVersionenModalLabel">Alle Versionen von {{ app.name }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group list-group-flush">
+          {% for version in app.versions.all|dictsortreversed:"uploaded_at" %}
+            <li class="list-group-item bg-dark text-white border-secondary">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <strong>{{ version.version_number }}</strong>
+                  <small class="text-light ms-2">{{ version.uploaded_at|date:"d.m.Y" }}</small>
+                </div>
+              </div>
+              {% if version.release_notes %}
+                <p class="mb-0 small mt-1" style="white-space: pre-wrap; word-break: break-word;">{{ version.release_notes }}</p>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-outline-light rounded-pill" data-bs-dismiss="modal">Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .hover-bg-light:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  .screenshot-thumb img {
+    transition: transform 0.3s ease;
+  }
+  .screenshot-thumb:hover img {
+    transform: scale(1.05);
+  }
+  #app-icon {
+    transition: transform 0.3s ease;
+  }
+  /* Icon wird kleiner, wenn Kreis aktiv */
+  .icon-loading #app-icon {
+    transform: scale(0.7);
+    filter: brightness(0.9);
+  }
+
+  /* Fortschritts-Kreis Halb-Drehung Animation */
+  @keyframes half-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(180deg); }
+  }
+  .half-spin {
+    animation: half-spin 2s linear infinite;
+  }
+  /* Für den drehenden Lade-Kreis ohne Prozent */
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+  /* Icon-Vergrößerung */
+  .icon-loading #app-icon {
+    width: 50px; /* klein */
+    height: 50px;
+    opacity: 0.5;
+    transition: all 0.3s;
+  }
+  #app-icon {
+    width: 100px;
+    height: 100px;
+    transition: all 0.3s;
+  }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('downloadBtn');
+  const iconContainer = document.getElementById('icon-container');
+  const appIcon = document.getElementById('app-icon');
+
+  let canvas = document.getElementById('progress-circle');
+  let progressText = document.getElementById('progress-text');
+
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'progress-circle';
+    canvas.width = iconContainer.clientWidth;
+    canvas.height = iconContainer.clientHeight;
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    iconContainer.appendChild(canvas);
+  }
+
+  if (!progressText) {
+    progressText = document.createElement('div');
+    progressText.id = 'progress-text';
+    progressText.style.position = 'absolute';
+    progressText.style.top = '40%';
+    progressText.style.left = '0';
+    progressText.style.width = '100%';
+    progressText.style.textAlign = 'center';
+    progressText.style.fontWeight = 'bold';
+    progressText.style.color = 'white';
+    progressText.style.pointerEvents = 'none';
+    progressText.style.userSelect = 'none';
+    iconContainer.appendChild(progressText);
+  }
+
+  const ctx = canvas.getContext('2d');
+  const versionId = {{ latest_version.id }};
+  const downloadUrl = "{% url 'download_file_view' latest_version.id %}";
+  const platform = '{{ app.platform|lower }}';
+  const originalFileName = '{{ latest_version.file.name }}';
+  const fileExtension = originalFileName.split('.').pop().toLowerCase();
+  const fileName = '{{ app.name|slugify }}-v{{ latest_version.version }}.' + fileExtension;
+
+  let installed = {% if user_installed_version and user_installed_version.id == latest_version.id %}true{% else %}false{% endif %};
+  let downloading = false;
+
+  const DOWNLOAD_STORAGE_KEY = 'jds_downloads';
+  const DOWNLOAD_STORAGE_TTL = 20 * 60 * 1000;
+
+  function loadDownloads() {
+    let downloads = JSON.parse(localStorage.getItem(DOWNLOAD_STORAGE_KEY) || '[]');
+    const now = Date.now();
+    downloads = downloads.filter(item => (now - item.time) < DOWNLOAD_STORAGE_TTL);
+    localStorage.setItem(DOWNLOAD_STORAGE_KEY, JSON.stringify(downloads));
+    return downloads;
+  }
+
+  function addDownload(name, url) {
+    let downloads = loadDownloads();
+    const exists = downloads.some(dl => dl.name === name && dl.url === url);
+    if (!exists) {
+      downloads.push({name, url, time: Date.now()});
+      try {
+        localStorage.setItem(DOWNLOAD_STORAGE_KEY, JSON.stringify(downloads));
+      } catch(e) {
+        console.warn('localStorage voll oder gesperrt, kann Download nicht speichern.', e);
+      }
+    }
+    renderDownloads();
+  }
+
+  function renderDownloads() {
+    const container = document.getElementById('download-list');
+    const downloads = loadDownloads();
+    container.innerHTML = '';
+    if (downloads.length === 0) {
+      container.innerHTML = '<li style="color:#888;">Keine Downloads</li>';
+      document.getElementById('download-badge').style.display = 'none';
+    } else {
+      downloads.forEach(dl => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.textContent = dl.name;
+        a.href = dl.url;
+        a.target = '_blank';
+        li.appendChild(a);
+        container.appendChild(li);
+      });
+      const badge = document.getElementById('download-badge');
+      badge.style.display = 'inline-block';
+      badge.textContent = downloads.length;
+    }
+  }
+
+  function drawProgress(percent) {
+    const size = canvas.width;
+    const center = size / 2;
+    const radius = center - 6;
+    const startAngle = -Math.PI / 2;
+    ctx.clearRect(0, 0, size, size);
+    ctx.beginPath();
+    ctx.arc(center, center, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    ctx.beginPath();
+    const endAngle = startAngle + (2 * Math.PI * percent / 100);
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.arc(center, center, radius, startAngle, endAngle);
+    ctx.stroke();
+
+    progressText.textContent = percent < 100 ? Math.floor(percent) + '%' : 'Wird installiert...';
+  }
+
+  async function fakeLoading(duration = 4000) {
+    const interval = 50;
+    const steps = duration / interval;
+    for (let i = 0; i <= steps; i++) {
+      const percent = (i / steps) * 20;
+      drawProgress(percent);
+      await new Promise(resolve => setTimeout(resolve, interval));
+    }
+  }
+
+  async function startDownload() {
+    if (installed) {
+      alert("App ist bereits installiert.");
+      return;
+    }
+    if (downloading) return;
+
+    downloading = true;
+    btn.disabled = true;
+    iconContainer.classList.add('icon-loading');
+    progressText.classList.remove('d-none');
+    drawProgress(0);
+    btn.textContent = 'Lädt...';
+
+    await fakeLoading();
+
+    await fetch("{% url 'api_increment_download' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ version_id: versionId }),
+    });
+
+    btn.textContent = 'Wird heruntergeladen...';
+
+    try {
+      const response = await fetch(downloadUrl);
+      if (!response.ok) throw new Error('Download fehlgeschlagen');
+
+      const contentLength = response.headers.get('content-length');
+      const total = contentLength ? parseInt(contentLength, 10) : null;
+
+      const reader = response.body.getReader();
+      let receivedLength = 0;
+      const chunks = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        receivedLength += value.length;
+        if (total) {
+          const percent = 20 + ((receivedLength / total) * 80);
+          drawProgress(percent);
+        }
+      }
+
+      const mimeType = fileExtension === 'apk'
+        ? 'application/vnd.android.package-archive'
+        : fileExtension === 'ipa'
+        ? 'application/octet-stream'
+        : 'application/octet-stream';
+
+      const apkBlob = new Blob(chunks, { type: mimeType });
+      const apkUrl = URL.createObjectURL(apkBlob);
+
+      // Versuch die Datei "auszuführen"
+      const a = document.createElement('a');
+      a.href = apkUrl;
+      a.download = fileName;      
+
+      if (fileExtension === 'apk') {
+        a.target = '_blank'; // Versucht, APK zu öffnen
+      } else {
+        a.target = '_self'; // Normales Downloadverhalten
+      }
+      document.body.appendChild(a);
+
+      try {
+        a.click();  // Chrome öffnet ggf. direkt
+        // Speichern für späteren Zugriff
+        addDownload(fileName, apkUrl);
+        drawProgress(100);
+        btn.textContent = 'Wird installiert...';
+
+        setTimeout(() => {
+          progressText.textContent = 'Installiert';
+          btn.textContent = 'Installiert';
+          btn.disabled = true;
+          iconContainer.classList.remove('icon-loading');
+          URL.revokeObjectURL(apkUrl);
+          installed = true;
+        }, 3000);
+      } catch (e) {
+        alert("Die Datei konnte nicht automatisch geöffnet werden. Sie wurde im Download-Ordner gespeichert und muss manuell installiert werden.");
+        addDownload(fileName, apkUrl);
+        drawProgress(100);
+        btn.textContent = 'Gespeichert';
+        iconContainer.classList.remove('icon-loading');
+        URL.revokeObjectURL(apkUrl);
+      } finally {
+        document.body.removeChild(a);
+      }
+
+    } catch (error) {
+      alert('Download fehlgeschlagen: ' + error.message);
+      btn.textContent = 'Download';
+      btn.disabled = false;
+      iconContainer.classList.remove('icon-loading');
+      progressText.classList.add('d-none');
+      progressText.textContent = '0%';
+      downloading = false;
+    }
+  }
+
+  if (btn) {
+    btn.addEventListener('click', startDownload);
+  }
+
+  renderDownloads();
+});
+</script>
+
+
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('toggleDescBtn');
+    if (!btn) return;
+    const preview = document.getElementById('descPreview');
+    const full = document.getElementById('descFull');
+
+    btn.addEventListener('click', function () {
+      if (full.classList.contains('d-none')) {
+        full.classList.remove('d-none');
+        preview.classList.add('d-none');
+        btn.textContent = 'weniger';
+      } else {
+        full.classList.add('d-none');
+        preview.classList.remove('d-none');
+        btn.textContent = 'mehr';
+      }
+    });
+  });
+</script>
+
+{% endblock %}

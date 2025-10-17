@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Blocky Blast Puzzle – 11x11</title>
+<style>
+  /* Reset & Grundlayout */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; 
+    background: #222;
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1 {
+    margin: 0 0 10px 0;
+  }
+  button {
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    background: #4caf50;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background: #45a049;
+  }
+
+  /* Container */
+  #start-screen, #game-screen, #game-over-screen {
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  /* Spielbrett */
+  #board {
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    gap: 4px;
+    margin: 20px auto;
+    width: 100%;
+    max-width: 440px;
+    aspect-ratio: 1 / 1;
+  }
+  .block {
+    background-color: #888;
+    border-radius: 8px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: transparent;
+  }
+
+  /* Farben der Blöcke */
+  .color-0 { background: #e74c3c; } /* rot */
+  .color-1 { background: #3498db; } /* blau */
+  .color-2 { background: #f1c40f; } /* gelb */
+  .color-3 { background: #2ecc71; } /* grün */
+  .color-4 { background: #9b59b6; } /* lila */
+  .color-5 { background: #e67e22; } /* orange */
+
+  /* Entfernen Animation */
+  .remove {
+    animation: fadeOutScale 0.4s forwards;
+  }
+  @keyframes fadeOutScale {
+    to {
+      opacity: 0;
+      transform: scale(0);
+    }
+  }
+
+  /* Punktestand */
+  #scoreboard {
+    font-size: 1.3rem;
+    margin-top: 10px;
+  }
+
+  /* Highscore */
+  #highscoreboard {
+    font-size: 1rem;
+    margin-top: 5px;
+    color: #aaa;
+  }
+
+  /* Erklärung im Startscreen */
+  #instructions {
+    font-size: 1rem;
+    margin: 10px 0 20px;
+    line-height: 1.4;
+  }
+
+  /* Game Over */
+  #game-over-screen h2 {
+    margin-bottom: 10px;
+  }
+  #game-over-score {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Startbildschirm -->
+<div id="start-screen">
+  <h1>Blocky Blast Puzzle</h1>
+  <div id="instructions">
+    Tippe oder klicke auf mindestens zwei benachbarte gleichfarbige Blöcke, um sie zu entfernen.<br>
+    Entferne so viele Blöcke wie möglich und erreiche eine hohe Punktzahl!<br>
+    Viel Spaß!
+  </div>
+  <button id="start-btn">Spiel starten</button>
+  <div id="highscoreboard"></div>
+</div>
+
+<!-- Spielbildschirm -->
+<div id="game-screen" style="display:none;">
+  <div id="scoreboard">Punkte: 0</div>
+  <div id="board" role="grid" aria-label="Spielbrett"></div>
+</div>
+
+<!-- Game Over -->
+<div id="game-over-screen" style="display:none;">
+  <h2>Spiel beendet!</h2>
+  <div id="game-over-score">Deine Punktzahl: 0</div>
+  <button id="restart-btn">Nochmal spielen</button>
+  <div id="highscoreboard-over"></div>
+</div>
+
+<script>
+(() => {
+  // Config
+  const ROWS = 11;
+  const COLS = 11;
+  const COLORS = 6; // Anzahl Farben
+
+  // DOM Elemente
+  const startScreen = document.getElementById('start-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const gameOverScreen = document.getElementById('game-over-screen');
+  const boardEl = document.getElementById('board');
+  const scoreboard = document.getElementById('scoreboard');
+  const highscoreboard = document.getElementById('highscoreboard');
+  const highscoreboardOver = document.getElementById('highscoreboard-over');
+  const gameOverScore = document.getElementById('game-over-score');
+  const startBtn = document.getElementById('start-btn');
+  const restartBtn = document.getElementById('restart-btn');
+
+  // Spielzustand
+  let board = [];
+  let score = 0;
+  let highscore = 0;
+
+  // Highscore laden
+  function loadHighscore() {
+    return Number(localStorage.getItem('blockyBlastHighscore') || 0);
+  }
+
+  // Highscore speichern
+  function saveHighscore(newScore) {
+    localStorage.setItem('blockyBlastHighscore', newScore);
+  }
+
+  // Zufallszahl 0..max-1
+  function rand(max) {
+    return Math.floor(Math.random() * max);
+  }
+
+  // Neues Spiel starten
+  function initGame() {
+    score = 0;
+    board = [];
+    for(let r=0; r<ROWS; r++) {
+      const row = [];
+      for(let c=0; c<COLS; c++) {
+        row.push(rand(COLORS));
+      }
+      board.push(row);
+    }
+    updateScore(0);
+    renderBoard();
+  }
+
+  // Score updaten und anzeigen
+  function updateScore(inc) {
+    score += inc;
+    scoreboard.textContent = 'Punkte: ' + score;
+  }
+
+  // Blöcke rendern
+  function renderBoard() {
+    boardEl.innerHTML = '';
+    for(let r=0; r<ROWS; r++) {
+      for(let c=0; c<COLS; c++) {
+        const block = document.createElement('div');
+        block.className = 'block color-' + board[r][c];
+        block.dataset.row = r;
+        block.dataset.col = c;
+        block.setAttribute('role', 'button');
+        block.setAttribute('tabindex', '0');
+        boardEl.appendChild(block);
+      }
+    }
+  }
+
+  // Finden aller verbundenen Blöcke gleicher Farbe per DFS
+  function findConnected(r, c, color, visited = new Set()) {
+    const key = r + ',' + c;
+    if (r<0 || r>=ROWS || c<0 || c>=COLS) return [];
+    if (visited.has(key)) return [];
+    if (board[r][c] !== color) return [];
+    visited.add(key);
+
+    let connected = [[r,c]];
+    connected = connected.concat(findConnected(r+1,c,color,visited));
+    connected = connected.concat(findConnected(r-1,c,color,visited));
+    connected = connected.concat(findConnected(r,c+1,color,visited));
+    connected = connected.concat(findConnected(r,c-1,color,visited));
+    return connected;
+  }
+
+  // Entfernen der Blöcke und Verschieben (kein Fallen nötig, da statisch)
+  function removeBlocks(cells) {
+    if (cells.length < 2) return false; // Minimum 2
+
+    // Animation entfernen
+    cells.forEach(([r,c]) => {
+      const idx = r*COLS + c;
+      const blockEl = boardEl.children[idx];
+      blockEl.classList.add('remove');
+    });
+
+    // Nach Animation (400ms) Blöcke ersetzen
+    setTimeout(() => {
+      cells.forEach(([r,c]) => {
+        board[r][c] = -1; // leer
+      });
+      // Board "kompakt" machen - Blöcke nach links schieben wenn möglich
+      compactBoard();
+      renderBoard();
+
+      // Nach dem Rendern prüfen, ob Spiel vorbei ist
+      if (isGameOver()) {
+        endGame();
+      }
+    }, 400);
+
+    // Punkte: Quadratisch zur Anzahl
+    const points = cells.length * cells.length;
+    updateScore(points);
+    return true;
+  }
+
+  // Board kompakt machen: Blöcke nach links verschieben
+  function compactBoard() {
+    for(let r=0; r<ROWS; r++) {
+      let writeCol = 0;
+      for(let c=0; c<COLS; c++) {
+        if (board[r][c] !== -1) {
+          board[r][writeCol] = board[r][c];
+          if(writeCol !== c) board[r][c] = -1;
+          writeCol++;
+        }
+      }
+      // Rest auffüllen mit -1 (leer)
+      for(let c=writeCol; c<COLS; c++) {
+        board[r][c] = -1;
+      }
+    }
+  }
+
+  // Prüfen ob Züge möglich sind (mind. 2 benachbarte gleiche Farben)
+  function isGameOver() {
+    for(let r=0; r<ROWS; r++) {
+      for(let c=0; c<COLS; c++) {
+        const color = board[r][c];
+        if(color === -1) continue;
+        // Nachbarn prüfen
+        if (r>0 && board[r-1][c] === color) return false;
+        if (r<ROWS-1 && board[r+1][c] === color) return false;
+        if (c>0 && board[r][c-1] === color) return false;
+        if (c<COLS-1 && board[r][c+1] === color) return false;
+      }
+    }
+    return true;
+  }
+
+  // Spiel beenden, Game-Over anzeigen
+  function endGame() {
+    highscore = loadHighscore();
+    if(score > highscore) {
+      highscore = score;
+      saveHighscore(highscore);
+    }
+    gameOverScore.textContent = 'Deine Punktzahl: ' + score;
+    highscoreboardOver.textContent = 'Highscore: ' + highscore;
+
+    gameScreen.style.display = 'none';
+    gameOverScreen.style.display = 'block';
+  }
+
+  // Startbildschirm Highscore anzeigen
+  function showStartHighscore() {
+    highscore = loadHighscore();
+    highscoreboard.textContent = 'Highscore: ' + highscore;
+  }
+
+  // Block klick/touch Handler
+  function onBlockClick(e) {
+    if(e.target.classList.contains('block')) {
+      const r = Number(e.target.dataset.row);
+      const c = Number(e.target.dataset.col);
+      const color = board[r][c];
+      if(color === -1) return;
+
+      const connected = findConnected(r, c, color);
+      if(connected.length >= 2) {
+        removeBlocks(connected);
+      }
+    }
+  }
+
+  // Event Listener Setup
+  boardEl.addEventListener('click', onBlockClick);
+
+  // Tastatur-Zugänglichkeit (Enter oder Leertaste zum Auslösen)
+  boardEl.addEventListener('keydown', e => {
+    if(e.target.classList.contains('block')) {
+      if(e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.target.click();
+      }
+    }
+  });
+
+  // Startbutton
+  startBtn.addEventListener('click', () => {
+    startScreen.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    gameScreen.style.display = 'block';
+    initGame();
+  });
+
+  // Restartbutton
+  restartBtn.addEventListener('click', () => {
+    gameOverScreen.style.display = 'none';
+    startScreen.style.display = 'block';
+    showStartHighscore();
+  });
+
+  // Initiales Highscore Update auf Startscreen
+  showStartHighscore();
+
+})();
+</script>
+
+</body>
+</html>

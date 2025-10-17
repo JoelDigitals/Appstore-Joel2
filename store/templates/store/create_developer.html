@@ -1,0 +1,81 @@
+{# templates/developer/create_account.html #}
+{% extends 'base.html' %}
+
+{% block title %}Entwicklerkonto erstellen{% endblock %}
+
+{% block content %}
+  <div class="py-5">
+    <h2 class="mb-3">Entwicklerkonto erstellen</h2>
+    <p>Bitte gib die Informationen für dein Entwicklerprofil an, um Apps hochladen zu können.</p>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+
+      <div class="mb-3">
+        {{ form.name.label_tag }}
+        {{ form.name }}
+        {% if form.name.errors %}
+          <div class="text-danger">{{ form.name.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.website.label_tag }}
+        {{ form.website }}
+        {% if form.website.errors %}
+          <div class="text-danger">{{ form.website.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.email.label_tag }} <small class="text-muted"></small><br>
+        {{ form.email }}
+        {% if form.email.errors %}
+          <div class="text-danger">{{ form.email.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.description.label_tag }}
+        {{ form.description }}
+        {% if form.description.errors %}
+          <div class="text-danger">{{ form.description.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.logo.label_tag }} <small class="text-muted"></small><br>
+        {{ form.logo }}
+        {% if form.logo.errors %}
+          <div class="text-danger">{{ form.logo.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.youtube.label_tag }}
+        {{ form.youtube }}
+        {% if form.youtube.errors %}
+          <div class="text-danger">{{ form.youtube.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.twitter.label_tag }}
+        {{ form.twitter }}
+        {% if form.twitter.errors %}
+          <div class="text-danger">{{ form.twitter.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.github.label_tag }}
+        {{ form.github }}
+        {% if form.github.errors %}
+          <div class="text-danger">{{ form.github.errors }}</div>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-success">Erstellen</button>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pong – Minispiel</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      -webkit-user-select: none; /* Kein Textmarkieren beim Touch */
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    h1 {
+      margin-top: 20px;
+    }
+
+    #info {
+      margin: 10px auto 20px;
+      max-width: 600px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    #pong {
+      background: #111;
+      display: block;
+      margin: 0 auto;
+      border: 3px solid #fff;
+      border-radius: 10px;
+      position: relative;
+      touch-action: none; /* Verhindert Scrollen bei Touch */
+    }
+
+    #startScreen, #endScreen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    #startBtn {
+      padding: 10px 20px;
+      background: #00cc66;
+      border: none;
+      color: white;
+      font-size: 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    #startBtn:hover {
+      background: #00aa55;
+    }
+
+    #highscore {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Pong</h1>
+<div id="info">
+  <p><strong>Steuerung:</strong> Du spielst gegen den Computer. Bewege deinen Schläger mit <strong>W</strong> (hoch) und <strong>S</strong> (runter) oder per Touch am linken Bildschirmrand.</p>
+  <p>Halte den Ball im Spiel und versuche, mehr Punkte als der Computer zu erzielen – du hast 5 Minuten Zeit!</p>
+</div>
+
+<canvas id="pong" width="600" height="400"></canvas>
+
+<div id="startScreen">
+  <h2>Willkommen bei Pong!</h2>
+  <p>Bewege deinen Schläger mit <strong>W</strong> (hoch) und <strong>S</strong> (runter)</p>
+  <p>oder per Touch am linken Bildschirmrand.</p>
+  <p id="highscore">Bester Highscore: <span id="bestScore">0</span></p>
+  <button id="startBtn">Spiel starten</button>
+</div>
+
+<div id="endScreen" style="display: none;">
+  <h2>Spiel beendet!</h2>
+  <p id="resultText"></p>
+  <p>Dein Score: <span id="finalScore"></span></p>
+  <p>Bester Highscore: <span id="finalBestScore"></span></p>
+  <button onclick="location.reload()">Erneut spielen</button>
+</div>
+
+<script>
+  const canvas = document.getElementById("pong");
+  const ctx = canvas.getContext("2d");
+
+  const paddleWidth = 10, paddleHeight = 80;
+  const player = { x: 10, y: 160, score: 0 };
+  const ai = { x: 580, y: 160, score: 0 };
+
+  class Ball {
+    constructor(speedX, speedY) {
+      this.radius = 7;
+      this.reset();
+      this.speedX = speedX;
+      this.speedY = speedY;
+    }
+    reset() {
+      this.x = canvas.width / 2;
+      this.y = canvas.height / 2;
+      this.speedX = this.speedX > 0 ? 3 : -3;
+      this.speedY = (Math.random() > 0.5 ? 1 : -1) * 3;
+    }
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+
+      if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+
+      // Kollision Spieler
+      if (this.x < player.x + paddleWidth &&
+          this.y > player.y && this.y < player.y + paddleHeight) {
+        this.speedX *= -1;
+        this.speedX *= 1.05;
+        this.speedY *= 1.05;
+      }
+
+      // Kollision KI
+      if (this.x > ai.x - this.radius &&
+          this.y > ai.y && this.y < ai.y + paddleHeight) {
+        this.speedX *= -1;
+        this.speedX *= 1.05;
+        this.speedY *= 1.05;
+      }
+
+      if (this.x < 0) {
+        ai.score++;
+        this.reset();
+      }
+      if (this.x > canvas.width) {
+        player.score++;
+        this.reset();
+      }
+    }
+    draw() {
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  let balls = [new Ball(3, 3)];
+  let upPressed = false, downPressed = false;
+  let running = false, startTime;
+  const GAME_DURATION = 5 * 60 * 1000;
+
+  const bestScoreSpan = document.getElementById("bestScore");
+  const finalScoreSpan = document.getElementById("finalScore");
+  const finalBestScoreSpan = document.getElementById("finalBestScore");
+  const resultText = document.getElementById("resultText");
+
+  let bestScore = localStorage.getItem("pongHighscore") || 0;
+  bestScoreSpan.textContent = bestScore;
+
+  function drawRect(x, y, w, h, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, w, h);
+  }
+
+  function drawNet() {
+    for (let i = 0; i < canvas.height; i += 20) {
+      drawRect(canvas.width / 2 - 1, i, 2, 10, "white");
+    }
+  }
+
+  function drawScore() {
+    ctx.font = "20px Arial";
+    ctx.fillText(player.score, canvas.width / 4, 30);
+    ctx.fillText(ai.score, 3 * canvas.width / 4, 30);
+  }
+
+  function drawTimeLeft(timeLeft) {
+    ctx.font = "18px Arial";
+    ctx.fillStyle = "white";
+    ctx.fillText("Verbleibende Zeit: " + Math.ceil(timeLeft / 1000) + "s", canvas.width / 2 - 90, 390);
+  }
+
+  function update() {
+    if (upPressed && player.y > 0) player.y -= 6;
+    if (downPressed && player.y < canvas.height - paddleHeight) player.y += 6;
+
+    // KI bewegt sich langsamer und schlagbar
+    const aiCenter = ai.y + paddleHeight / 2;
+    let diff = balls.reduce((acc, ball) => acc + (ball.y - aiCenter), 0) / balls.length;
+
+    if (Math.abs(diff) > 15) {
+      if (diff > 0) ai.y += 3;
+      else ai.y -= 3;
+    }
+
+    if (ai.y < 0) ai.y = 0;
+    if (ai.y > canvas.height - paddleHeight) ai.y = canvas.height - paddleHeight;
+
+    balls.forEach(ball => ball.update());
+  }
+
+  function render() {
+    drawRect(0, 0, canvas.width, canvas.height, "#111");
+    drawNet();
+    drawScore();
+
+    const elapsed = Date.now() - startTime;
+    const timeLeft = Math.max(0, GAME_DURATION - elapsed);
+    drawTimeLeft(timeLeft);
+
+    drawRect(player.x, player.y, paddleWidth, paddleHeight, "white");
+    drawRect(ai.x, ai.y, paddleWidth, paddleHeight, "white");
+
+    balls.forEach(ball => ball.draw());
+  }
+
+  function gameLoop() {
+    if (!running) return;
+
+    const now = Date.now();
+    const elapsed = now - startTime;
+
+    if (elapsed > 3 * 60 * 1000 && balls.length < 2) {
+      balls.push(new Ball(Math.random() > 0.5 ? 3.5 : -3.5, Math.random() > 0.5 ? 3 : -3));
+    }
+    if (elapsed > 4 * 60 * 1000 && balls.length < 3) {
+      balls.push(new Ball(Math.random() > 0.5 ? 4 : -4, Math.random() > 0.5 ? 3.5 : -3.5));
+    }
+
+    update();
+    render();
+
+    if (elapsed >= GAME_DURATION) {
+      endGame();
+      return;
+    }
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  function endGame() {
+    running = false;
+
+    if (player.score > bestScore) {
+      bestScore = player.score;
+      localStorage.setItem("pongHighscore", bestScore);
+    }
+
+    document.getElementById("startScreen").style.display = "none";
+    const endScreen = document.getElementById("endScreen");
+    endScreen.style.display = "flex";
+
+    finalScoreSpan.textContent = player.score;
+    finalBestScoreSpan.textContent = bestScore;
+
+    if (player.score > ai.score) {
+      resultText.textContent = "Glückwunsch, du hast gewonnen!";
+    } else if (player.score < ai.score) {
+      resultText.textContent = "Der Computer hat gewonnen. Versuch es nochmal!";
+    } else {
+      resultText.textContent = "Unentschieden!";
+    }
+  }
+
+  // Tastatursteuerung
+  window.addEventListener("keydown", e => {
+    if (e.key === "w" || e.key === "W") upPressed = true;
+    if (e.key === "s" || e.key === "S") downPressed = true;
+  });
+  window.addEventListener("keyup", e => {
+    if (e.key === "w" || e.key === "W") upPressed = false;
+    if (e.key === "s" || e.key === "S") downPressed = false;
+  });
+
+  // Touchsteuerung: Finger bewegen den Schläger vertikal am linken Bereich des Canvas
+  canvas.addEventListener("touchstart", handleTouch, {passive: false});
+  canvas.addEventListener("touchmove", handleTouch, {passive: false});
+
+  function handleTouch(event) {
+    event.preventDefault();
+    for (let touch of event.touches) {
+      const rect = canvas.getBoundingClientRect();
+      const touchX = touch.clientX - rect.left;
+      const touchY = touch.clientY - rect.top;
+
+      // Nur am linken Drittel des Canvas wird der Schläger bewegt
+      if (touchX < canvas.width / 3) {
+        // Schläger zentriert auf die Touch-Y-Position (mit Begrenzer)
+        player.y = touchY - paddleHeight / 2;
+        if (player.y < 0) player.y = 0;
+        if (player.y > canvas.height - paddleHeight) player.y = canvas.height - paddleHeight;
+      }
+    }
+  }
+
+  // Start Button
+  document.getElementById("startBtn").addEventListener("click", () => {
+    document.getElementById("startScreen").style.display = "none";
+    running = true;
+    startTime = Date.now();
+    gameLoop();
+  });
+</script>
+
+</body>
+</html>

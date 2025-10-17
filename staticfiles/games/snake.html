@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Snake – Minispiel</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #121212;
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      user-select: none;
+      touch-action: none; /* wichtig für Touch-Gesten */
+    }
+    h1 {
+      margin-bottom: 0;
+      font-weight: 700;
+      font-size: 2.8rem;
+      letter-spacing: 3px;
+    }
+    canvas {
+      background: #000;
+      border: 4px solid #fff;
+      border-radius: 10px;
+      display: block;
+      margin: 20px auto;
+      box-shadow: 0 0 15px #0f0;
+    }
+    #info {
+      font-size: 1rem;
+      max-width: 380px;
+      margin-bottom: 10px;
+      color: #ccc;
+      text-align: center;
+      line-height: 1.4;
+    }
+    button {
+      padding: 12px 28px;
+      font-size: 1.2rem;
+      background: #0f0;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      color: #030;
+      box-shadow: 0 0 8px #0f0;
+    }
+    button:hover {
+      background: #1aff1a;
+      box-shadow: 0 0 14px #1aff1a;
+    }
+    #startScreen, #gameOverScreen {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.95);
+      padding: 30px 40px;
+      border-radius: 15px;
+      border: 3px solid #0f0;
+      text-align: center;
+      z-index: 10;
+      width: 320px;
+      user-select: none;
+    }
+    #gameOverScreen {
+      display: none;
+    }
+    #scoreBoard {
+      margin-top: 15px;
+      font-size: 1.1rem;
+      color: #0f0;
+      font-weight: 700;
+    }
+    #highscoreDisplay {
+      margin-top: 5px;
+      font-size: 0.9rem;
+      color: #555;
+      font-weight: 400;
+    }
+    /* Gitterlinien für klare Kästchen */
+    #game {
+      image-rendering: pixelated;
+      touch-action: none; /* wichtig für Touch-Gesten */
+    }
+  </style>
+</head>
+<body>
+
+<h1>Snake</h1>
+<div id="info">Steuere die Schlange mit den Pfeiltasten oder durch Wischen.<br>Iss Äpfel, um zu wachsen. Berühre nicht die Wände oder dich selbst!</div>
+
+<canvas id="game" width="400" height="400"></canvas>
+
+<div id="startScreen">
+  <h2>Ready to play?</h2>
+  <button id="startBtn">Spiel starten</button>
+  <div id="highscoreDisplay">Bester Highscore: 0</div>
+</div>
+
+<div id="gameOverScreen">
+  <h2>Game Over!</h2>
+  <div id="finalScore">Dein Score: 0</div>
+  <div id="scoreBoard"></div>
+  <button id="restartBtn">Nochmal spielen</button>
+</div>
+
+<script>
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const grid = 20;
+  let snake, dx, dy, apple, score, gameInterval;
+
+  const startScreen = document.getElementById("startScreen");
+  const gameOverScreen = document.getElementById("gameOverScreen");
+  const startBtn = document.getElementById("startBtn");
+  const restartBtn = document.getElementById("restartBtn");
+  const finalScoreDisplay = document.getElementById("finalScore");
+  const scoreBoard = document.getElementById("scoreBoard");
+  const highscoreDisplay = document.getElementById("highscoreDisplay");
+
+  let highscore = localStorage.getItem("snakeHighscore") || 0;
+  highscoreDisplay.textContent = `Bester Highscore: ${highscore}`;
+
+  function resetGame() {
+    snake = [
+      {x: 160, y: 160},
+      {x: 140, y: 160},
+      {x: 120, y: 160}
+    ];
+    dx = grid;
+    dy = 0;
+    score = 0;
+    placeApple();
+  }
+
+  function placeApple() {
+    apple = {
+      x: Math.floor(Math.random() * (canvas.width / grid)) * grid,
+      y: Math.floor(Math.random() * (canvas.height / grid)) * grid
+    };
+    if (snake.some(seg => seg.x === apple.x && seg.y === apple.y)) {
+      placeApple();
+    }
+  }
+
+  function drawGrid() {
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 1;
+    for(let x = 0; x <= canvas.width; x += grid) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
+    }
+    for(let y = 0; y <= canvas.height; y += grid) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
+  }
+
+  function draw() {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawGrid();
+
+    ctx.fillStyle = "#e63946";
+    ctx.fillRect(apple.x + 2, apple.y + 2, grid - 4, grid - 4);
+    ctx.strokeStyle = "#b22222";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(apple.x + 2, apple.y + 2, grid - 4, grid - 4);
+
+    snake.forEach((seg, i) => {
+      ctx.fillStyle = i === 0 ? "#4caf50" : "#81c784";
+      ctx.fillRect(seg.x + 1, seg.y + 1, grid - 2, grid - 2);
+      ctx.strokeStyle = "#2e7d32";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(seg.x + 1, seg.y + 1, grid - 2, grid - 2);
+    });
+
+    ctx.fillStyle = "#0f0";
+    ctx.font = "20px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    ctx.fillText(`Score: ${score}`, 10, 26);
+  }
+
+  function gameOver() {
+    clearInterval(gameInterval);
+    startScreen.style.display = "none";
+    gameOverScreen.style.display = "block";
+    finalScoreDisplay.textContent = `Dein Score: ${score}`;
+
+    if (score > highscore) {
+      highscore = score;
+      localStorage.setItem("snakeHighscore", highscore);
+      scoreBoard.textContent = "Neuer Highscore! 🎉";
+      highscoreDisplay.textContent = `Bester Highscore: ${highscore}`;
+    } else {
+      scoreBoard.textContent = `Bester Highscore: ${highscore}`;
+    }
+  }
+
+  function moveSnake() {
+    const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+
+    if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+      gameOver();
+      return;
+    }
+
+    if (snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+      gameOver();
+      return;
+    }
+
+    snake.unshift(head);
+
+    if (head.x === apple.x && head.y === apple.y) {
+      score++;
+      placeApple();
+    } else {
+      snake.pop();
+    }
+  }
+
+  function gameLoop() {
+    moveSnake();
+    draw();
+  }
+
+  // Tastatursteuerung
+  window.addEventListener("keydown", e => {
+    if (e.key === "ArrowUp" && dy === 0) {
+      dx = 0; dy = -grid;
+    } else if (e.key === "ArrowDown" && dy === 0) {
+      dx = 0; dy = grid;
+    } else if (e.key === "ArrowLeft" && dx === 0) {
+      dx = -grid; dy = 0;
+    } else if (e.key === "ArrowRight" && dx === 0) {
+      dx = grid; dy = 0;
+    }
+  });
+
+  // Touchsteuerung (Swipe)
+  let touchStartX = null;
+  let touchStartY = null;
+
+  canvas.addEventListener("touchstart", e => {
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+  });
+
+  canvas.addEventListener("touchmove", e => {
+    if (!touchStartX || !touchStartY) return;
+
+    const touch = e.touches[0];
+    const diffX = touch.clientX - touchStartX;
+    const diffY = touch.clientY - touchStartY;
+
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      // Horizontaler Swipe
+      if (diffX > 30 && dx === 0) {
+        dx = grid;
+        dy = 0;
+        touchStartX = null;
+        touchStartY = null;
+      } else if (diffX < -30 && dx === 0) {
+        dx = -grid;
+        dy = 0;
+        touchStartX = null;
+        touchStartY = null;
+      }
+    } else {
+      // Vertikaler Swipe
+      if (diffY > 30 && dy === 0) {
+        dx = 0;
+        dy = grid;
+        touchStartX = null;
+        touchStartY = null;
+      } else if (diffY < -30 && dy === 0) {
+        dx = 0;
+        dy = -grid;
+        touchStartX = null;
+        touchStartY = null;
+      }
+    }
+  });
+
+  canvas.addEventListener("touchend", () => {
+    touchStartX = null;
+    touchStartY = null;
+  });
+
+  // Spiel starten
+  startBtn.addEventListener("click", () => {
+    startScreen.style.display = "none";
+    gameOverScreen.style.display = "none";
+    resetGame();
+    gameInterval = setInterval(gameLoop, 180); // langsamer als vorher (120 -> 180)
+  });
+
+  // Neustart nach Game Over
+  restartBtn.addEventListener("click", () => {
+    gameOverScreen.style.display = "none";
+    resetGame();
+    gameInterval = setInterval(gameLoop, 180);
+  });
+</script>
+</body>
+</html>
