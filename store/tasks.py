@@ -72,7 +72,7 @@ def start_background_check(version_id):
     file_path = version.file.path
     log = []
     dev = version.app.developer
-    notification = NotificationSettings.objects.filter(user=dev.user.user).first
+    notification = NotificationSettings.objects.filter(user=dev.user.user).first()
 
     def fail(msg):
         log.append(f"*** FEHLER: {msg}")
@@ -320,7 +320,7 @@ def start_background_check_version(version_id):
     file_path = version.file.path
     log = []
     dev = version.app.developer
-    notification = NotificationSettings.objects.filter(user=dev.user).first
+    notification = NotificationSettings.objects.filter(user=dev.user).first()
     
 
     def fail(msg):
