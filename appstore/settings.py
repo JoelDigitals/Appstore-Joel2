@@ -158,10 +158,9 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'mail.gmx.net'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'no-reply.jds-appstore@gmx.de'  # ersetzen!
-EMAIL_HOST_PASSWORD = 'Jo240207!'     # ersetzen!
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_BACKEND = "django_mailjet.backends.MailjetBackend"
+
+MAILJET_API_KEY = "c3f43729e477c3cd3a4cfdd51ef6a2ba"
+MAILJET_API_SECRET = "c06b2f2787d4a1ee5bf3c9821c8745c4"
+EMAIL_HOST_USER = 'no-reply.jds-appstore@joel-digitals.com '  # ersetzen!
+DEFAULT_FROM_EMAIL = 'JDS Appstore <no-reply.jds-appstore@joel-digitals.com>'  # ersetzen!
