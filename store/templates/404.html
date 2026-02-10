@@ -1,0 +1,341 @@
+{% extends "base_home.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Page Not Found" %} – 404 | Joel Digitals{% endblock %}
+
+{% block content %}
+<style>
+  .error-container {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .error-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(0, 68, 204, 0.03) 0%, transparent 70%);
+    animation: pulse 20s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+  }
+
+  .error-content {
+    text-align: center;
+    max-width: 600px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .error-code {
+    font-size: 10rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--primary), #0066ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    display: inline-block;
+  }
+
+  .error-code::after {
+    content: '404';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background: linear-gradient(135deg, rgba(0, 68, 204, 0.2), rgba(0, 102, 255, 0.2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    z-index: -1;
+  }
+
+  .error-icon {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 2rem;
+    background: linear-gradient(135deg, var(--primary), #0066ff);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 32px rgba(0, 68, 204, 0.3);
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+
+  .error-icon i {
+    font-size: 4rem;
+    color: white;
+  }
+
+  .error-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+
+  .error-message {
+    font-size: 1.1rem;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+
+  .error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), #0066ff);
+    color: white;
+    box-shadow: 0 4px 16px rgba(0, 68, 204, 0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 68, 204, 0.4);
+  }
+
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--text);
+    border: 2px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-3px);
+  }
+
+  .error-illustration {
+    margin-top: 3rem;
+    position: relative;
+  }
+
+  .error-illustration::before {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 20px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .astronaut {
+    font-size: 8rem;
+    animation: float 6s ease-in-out infinite;
+    display: inline-block;
+  }
+
+  /* Glitch effect for 404 */
+  .glitch {
+    position: relative;
+  }
+
+  .glitch::before,
+  .glitch::after {
+    content: '404';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--primary), #0066ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glitch::before {
+    animation: glitch-1 2s infinite linear alternate-reverse;
+    clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+  }
+
+  .glitch::after {
+    animation: glitch-2 3s infinite linear alternate-reverse;
+    clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+  }
+
+  @keyframes glitch-1 {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-2px); }
+    40% { transform: translateX(2px); }
+    60% { transform: translateX(-1px); }
+    80% { transform: translateX(1px); }
+  }
+
+  @keyframes glitch-2 {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(2px); }
+    40% { transform: translateX(-2px); }
+    60% { transform: translateX(1px); }
+    80% { transform: translateX(-1px); }
+  }
+
+  /* Search box */
+  .error-search {
+    margin-top: 2rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .search-box {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .search-box input {
+    flex: 1;
+    padding: 0.875rem 1rem;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-size: 1rem;
+    background: var(--bg);
+    color: var(--text);
+    transition: all 0.3s;
+  }
+
+  .search-box input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 68, 204, 0.1);
+  }
+
+  .search-box button {
+    padding: 0.875rem 1.25rem;
+    background: linear-gradient(135deg, var(--primary), #0066ff);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .search-box button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 68, 204, 0.3);
+  }
+
+  @media (max-width: 768px) {
+    .error-code {
+      font-size: 6rem;
+    }
+
+    .error-icon {
+      width: 80px;
+      height: 80px;
+    }
+
+    .error-icon i {
+      font-size: 2.5rem;
+    }
+
+    .error-title {
+      font-size: 1.5rem;
+    }
+
+    .astronaut {
+      font-size: 5rem;
+    }
+
+    .error-actions {
+      flex-direction: column;
+    }
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .error-code {
+      font-size: 4rem;
+    }
+
+    .error-title {
+      font-size: 1.25rem;
+    }
+  }
+</style>
+
+<div class="error-container">
+  <div class="error-content">
+    <div class="error-icon">
+      <i class="fas fa-rocket"></i>
+    </div>
+    
+    <div class="error-code glitch">404</div>
+    
+    <h1 class="error-title">{% trans "Houston, we have a problem!" %}</h1>
+    
+    <p class="error-message">
+      {% trans "The page you're looking for seems to have drifted off into space. 
+      It might have been moved, deleted, or you may have taken a wrong turn 
+      somewhere in the galaxy." %}
+    </p>
+
+    <div class="error-actions">
+      <a href="{% url 'home' %}" class="btn btn-primary">
+        <i class="fas fa-home"></i> {% trans "Back to Home" %}
+      </a>
+      <a href="javascript:history.back()" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> {% trans "Go Back" %}
+      </a>
+    </div>
+
+    <div class="error-search">
+      <form action="{% url 'search' %}" method="get" class="search-box">
+        <input type="text" name="q" placeholder="{% trans 'Search for something else...' %}" required>
+        <button type="submit">
+          <i class="fas fa-search"></i>
+        </button>
+      </form>
+    </div>
+
+    <div class="error-illustration">
+      <span class="astronaut">👨‍🚀</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
