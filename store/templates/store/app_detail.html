@@ -4,51 +4,50 @@
 {% block title %}{{ app.name }} – JDS Appstore{% endblock %}
 
 {% block content %}
+
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-  
+
   <!-- Breadcrumb -->
   <nav class="flex items-center text-sm text-gray-400 space-x-2">
-    <a href="{% url 'home' %}" class="hover:text-primary transition">Home</a>
-    <i class="bi bi-chevron-right text-xs"></i>
-    <a href="{% url 'jds_apps' %}" class="hover:text-primary transition">Apps</a>
+    <a href="{% url 'home' %}" class="hover:text-primary transition flex items-center gap-1">
+      <i class="bi bi-house-fill"></i> Home
+    </a>
     <i class="bi bi-chevron-right text-xs"></i>
     <span class="text-gray-300 truncate max-w-[200px]">{{ app.name }}</span>
   </nav>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    
-    <!-- Hauptbereich -->
+
+    <!-- ══ MAIN ══ -->
     <div class="lg:col-span-2 space-y-8">
-      
-      <!-- Hero Section -->
+
+      <!-- HERO -->
       <div class="glass rounded-3xl p-6 md:p-8">
         <div class="flex flex-col md:flex-row gap-6 items-start">
-          
-          <!-- Icon mit Download-Fortschritt und ImgBB/Local -->
+
+          <!-- Icon mit Progress-Ring -->
           <div class="relative flex-shrink-0 mx-auto md:mx-0">
             <div id="icon-container" class="relative w-32 h-32 md:w-40 md:h-40">
               {% with icon_url=app|get_image_url:"icon" %}
                 {% if icon_url %}
-                  <img id="app-icon" src="{{ icon_url }}" alt="{{ app.name }}" 
+                  <img id="app-icon" src="{{ icon_url }}" alt="{{ app.name }}"
                        class="w-full h-full object-contain rounded-3xl shadow-2xl transition-all duration-500 bg-slate-800/50 p-2"
-                       onerror="this.src='/static/images/default_app_icon.png'">
+                       onerror="this.style.display='none'; document.getElementById('icoFb').style.display='flex'">
+                  <div id="icoFb" style="display:none;"
+                       class="w-full h-full rounded-3xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-2xl absolute inset-0">
+                    <span class="text-5xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
+                  </div>
                 {% else %}
                   <div class="w-full h-full rounded-3xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-2xl">
                     <span class="text-5xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
                   </div>
                 {% endif %}
               {% endwith %}
-              
-              <!-- ImgBB Indicator -->
-              {% if app.icon_url %}
-                <div class="absolute -top-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-slate-900" title="ImgBB">
-                  <i class="bi bi-cloud text-white text-sm"></i>
-                </div>
-              {% endif %}
-              
-              <canvas id="progress-circle" width="160" height="160" 
+
+              <canvas id="progress-circle" width="160" height="160"
                       class="absolute top-0 left-0 w-full h-full pointer-events-none hidden"></canvas>
-              <div id="progress-text" class="absolute inset-0 flex items-center justify-center text-white font-bold text-lg hidden">
+              <div id="progress-text"
+                   class="absolute inset-0 flex items-center justify-center text-white font-bold text-lg hidden bg-black/40 rounded-3xl">
                 0%
               </div>
             </div>
@@ -57,140 +56,166 @@
           <!-- App Info -->
           <div class="flex-1 text-center md:text-left space-y-4">
             <div>
-              <h1 class="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{{ app.name }}</h1>
-              <a href="{% url 'developer_detail' app.developer.name %}" 
+              <!-- Title + Status badge -->
+              <div class="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-100">{{ app.name }}</h1>
+                {% if user_installed_version %}
+                  {% if user_installed_version.id == latest_version.id %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/15 border border-green-500/25 text-green-400">
+                      <span class="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_5px_currentColor]"></span>
+                      Installiert
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500/15 border border-yellow-500/25 text-yellow-400">
+                      <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_5px_currentColor]"></span>
+                      Update verfügbar
+                    </span>
+                  {% endif %}
+                {% endif %}
+              </div>
+              <a href="{% url 'developer_detail' app.developer.name %}"
                  class="inline-flex items-center text-primary hover:text-primary/80 transition font-medium">
                 <i class="bi bi-person-circle mr-2"></i>
                 {{ app.developer.name }}
               </a>
             </div>
 
-            <!-- Meta Info -->
-            <div class="flex flex-wrap justify-center md:justify-start gap-3 text-sm">
-              <span class="px-3 py-1 glass rounded-full flex items-center text-gray-300">
-                {% if app.platform == 'ios' %}
-                  <i class="bi bi-apple mr-2 text-primary"></i>
-                {% elif app.platform == 'android' %}
-                  <i class="bi bi-android2 mr-2 text-green-400"></i>
-                {% elif app.platform == 'windows' %}
-                  <i class="bi bi-microsoft mr-2 text-blue-400"></i>
-                {% elif app.platform == 'macos' %}
-                  <i class="bi bi-apple mr-2 text-gray-300"></i>
-                {% elif app.platform == 'linux' %}
-                  <i class="bi bi-terminal mr-2 text-yellow-400"></i>
-                {% else %}
-                  <i class="bi bi-laptop mr-2 text-primary"></i>
-                {% endif %}
+            <!-- Meta Badges -->
+            <div class="flex flex-wrap justify-center md:justify-start gap-2 text-sm">
+              <span class="px-3 py-1 glass rounded-full flex items-center gap-1.5 text-gray-300">
+                {% if app.platform == 'ios' %}<i class="bi bi-apple text-primary"></i>
+                {% elif app.platform == 'android' %}<i class="bi bi-android2 text-green-400"></i>
+                {% elif app.platform == 'windows' %}<i class="bi bi-microsoft text-blue-400"></i>
+                {% elif app.platform == 'macos' %}<i class="bi bi-apple text-gray-300"></i>
+                {% elif app.platform == 'linux' %}<i class="bi bi-terminal text-yellow-400"></i>
+                {% else %}<i class="bi bi-laptop text-primary"></i>{% endif %}
                 {{ app.platform|title }}
               </span>
-              <span class="px-3 py-1 glass rounded-full text-gray-300">
-                <i class="bi bi-globe mr-2"></i>{{ app.language }}
+              <span class="px-3 py-1 glass rounded-full flex items-center gap-1.5 text-gray-300">
+                <i class="bi bi-translate"></i> {{ app.language }}
               </span>
-              <span class="px-3 py-1 glass rounded-full text-gray-300">
-                <i class="bi bi-person-badge mr-2"></i>Ab {{ app.age_rating }}
+              <span class="px-3 py-1 glass rounded-full flex items-center gap-1.5 text-gray-300">
+                <i class="bi bi-person-badge"></i> Ab {{ app.age_rating }}
               </span>
-              <span class="px-3 py-1 glass rounded-full text-gray-300">
-                <i class="bi bi-download mr-2 text-primary"></i>{{ app.download_count|default:"0" }} Downloads
+              <span class="px-3 py-1 glass rounded-full flex items-center gap-1.5 text-gray-300">
+                <i class="bi bi-download text-primary"></i>
+                <span id="dlCount">{{ app.download_count|default:"0" }}</span> Downloads
               </span>
+              {% if app.category %}
+              <span class="px-3 py-1 glass rounded-full flex items-center gap-1.5 text-gray-300">
+                <i class="bi bi-tag"></i> {{ app.category }}
+              </span>
+              {% endif %}
+              {% if latest_version %}
+              <span class="px-3 py-1 glass rounded-full flex items-center gap-1.5 text-primary border border-primary/25 bg-primary/8">
+                <i class="bi bi-box-seam"></i> v{{ latest_version.version_number }}
+              </span>
+              {% endif %}
             </div>
-
-            {% if app.category %}
-            <div class="text-sm text-gray-400">
-              <span class="text-gray-500">Kategorie:</span>
-              <span class="text-gray-300">{{ app.category }}</span>
-            </div>
-            {% endif %}
 
             <!-- Action Buttons -->
-            <div class="flex flex-wrap justify-center md:justify-start gap-3 pt-4">
+            <div id="actionArea" class="flex flex-wrap justify-center md:justify-start gap-3 pt-2">
               {% if latest_version %}
                 {% if user.is_authenticated %}
+
                   {% if user_installed_version and user_installed_version.id == latest_version.id %}
-                    <button class="px-8 py-3 bg-green-500/20 text-green-400 rounded-full font-semibold flex items-center cursor-default" disabled>
-                      <i class="bi bi-check-circle-fill mr-2"></i>
-                      Installiert
+                    <button class="px-8 py-3 bg-green-500/20 text-green-400 border border-green-500/25 rounded-full font-semibold flex items-center gap-2 cursor-default" disabled>
+                      <i class="bi bi-check-circle-fill"></i> Installiert
                     </button>
+
+                  {% elif user_installed_version %}
+                    <button id="downloadBtn"
+                            data-version-id="{{ latest_version.id }}"
+                            data-mode="update"
+                            data-filename="{{ latest_version.file.name|default:'' }}"
+                            class="group px-8 py-4 bg-gradient-to-r from-blue-500 to-primary hover:shadow-lg hover:shadow-primary/30 text-white rounded-full font-semibold flex items-center gap-2 transition-all duration-300 hover:scale-105">
+                      <i class="bi bi-arrow-up-circle-fill text-xl"></i>
+                      Aktualisieren
+                    </button>
+                    <span class="text-xs text-gray-500 flex items-center gap-1 self-center">
+                      <i class="bi bi-info-circle"></i>
+                      v{{ user_installed_version.version_number }} → v{{ latest_version.version_number }}
+                    </span>
+
                   {% else %}
-                    <button id="downloadBtn" data-version-id="{{ latest_version.id }}" class="group px-8 py-4 bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/30 text-white rounded-full font-semibold flex items-center transition-all duration-300 hover:scale-105">
-                      <i class="bi bi-download mr-2 text-xl group-hover:animate-bounce"></i>
-                      {% if user_installed_version %}
-                        Aktualisieren
-                      {% else %}
-                        Jetzt herunterladen
-                      {% endif %}
+                    <button id="downloadBtn"
+                            data-version-id="{{ latest_version.id }}"
+                            data-mode="install"
+                            data-filename="{{ latest_version.file.name|default:'' }}"
+                            class="group px-8 py-4 bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/30 text-white rounded-full font-semibold flex items-center gap-2 transition-all duration-300 hover:scale-105">
+                      <i class="bi bi-download text-xl group-hover:animate-bounce"></i>
+                      Jetzt herunterladen
                     </button>
                   {% endif %}
+
                 {% else %}
-                  <a href="{% url 'login' %}" class="inline-flex items-center px-8 py-4 bg-primary/10 hover:bg-primary/20 text-primary rounded-full font-semibold transition-all">
-                    <i class="bi bi-box-arrow-in-right mr-2"></i>
-                    Anmelden zum Download
+                  <a href="{% url 'login' %}"
+                     class="inline-flex items-center gap-2 px-8 py-4 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 border-dashed rounded-full font-semibold transition-all">
+                    <i class="bi bi-box-arrow-in-right"></i> Anmelden zum Download
                   </a>
                 {% endif %}
+
+              {% else %}
+                <span class="px-4 py-3 glass rounded-full text-gray-500 text-sm flex items-center gap-2">
+                  <i class="bi bi-slash-circle"></i> Keine Version verfügbar
+                </span>
               {% endif %}
 
-              <!-- Teilen Button -->
-              <button onclick="openShareModal()" class="px-6 py-4 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-full font-semibold flex items-center transition-all">
-                <i class="bi bi-share-fill mr-2"></i>
-                Teilen
+              <button onclick="openShareModal()"
+                      class="px-6 py-4 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-full font-semibold flex items-center gap-2 transition-all">
+                <i class="bi bi-share-fill"></i> Teilen
               </button>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="dlBarWrap" class="hidden mt-3">
+              <div class="h-1.5 bg-white/6 rounded-full overflow-hidden">
+                <div id="dlBar" class="h-full w-0 bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-100"></div>
+              </div>
+              <div id="dlStatus" class="text-xs text-gray-500 mt-1.5"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Beschreibung -->
-      {% with app.description|default_if_none:"" as full_desc %}
-        {% if full_desc|length > 300 %}
-          <div class="glass rounded-2xl p-6">
-            <h3 class="text-lg font-semibold text-gray-200 mb-4 flex items-center">
-              <i class="bi bi-file-text mr-2 text-primary"></i>
-              Beschreibung
-            </h3>
-            <div class="prose prose-invert max-w-none">
-              <p id="descPreview" class="text-gray-300 leading-relaxed">{{ full_desc|slice:":300" }}...</p>
-              <p id="descFull" class="text-gray-300 leading-relaxed hidden whitespace-pre-wrap">{{ full_desc }}</p>
-            </div>
-            <button id="toggleDescBtn" class="mt-4 text-primary hover:text-primary/80 font-medium flex items-center transition">
-              <span>Mehr anzeigen</span>
-              <i class="bi bi-chevron-down ml-2 transition-transform"></i>
-            </button>
-          </div>
-        {% elif full_desc %}
-          <div class="glass rounded-2xl p-6">
-            <h3 class="text-lg font-semibold text-gray-200 mb-4 flex items-center">
-              <i class="bi bi-file-text mr-2 text-primary"></i>
-              Beschreibung
-            </h3>
-            <p class="text-gray-300 leading-relaxed whitespace-pre-wrap">{{ full_desc }}</p>
-          </div>
+      <!-- DESCRIPTION -->
+      {% with app.description|default_if_none:"" as desc %}
+      {% if desc %}
+      <div class="glass rounded-2xl p-6">
+        <h3 class="text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2">
+          <i class="bi bi-file-text text-primary"></i> Beschreibung
+        </h3>
+        {% if desc|length > 350 %}
+          <p id="descPreview" class="text-gray-300 leading-relaxed">{{ desc|slice:":350" }}…</p>
+          <p id="descFull" class="text-gray-300 leading-relaxed hidden whitespace-pre-wrap">{{ desc }}</p>
+          <button id="toggleDescBtn"
+                  class="mt-4 text-primary hover:text-primary/80 font-medium flex items-center gap-2 transition">
+            <span>Mehr anzeigen</span>
+            <i class="bi bi-chevron-down transition-transform"></i>
+          </button>
+        {% else %}
+          <p class="text-gray-300 leading-relaxed whitespace-pre-wrap">{{ desc }}</p>
         {% endif %}
+      </div>
+      {% endif %}
       {% endwith %}
 
-      <!-- Screenshots mit ImgBB/Local -->
+      <!-- SCREENSHOTS -->
       {% if app.screenshots.all %}
       <div class="glass rounded-2xl p-6">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-semibold text-gray-200 flex items-center">
-            <i class="bi bi-images mr-2 text-primary"></i>
-            Screenshots
+          <h3 class="text-lg font-semibold text-gray-200 flex items-center gap-2">
+            <i class="bi bi-images text-primary"></i> Screenshots
           </h3>
           <span class="text-xs text-gray-500">{{ app.screenshots.count }} Bilder</span>
         </div>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
           {% for shot in app.screenshots.all %}
-          <div class="group relative aspect-video rounded-xl overflow-hidden cursor-pointer bg-slate-800" 
+          <div class="group relative aspect-video rounded-xl overflow-hidden cursor-pointer bg-slate-800 border border-white/5"
                onclick="openScreenshotModal('{{ shot|get_image_url:"image" }}', '{{ app.name }}')">
-            <img src="{{ shot|get_image_url:"image" }}" alt="Screenshot {{ forloop.counter }}" 
+            <img src="{{ shot|get_image_url:"image" }}" alt="Screenshot {{ forloop.counter }}"
                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                 onerror="this.src='/static/images/default_screenshot.png'">
-            
-            <!-- ImgBB Indicator -->
-            {% if shot.image_url %}
-              <div class="absolute top-2 right-2 px-2 py-1 bg-primary/80 rounded text-xs text-white" title="ImgBB">
-                <i class="bi bi-cloud"></i>
-              </div>
-            {% endif %}
-            
+                 onerror="this.closest('.group').style.display='none'">
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
               <i class="bi bi-arrows-fullscreen text-white text-2xl"></i>
             </div>
@@ -200,152 +225,142 @@
       </div>
       {% endif %}
 
-      <!-- Versionen -->
+      <!-- VERSIONS -->
       {% if latest_version %}
       <div class="glass rounded-2xl p-6">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-semibold text-gray-200 flex items-center">
-            <i class="bi bi-box-seam mr-2 text-primary"></i>
-            Versionen
+          <h3 class="text-lg font-semibold text-gray-200 flex items-center gap-2">
+            <i class="bi bi-box-seam text-primary"></i> Versionen
           </h3>
           {% if app.versions.count > 1 %}
-          <button onclick="toggleVersions()" class="text-sm text-primary hover:text-primary/80 font-medium flex items-center">
+          <button onclick="toggleVersions()"
+                  class="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1.5 transition">
             <span id="versionsToggleText">Alle anzeigen</span>
-            <i class="bi bi-chevron-down ml-2 transition-transform" id="versionsToggleIcon"></i>
+            <i class="bi bi-chevron-down transition-transform" id="versionsToggleIcon"></i>
           </button>
           {% endif %}
         </div>
 
-        <!-- Aktuellste Version -->
+        <!-- Latest -->
         <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4">
           <div class="flex items-center justify-between flex-wrap gap-4">
             <div>
               <div class="flex items-center gap-3 mb-1">
                 <span class="text-2xl font-bold text-white">{{ latest_version.version_number }}</span>
-                <span class="px-2 py-1 bg-primary/20 text-primary text-xs rounded-full">Neueste</span>
+                <span class="px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full">Neueste</span>
               </div>
-              <p class="text-sm text-gray-400">{{ latest_version.uploaded_at|date:"d.m.Y" }}</p>
+              <p class="text-sm text-gray-400">
+                {{ latest_version.uploaded_at|date:"d. F Y" }}
+                {% if latest_version.file.name %}
+                  · <i class="bi bi-file-earmark"></i> {{ latest_version.file.name|filename }}
+                {% endif %}
+              </p>
             </div>
             {% if latest_version.release_notes %}
-            <button onclick="toggleReleaseNotes()" class="text-sm text-primary hover:text-primary/80 font-medium">
+            <button onclick="toggleReleaseNotes()" class="text-sm text-primary hover:text-primary/80 font-medium transition">
               Release Notes
             </button>
             {% endif %}
           </div>
-          
           {% if latest_version.release_notes %}
           <div id="releaseNotes" class="hidden mt-4 pt-4 border-t border-primary/10">
-            <p class="text-gray-300 text-sm whitespace-pre-wrap">{{ latest_version.release_notes }}</p>
+            <p class="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">{{ latest_version.release_notes }}</p>
           </div>
           {% endif %}
         </div>
 
-        <!-- Ältere Versionen -->
+        <!-- Older -->
         {% if app.versions.count > 1 %}
         <div id="olderVersions" class="hidden space-y-3">
-          {% for version in app.versions.all|dictsortreversed:"uploaded_at" %}
-            {% if version.id != latest_version.id %}
-            <div class="flex items-center justify-between p-4 rounded-xl bg-slate-800/30 border border-gray-700/30">
-              <div>
-                <span class="font-semibold text-gray-200">{{ version.version_number }}</span>
-                <p class="text-xs text-gray-500 mt-1">{{ version.uploaded_at|date:"d.m.Y" }}</p>
+          {% for v in app.versions.all|dictsortreversed:"uploaded_at" %}
+          {% if v.id != latest_version.id %}
+          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-800/30 border border-gray-700/30">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-semibold text-gray-200">{{ v.version_number }}</span>
+                <span class="px-2 py-0.5 bg-white/4 border border-white/8 text-gray-500 text-xs rounded-full">Veraltet</span>
               </div>
-              {% if version.release_notes %}
-              <button onclick="toggleOldReleaseNotes({{ version.id }})" class="text-xs text-primary hover:text-primary/80">
-                Details
-              </button>
-              {% endif %}
+              <p class="text-xs text-gray-500">{{ v.uploaded_at|date:"d. F Y" }}</p>
             </div>
-            {% if version.release_notes %}
-            <div id="oldReleaseNotes{{ version.id }}" class="hidden p-4 text-sm text-gray-400 bg-slate-800/20 rounded-xl -mt-2">
-              {{ version.release_notes }}
-            </div>
+            {% if v.release_notes %}
+            <button onclick="toggleOldReleaseNotes({{ v.id }})" class="text-xs text-primary hover:text-primary/80 transition">
+              Details
+            </button>
             {% endif %}
-            {% endif %}
+          </div>
+          {% if v.release_notes %}
+          <div id="oldReleaseNotes{{ v.id }}" class="hidden p-4 text-sm text-gray-400 bg-slate-800/20 rounded-xl -mt-2 whitespace-pre-wrap leading-relaxed">
+            {{ v.release_notes }}
+          </div>
+          {% endif %}
+          {% endif %}
           {% endfor %}
         </div>
         {% endif %}
       </div>
       {% endif %}
 
-      <!-- Zurück Button -->
-      <div class="flex justify-start">
-        <a href="{% url 'home' %}" class="inline-flex items-center px-6 py-3 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-full font-medium transition-all">
-          <i class="bi bi-arrow-left mr-2"></i>
-          Zurück zum Store
-        </a>
-      </div>
+      <!-- Back -->
+      <a href="{% url 'home' %}"
+         class="inline-flex items-center gap-2 px-6 py-3 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-full font-medium transition-all">
+        <i class="bi bi-arrow-left"></i> Zurück zum Store
+      </a>
     </div>
 
-    <!-- Sidebar -->
-    <div class="lg:col-span-1 space-y-6">
-      
-      <!-- Ähnliche Apps mit ImgBB/Local -->
-      {% if suggestions %}
+    <!-- ══ SIDEBAR ══ -->
+    {% if suggestions %}
+    <div class="lg:col-span-1">
       <div class="glass rounded-2xl p-6 sticky top-24">
-        <h3 class="text-lg font-semibold text-gray-200 mb-4 flex items-center">
-          <i class="bi bi-lightbulb mr-2 text-yellow-400"></i>
-          Ähnliche Apps
+        <h3 class="text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2">
+          <i class="bi bi-lightbulb text-yellow-400"></i> Ähnliche Apps
         </h3>
-        <div class="space-y-4">
-          {% for suggestion in suggestions %}
-          <a href="{% url 'app_detail' suggestion.id %}" class="group flex items-center p-3 rounded-xl hover:bg-primary/5 transition-colors">
-            <div class="relative w-16 h-16 flex-shrink-0">
-              {% with sugg_icon=suggestion|get_image_url:"icon" %}
-                {% if sugg_icon %}
-                  <img src="{{ sugg_icon }}" alt="{{ suggestion.name }}" 
-                       class="w-full h-full object-contain rounded-xl bg-slate-800/50 p-1"
-                       onerror="this.src='/static/images/default_app_icon.png'">
-                {% else %}
-                  <div class="w-full h-full rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                    <span class="text-xl font-bold text-white">{{ suggestion.name|slice:":1"|upper }}</span>
-                  </div>
-                {% endif %}
-              {% endwith %}
-              
-              <!-- ImgBB Indicator -->
-              {% if suggestion.icon_url %}
-                <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow border border-slate-900" title="ImgBB">
-                  <i class="bi bi-cloud text-white text-[8px]"></i>
+        <div class="space-y-1">
+          {% for s in suggestions %}
+          <a href="{% url 'app_detail' s.id %}" class="group flex items-center gap-3 p-3 rounded-xl hover:bg-primary/5 transition-colors">
+            {% with si=s|get_image_url:"icon" %}
+              {% if si %}
+                <img src="{{ si }}" alt="{{ s.name }}"
+                     class="w-14 h-14 rounded-xl object-contain bg-slate-800/50 p-1 border border-white/5 flex-shrink-0"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div style="display:none;" class="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-secondary flex-shrink-0 flex items-center justify-center">
+                  <span class="text-xl font-bold text-white">{{ s.name|slice:":1"|upper }}</span>
+                </div>
+              {% else %}
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-secondary flex-shrink-0 flex items-center justify-center">
+                  <span class="text-xl font-bold text-white">{{ s.name|slice:":1"|upper }}</span>
                 </div>
               {% endif %}
-            </div>
-            <div class="ml-4 flex-1 min-w-0">
-              <h4 class="font-medium text-gray-200 group-hover:text-primary transition-colors truncate">
-                {{ suggestion.name }}
-              </h4>
-              <p class="text-xs text-gray-500 truncate">{{ suggestion.developer.name }}</p>
-              <div class="flex items-center mt-1 text-xs text-gray-400">
-                <i class="bi bi-person-badge mr-1"></i>
-                Ab {{ suggestion.age_rating }}
-              </div>
+            {% endwith %}
+            <div class="min-w-0">
+              <h4 class="font-medium text-gray-200 group-hover:text-primary transition-colors truncate text-sm">{{ s.name }}</h4>
+              <p class="text-xs text-gray-500 truncate">{{ s.developer.name }}</p>
+              <p class="text-xs text-gray-500 mt-0.5"><i class="bi bi-person-badge text-[10px] mr-0.5"></i> Ab {{ s.age_rating }}</p>
             </div>
           </a>
           {% endfor %}
         </div>
       </div>
-      {% endif %}
     </div>
+    {% endif %}
+
   </div>
 </div>
 
-<!-- Share Modal mit ImgBB/Local Icon -->
-<div id="shareModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onclick="closeShareModal()">
-  <div class="relative w-full max-w-md glass rounded-3xl p-6 transform scale-95 opacity-0 transition-all duration-300" 
+<!-- ══ SHARE MODAL ══ -->
+<div id="shareModal"
+     class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+     onclick="closeShareModal()">
+  <div class="relative w-full max-w-md glass rounded-3xl p-6 transform scale-95 opacity-0 transition-all duration-300"
        id="shareModalContent" onclick="event.stopPropagation()">
-    
-    <!-- Header -->
     <div class="flex items-center justify-between mb-6">
-      <h3 class="text-xl font-bold text-gray-100 flex items-center">
-        <i class="bi bi-share-fill mr-3 text-primary"></i>
-        App teilen
+      <h3 class="text-xl font-bold text-gray-100 flex items-center gap-2">
+        <i class="bi bi-share-fill text-primary"></i> App teilen
       </h3>
       <button onclick="closeShareModal()" class="text-gray-400 hover:text-white transition">
         <i class="bi bi-x-lg text-2xl"></i>
       </button>
     </div>
 
-    <!-- App Preview -->
     <div class="flex items-center p-4 bg-slate-800/50 rounded-2xl mb-6">
       {% with share_icon=app|get_image_url:"icon" %}
         {% if share_icon %}
@@ -359,217 +374,351 @@
       <div class="ml-4">
         <h4 class="font-semibold text-gray-200">{{ app.name }}</h4>
         <p class="text-sm text-gray-500">{{ app.developer.name }}</p>
-        {% if app.icon_url %}
-          <span class="text-xs text-primary flex items-center gap-1">
-            <i class="bi bi-cloud-check"></i> ImgBB
-          </span>
-        {% endif %}
       </div>
     </div>
 
-    <!-- Share Options -->
-    <div class="grid grid-cols-4 gap-4 mb-6">
-      <button onclick="shareTo('whatsapp')" class="flex flex-col items-center gap-2 group">
+    <div class="grid grid-cols-4 gap-3 mb-5">
+      <button onclick="shareTo('whatsapp')" class="flex flex-col items-center gap-1.5 group">
         <div class="w-14 h-14 rounded-2xl bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-all group-hover:scale-110">
           <i class="bi bi-whatsapp text-2xl text-green-400"></i>
         </div>
         <span class="text-xs text-gray-400">WhatsApp</span>
       </button>
-      <button onclick="shareTo('instagram')" class="flex flex-col items-center gap-2 group">
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all group-hover:scale-110">
-          <i class="bi bi-instagram text-2xl text-pink-400"></i>
-        </div>
-        <span class="text-xs text-gray-400">Instagram</span>
-      </button>
-      <button onclick="shareTo('twitter')" class="flex flex-col items-center gap-2 group">
-        <div class="w-14 h-14 rounded-2xl bg-slate-700/50 flex items-center justify-center group-hover:bg-slate-600/50 transition-all group-hover:scale-110">
-          <i class="bi bi-twitter-x text-2xl text-white"></i>
-        </div>
-        <span class="text-xs text-gray-400">X</span>
-      </button>
-      <button onclick="shareTo('facebook')" class="flex flex-col items-center gap-2 group">
-        <div class="w-14 h-14 rounded-2xl bg-blue-600/20 flex items-center justify-center group-hover:bg-blue-600/30 transition-all group-hover:scale-110">
-          <i class="bi bi-facebook text-2xl text-blue-500"></i>
-        </div>
-        <span class="text-xs text-gray-400">Facebook</span>
-      </button>
-      <button onclick="shareTo('telegram')" class="flex flex-col items-center gap-2 group">
+      <button onclick="shareTo('telegram')" class="flex flex-col items-center gap-1.5 group">
         <div class="w-14 h-14 rounded-2xl bg-sky-500/20 flex items-center justify-center group-hover:bg-sky-500/30 transition-all group-hover:scale-110">
           <i class="bi bi-telegram text-2xl text-sky-400"></i>
         </div>
         <span class="text-xs text-gray-400">Telegram</span>
       </button>
-      <button onclick="shareTo('email')" class="flex flex-col items-center gap-2 group">
+      <button onclick="shareTo('twitter')" class="flex flex-col items-center gap-1.5 group">
+        <div class="w-14 h-14 rounded-2xl bg-slate-700/50 flex items-center justify-center group-hover:bg-slate-600/50 transition-all group-hover:scale-110">
+          <i class="bi bi-twitter-x text-2xl text-white"></i>
+        </div>
+        <span class="text-xs text-gray-400">X</span>
+      </button>
+      <button onclick="shareTo('facebook')" class="flex flex-col items-center gap-1.5 group">
+        <div class="w-14 h-14 rounded-2xl bg-blue-600/20 flex items-center justify-center group-hover:bg-blue-600/30 transition-all group-hover:scale-110">
+          <i class="bi bi-facebook text-2xl text-blue-500"></i>
+        </div>
+        <span class="text-xs text-gray-400">Facebook</span>
+      </button>
+      <button onclick="shareTo('email')" class="flex flex-col items-center gap-1.5 group">
         <div class="w-14 h-14 rounded-2xl bg-red-500/20 flex items-center justify-center group-hover:bg-red-500/30 transition-all group-hover:scale-110">
           <i class="bi bi-envelope-fill text-2xl text-red-400"></i>
         </div>
         <span class="text-xs text-gray-400">E-Mail</span>
       </button>
-      <button onclick="shareTo('sms')" class="flex flex-col items-center gap-2 group">
+      <button onclick="shareTo('sms')" class="flex flex-col items-center gap-1.5 group">
         <div class="w-14 h-14 rounded-2xl bg-yellow-500/20 flex items-center justify-center group-hover:bg-yellow-500/30 transition-all group-hover:scale-110">
           <i class="bi bi-chat-dots-fill text-2xl text-yellow-400"></i>
         </div>
         <span class="text-xs text-gray-400">SMS</span>
       </button>
-      <button onclick="shareTo('copy')" class="flex flex-col items-center gap-2 group">
+      <button onclick="shareTo('copy')" class="flex flex-col items-center gap-1.5 group">
         <div class="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-all group-hover:scale-110">
           <i class="bi bi-link-45deg text-2xl text-primary"></i>
         </div>
         <span class="text-xs text-gray-400">Link</span>
       </button>
+      <button onclick="nativeShare()" class="flex flex-col items-center gap-1.5 group">
+        <div class="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-all group-hover:scale-110">
+          <i class="bi bi-box-arrow-up text-2xl text-gray-300"></i>
+        </div>
+        <span class="text-xs text-gray-400">Mehr</span>
+      </button>
     </div>
-
-    <!-- Native Share -->
-    <button onclick="nativeShare()" class="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all">
-      <i class="bi bi-box-arrow-up"></i>
-      Mehr Optionen...
-    </button>
   </div>
 </div>
 
-<!-- Screenshot Modal -->
-<div id="screenshotModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/90 backdrop-blur-sm" onclick="closeScreenshotModal()">
+<!-- ══ SCREENSHOT LIGHTBOX ══ -->
+<div id="screenshotModal"
+     class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
+     onclick="closeScreenshotModal()">
   <div class="relative max-w-6xl max-h-[90vh] w-full flex items-center justify-center" onclick="event.stopPropagation()">
-    <img id="screenshotModalImg" src="" alt="" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl">
-    <button onclick="closeScreenshotModal()" class="absolute -top-12 right-0 text-white hover:text-primary transition">
+    <img id="screenshotModalImg" src="" alt=""
+         class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl transition-transform duration-300 scale-95">
+    <button onclick="closeScreenshotModal()"
+            class="absolute -top-12 right-0 text-white hover:text-primary transition">
       <i class="bi bi-x-lg text-3xl"></i>
     </button>
   </div>
 </div>
 
+<!-- ══ TOAST ══ -->
+<div id="toastEl"
+     class="fixed bottom-6 right-6 z-[9999] pointer-events-none
+            px-5 py-4 rounded-2xl border backdrop-blur-xl
+            flex items-center gap-3 text-sm font-medium
+            transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm">
+  <i class="bi" id="toastIco"></i>
+  <span id="toastTxt"></span>
+</div>
+
 <style>
-  /* Icon Animation beim Download */
   .icon-loading #app-icon {
     transform: scale(0.85);
-    filter: brightness(0.7);
+    filter: brightness(0.6);
   }
-  .icon-loading canvas {
-    display: block !important;
-  }
-  .icon-loading #progress-text {
-    display: flex !important;
-  }
-
-  /* Share Modal */
-  #shareModal.active #shareModalContent {
+  #shareModal.modal-active #shareModalContent {
     transform: scale(1);
     opacity: 1;
   }
-
-  /* Screenshot Modal */
-  #screenshotModal {
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-  #screenshotModal.active {
-    opacity: 1;
-  }
-  #screenshotModal img {
-    transform: scale(0.9);
-    transition: transform 0.3s ease;
-  }
-  #screenshotModal.active img {
+  #screenshotModal.modal-active #screenshotModalImg {
     transform: scale(1);
-  }
-
-  /* Open-Hint Banner */
-  .open-hint-banner {
-    transition: opacity 0.4s ease, transform 0.4s ease;
   }
 </style>
 
 <script>
-// ─────────────────────────────────────────────
-// Share Modal
-// ─────────────────────────────────────────────
-function openShareModal() {
-  const modal = document.getElementById('shareModal');
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-  setTimeout(() => modal.classList.add('active'), 10);
-  document.body.style.overflow = 'hidden';
-}
+// ════ DOWNLOAD SYSTEM ════
+document.addEventListener('DOMContentLoaded', () => {
 
-function closeShareModal() {
-  const modal = document.getElementById('shareModal');
-  modal.classList.remove('active');
-  setTimeout(() => {
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    document.body.style.overflow = '';
-  }, 300);
-}
+  // ─ Canvas progress helper ─
+  const canvas = document.getElementById('progress-circle');
+  const ctx = canvas ? canvas.getContext('2d') : null;
+  const progressText = document.getElementById('progress-text');
+  const iconContainer = document.getElementById('icon-container');
 
-async function nativeShare() {
-  const shareData = {
-    title: '{{ app.name }}',
-    text: 'Schau dir {{ app.name }} im JDS Appstore an! {{ app.description|truncatechars:100 }}',
-    url: window.location.href
+  function drawProgress(percent) {
+    if (!ctx) return;
+    const size = canvas.width, center = size / 2, radius = center - 8;
+    ctx.clearRect(0, 0, size, size);
+    ctx.beginPath();
+    ctx.arc(center, center, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+    if (percent > 0) {
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#3b82f6');
+      gradient.addColorStop(1, '#8b5cf6');
+      ctx.beginPath();
+      ctx.arc(center, center, radius, -Math.PI / 2, -Math.PI / 2 + (2 * Math.PI * percent / 100));
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+    if (progressText) progressText.textContent = percent < 100 ? Math.floor(percent) + '%' : '✓';
+  }
+
+  function showLoader(on) {
+    if (canvas) canvas.classList.toggle('hidden', !on);
+    if (progressText) progressText.classList.toggle('hidden', !on);
+    document.getElementById('dlBarWrap').classList.toggle('hidden', !on);
+    if (iconContainer) iconContainer.classList.toggle('icon-loading', on);
+  }
+
+  function setBar(pct) {
+    document.getElementById('dlBar').style.width = pct + '%';
+    drawProgress(pct);
+  }
+  function setStatus(txt) { document.getElementById('dlStatus').textContent = txt; }
+
+  function fmtBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+  }
+
+  function getCookie(n) {
+    for (const c of document.cookie.split(';')) {
+      const [k, v] = c.trim().split('=');
+      if (k === n) return decodeURIComponent(v);
+    }
+    return null;
+  }
+
+  const mimeMap = {
+    apk: 'application/vnd.android.package-archive',
+    exe: 'application/vnd.microsoft.portable-executable',
+    msi: 'application/x-msi',
+    dmg: 'application/x-apple-diskimage',
+    pkg: 'application/x-newton-compatible-pkg',
+    deb: 'application/x-debian-package',
+    rpm: 'application/x-rpm',
+    sh:  'application/x-sh',
+    zip: 'application/zip',
+    ipa: 'application/octet-stream',
   };
-  if (navigator.share) {
-    try { await navigator.share(shareData); closeShareModal(); }
-    catch (err) { console.log('Share cancelled'); }
-  } else {
-    shareTo('copy');
-  }
-}
 
-function shareTo(platform) {
-  const url   = encodeURIComponent(window.location.href);
-  const text  = encodeURIComponent('Schau dir {{ app.name }} im JDS Appstore an!');
-  const title = encodeURIComponent('{{ app.name }}');
-  let shareUrl = '';
+  const openHints = {
+    exe: `Doppelklicke auf die Datei in deinem <strong>Download-Ordner</strong>, um die Installation zu starten.`,
+    msi: `Doppelklicke auf die Datei in deinem <strong>Download-Ordner</strong>, um die Installation zu starten.`,
+    dmg: `Öffne die <strong>.dmg-Datei</strong> im Download-Ordner und folge den Installationsschritten.`,
+    pkg: `Doppelklicke auf die <strong>.pkg-Datei</strong> im Download-Ordner, um zu installieren.`,
+    apk: `Öffne auf deinem Android-Gerät den <strong>Download-Ordner</strong>, tippe auf die APK-Datei und folge den Anweisungen.<br><small style="opacity:.75">Ggf. musst du unter <em>Einstellungen → Sicherheit</em> die Installation aus unbekannten Quellen erlauben.</small>`,
+    deb: `Installiere die Datei im Terminal:<br><code>sudo dpkg -i {filename}</code>`,
+    rpm: `Installiere die Datei im Terminal:<br><code>sudo rpm -i {filename}</code>`,
+    sh:  `Führe die Datei im Terminal aus:<br><code>chmod +x {filename} && ./{filename}</code>`,
+    zip: `Entpacke das Archiv im Download-Ordner und öffne die enthaltene Anwendung.`,
+    ipa: `Übertrage die <strong>.ipa-Datei</strong> mit AltStore oder Sideloadly auf dein iOS-Gerät.`,
+  };
 
-  switch (platform) {
-    case 'whatsapp':  shareUrl = `https://wa.me/?text=${text}%20${url}`; break;
-    case 'instagram':
-      if (navigator.share) { nativeShare(); return; }
-      else { shareTo('copy'); showNotification('Link kopiert! Füge ihn in Instagram ein.', 'success'); return; }
-    case 'twitter':   shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`; break;
-    case 'facebook':  shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`; break;
-    case 'telegram':  shareUrl = `https://t.me/share/url?url=${url}&text=${text}`; break;
-    case 'email':     shareUrl = `mailto:?subject=${title}&body=${text}%0A%0A${url}`; break;
-    case 'sms':       shareUrl = `sms:?body=${text}%20${url}`; break;
-    case 'copy':
-      navigator.clipboard.writeText(window.location.href)
-        .then(() => { showNotification('Link in Zwischenablage kopiert!', 'success'); closeShareModal(); })
-        .catch(() => showNotification('Konnte Link nicht kopieren', 'error'));
-      return;
-  }
+  const dlBtn = document.getElementById('downloadBtn');
+  if (!dlBtn) return;
 
-  if (shareUrl) {
-    const w = 600, h = 400;
-    window.open(shareUrl, 'share',
-      `width=${w},height=${h},left=${(screen.width-w)/2},top=${(screen.height-h)/2},toolbar=0,menubar=0`);
-    closeShareModal();
-  }
-}
+  const isUpdate  = dlBtn.dataset.mode === 'update';
+  const vId       = dlBtn.dataset.versionId;
+  const rawFname  = dlBtn.dataset.filename || '';
+  const fileExt   = rawFname.split('.').pop().toLowerCase();
+  const fileName  = '{{ app.name|slugify }}-v{{ latest_version.version_number|default:"1.0" }}.' + fileExt;
+  const dlUrl     = "{% url 'download_file_view' 0 %}".replace('0', vId);
 
-// ─────────────────────────────────────────────
-// Screenshot Modal
-// ─────────────────────────────────────────────
-function openScreenshotModal(src, alt) {
-  const modal = document.getElementById('screenshotModal');
-  document.getElementById('screenshotModalImg').src = src;
-  document.getElementById('screenshotModalImg').alt = alt;
-  modal.classList.remove('hidden');
-  modal.classList.add('flex', 'active');
-  document.body.style.overflow = 'hidden';
-}
+  let busy = false;
 
-function closeScreenshotModal() {
-  const modal = document.getElementById('screenshotModal');
-  modal.classList.remove('active');
+  dlBtn.addEventListener('click', async () => {
+    if (busy) return;
+    busy = true;
+
+    dlBtn.disabled = true;
+    dlBtn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin mr-2"></i>' + (isUpdate ? 'Wird aktualisiert…' : 'Wird heruntergeladen…');
+    showLoader(true);
+    setBar(4);
+    setStatus('Verbindung wird hergestellt…');
+
+    try {
+      // 1. Track
+      setStatus('Registriere Download…');
+      try {
+        await fetch(`/track-download/${vId}/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' }
+        });
+      } catch (e) { console.warn('Tracking:', e); }
+
+      setBar(10);
+      setStatus('Datei wird geladen…');
+
+      // 2. Fetch + stream
+      const resp = await fetch(dlUrl);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+      const len   = resp.headers.get('content-length');
+      const total = len ? parseInt(len, 10) : 0;
+      const reader = resp.body.getReader();
+      const chunks = [];
+      let got = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        got += value.length;
+        setBar(total ? 10 + Math.round(got / total * 83) : Math.min(10 + Math.round(got / 40000), 88));
+        setStatus(total ? fmtBytes(got) + ' / ' + fmtBytes(total) : fmtBytes(got) + ' heruntergeladen…');
+      }
+
+      setBar(96);
+      setStatus('Datei wird vorbereitet…');
+
+      // 3. Blob erzeugen + Browser-Download auslösen
+      const mime    = mimeMap[fileExt] || 'application/octet-stream';
+      const blob    = new Blob(chunks, { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href     = blobUrl;
+      a.download = fileName;
+      // Kein _blank – Browser speichert zuerst, versucht dann zu öffnen
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      // Kurz nach dem Klick versuchen wir zusätzlich, die Datei via _blank-Tab zu öffnen.
+      // Moderne Browser/OS öffnen bekannte Formate (z.B. PDF, DMG, APK) direkt.
+      // Für Installer (exe, msi, …) schlägt das meist fehl – der Nutzer sieht dann den Hinweis-Banner.
+      let autoOpenSuccess = false;
+      try {
+        const win = window.open(blobUrl, '_blank');
+        // Wenn der Browser das Öffnen blockiert oder die Datei nicht kennt, liefert win null oder about:blank
+        if (win && !win.closed) {
+          autoOpenSuccess = true;
+          // Fenster sofort wieder schließen – wir wollen nur den OS-Handler triggern, nicht ein leeres Tab
+          setTimeout(() => { try { win.close(); } catch(e){} }, 800);
+        }
+      } catch(e) { /* blocked */ }
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+
+      setBar(100);
+      setStatus(isUpdate ? 'Update fertig!' : 'Download abgeschlossen!');
+
+      // Download-Counter
+      const dlCountEl = document.getElementById('dlCount');
+      if (dlCountEl) dlCountEl.textContent = parseInt(dlCountEl.textContent || '0') + 1;
+
+      // Button → "Heruntergeladen"
+      dlBtn.classList.remove('from-primary', 'to-secondary', 'from-blue-500', 'hover:scale-105');
+      dlBtn.classList.add('bg-green-500/20', 'text-green-400', 'border', 'border-green-500/25');
+      dlBtn.innerHTML = '<i class="bi bi-check-circle-fill mr-2"></i>' + (isUpdate ? 'Aktualisiert' : 'Heruntergeladen');
+
+      showToast(isUpdate ? '✓ Update heruntergeladen' : '✓ Download abgeschlossen', 'success');
+
+      // Hinweis-Banner: Immer anzeigen (Browser kann Datei nicht "öffnen" wie eine App)
+      setTimeout(() => {
+        showLoader(false);
+
+        // Plattform-spezifischen Hinweis holen
+        const hintTemplate = openHints[fileExt]
+          || 'Die Datei <code>' + fileName + '</code> befindet sich jetzt in deinem <strong>Download-Ordner</strong>. Öffne sie dort, um fortzufahren.';
+        const hintText = hintTemplate.replace(/\{filename\}/g, fileName);
+
+        showOpenHintBanner(hintText, fileName, fileExt);
+      }, 1200);
+
+    } catch (err) {
+      console.error(err);
+      showLoader(false);
+      dlBtn.disabled = false;
+      dlBtn.innerHTML = '<i class="bi bi-download mr-2"></i>Erneut versuchen';
+      busy = false;
+      showToast('Download fehlgeschlagen: ' + err.message, 'error');
+    }
+  });
+});
+
+// ════ ÖFFNEN-HINWEIS BANNER ════
+function showOpenHintBanner(hintHtml, fileName, fileExt) {
+  // Alte Banner entfernen
+  document.querySelectorAll('.open-hint-banner').forEach(el => el.remove());
+
+  const banner = document.createElement('div');
+  banner.className = 'open-hint-banner fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-lg';
+  banner.innerHTML = `
+    <div class="px-5 py-4 rounded-2xl border bg-green-500/15 border-green-500/30 backdrop-blur-xl shadow-2xl
+                flex items-start gap-4 text-green-300
+                transform translate-y-4 opacity-0 transition-all duration-400"
+         id="openHintInner">
+      <i class="bi bi-folder2-open text-2xl text-green-400 flex-shrink-0 mt-0.5"></i>
+      <div class="flex-1 min-w-0">
+        <p class="font-semibold text-green-200 mb-1">✓ Download abgeschlossen!</p>
+        <p class="text-sm leading-relaxed">${hintHtml}</p>
+      </div>
+      <button onclick="this.closest('.open-hint-banner').remove()"
+              class="text-green-400 hover:text-white transition flex-shrink-0 ml-1">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(banner);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const inner = document.getElementById('openHintInner');
+    if (inner) { inner.style.transform = 'translateY(0)'; inner.style.opacity = '1'; }
+  }));
+
+  // Nach 16 Sek. ausblenden
   setTimeout(() => {
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    document.body.style.overflow = '';
-  }, 300);
+    const inner = document.getElementById('openHintInner');
+    if (inner) {
+      inner.style.transform = 'translateY(8px)';
+      inner.style.opacity = '0';
+      setTimeout(() => banner.remove(), 400);
+    }
+  }, 16000);
 }
 
-// ─────────────────────────────────────────────
-// Toggle-Funktionen
-// ─────────────────────────────────────────────
+// ════ UI HELPERS ════
 function toggleVersions() {
   const container = document.getElementById('olderVersions');
   const text = document.getElementById('versionsToggleText');
@@ -577,291 +726,100 @@ function toggleVersions() {
   const hidden = container.classList.contains('hidden');
   container.classList.toggle('hidden');
   text.textContent = hidden ? 'Weniger anzeigen' : 'Alle anzeigen';
-  icon.style.transform = hidden ? 'rotate(180deg)' : 'rotate(0deg)';
+  icon.style.transform = hidden ? 'rotate(180deg)' : '';
 }
+function toggleReleaseNotes() { document.getElementById('releaseNotes').classList.toggle('hidden'); }
+function toggleOldReleaseNotes(id) { document.getElementById('oldReleaseNotes' + id).classList.toggle('hidden'); }
 
-function toggleReleaseNotes() {
-  document.getElementById('releaseNotes').classList.toggle('hidden');
-}
-
-function toggleOldReleaseNotes(id) {
-  document.getElementById('oldReleaseNotes' + id).classList.toggle('hidden');
-}
-
-// Beschreibung Toggle
-document.addEventListener('DOMContentLoaded', function () {
+// Beschreibung
+document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('toggleDescBtn');
   if (!btn) return;
   const preview = document.getElementById('descPreview');
   const full    = document.getElementById('descFull');
   const icon    = btn.querySelector('i');
   const text    = btn.querySelector('span');
-
-  btn.addEventListener('click', function () {
+  btn.addEventListener('click', () => {
     const expanded = !full.classList.contains('hidden');
     full.classList.toggle('hidden', expanded);
     preview.classList.toggle('hidden', !expanded);
     text.textContent = expanded ? 'Mehr anzeigen' : 'Weniger anzeigen';
-    icon.style.transform = expanded ? 'rotate(0deg)' : 'rotate(180deg)';
+    icon.style.transform = expanded ? '' : 'rotate(180deg)';
   });
 });
 
-// ─────────────────────────────────────────────
-// Download-System
-// ─────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('downloadBtn');
-  if (!btn) return;
-
-  const iconContainer = document.getElementById('icon-container');
-  const canvas        = document.getElementById('progress-circle');
-  const progressText  = document.getElementById('progress-text');
-  const ctx           = canvas.getContext('2d');
-
-  const versionId    = btn.dataset.versionId;
-  const downloadUrl  = "{% url 'download_file_view' 0 %}".replace('0', versionId);
-  const fileExtension = '{{ latest_version.file.name|default:"" }}'.split('.').pop().toLowerCase();
-  const fileName     = '{{ app.name|slugify }}-v{{ latest_version.version_number|default:"" }}.' + fileExtension;
-
-  let installed  = {% if user_installed_version and user_installed_version.id == latest_version.id %}true{% else %}false{% endif %};
-  let downloading = false;
-
-  function drawProgress(percent) {
-    const size = canvas.width, center = size / 2, radius = center - 8;
-    const startAngle = -Math.PI / 2;
-    ctx.clearRect(0, 0, size, size);
-
-    ctx.beginPath();
-    ctx.arc(center, center, radius, 0, 2 * Math.PI);
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.lineWidth = 6;
-    ctx.stroke();
-
-    ctx.beginPath();
-    const gradient = ctx.createConicGradient(startAngle, center, center);
-    gradient.addColorStop(0, '#0d6efd');
-    gradient.addColorStop(1, '#0066ff');
-    ctx.strokeStyle = gradient;
-    ctx.lineWidth = 6;
-    ctx.lineCap = 'round';
-    ctx.arc(center, center, radius, startAngle, startAngle + (2 * Math.PI * percent / 100));
-    ctx.stroke();
-
-    progressText.textContent = percent < 100 ? Math.floor(percent) + '%' : '✓';
-  }
-
-  async function animateProgress(start, end, duration) {
-    const startTime = performance.now();
-    return new Promise(resolve => {
-      function update(now) {
-        const p = Math.min((now - startTime) / duration, 1);
-        drawProgress(start + (end - start) * p);
-        p < 1 ? requestAnimationFrame(update) : resolve();
-      }
-      requestAnimationFrame(update);
-    });
-  }
-
-  async function startDownload() {
-    if (installed)   { showNotification('App ist bereits installiert', 'info'); return; }
-    if (downloading) return;
-
-    downloading = true;
-    btn.disabled = true;
-    iconContainer.classList.add('icon-loading');
-    canvas.classList.remove('hidden');
-    progressText.classList.remove('hidden');
-    btn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin mr-2"></i>Lädt...';
-
-    await animateProgress(0, 20, 1500);
-
-    try {
-      // 1. Download tracken
-      const trackRes = await fetch(`/track-download/${versionId}/`, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' }
-      });
-      if (!trackRes.ok) console.warn('Tracking fehlgeschlagen, fahre fort');
-
-      // 2. Datei streamen
-      const response = await fetch(downloadUrl);
-      if (!response.ok) throw new Error('Download fehlgeschlagen');
-
-      const contentLength = response.headers.get('content-length');
-      const total  = contentLength ? parseInt(contentLength, 10) : 0;
-      const reader = response.body.getReader();
-      let receivedLength = 0;
-      const chunks = [];
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        receivedLength += value.length;
-        if (total) drawProgress(20 + (receivedLength / total) * 75);
-      }
-
-      await animateProgress(95, 100, 500);
-
-      // ── MIME-Type bestimmen ────────────────────────────────────────
-      const mimeTypes = {
-        apk: 'application/vnd.android.package-archive',
-        exe: 'application/vnd.microsoft.portable-executable',
-        msi: 'application/x-msi',
-        dmg: 'application/x-apple-diskimage',
-        pkg: 'application/x-newton-compatible-pkg',
-        deb: 'application/x-debian-package',
-        rpm: 'application/x-rpm',
-        sh:  'application/x-sh',
-        zip: 'application/zip',
-      };
-      const mimeType = mimeTypes[fileExtension] || 'application/octet-stream';
-      const blob = new Blob(chunks, { type: mimeType });
-      const objectUrl = URL.createObjectURL(blob);
-
-      // ── Datei direkt in Download-Ordner speichern ─────────────────
-      const a = document.createElement('a');
-      a.href     = objectUrl;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      // Blob-URL nach kurzer Verzögerung freigeben
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
-
-      // ── Plattform-spezifischer Öffnen-Hinweis ─────────────────────
-      const openHints = {
-        exe: `Die Datei wurde im Download-Ordner gespeichert. <strong>Doppelklicke</strong> auf <code>${fileName}</code>, um die Installation zu starten.`,
-        msi: `Die Datei wurde im Download-Ordner gespeichert. <strong>Doppelklicke</strong> auf <code>${fileName}</code>, um die Installation zu starten.`,
-        dmg: `Die Datei wurde im Download-Ordner gespeichert. <strong>Doppelklicke</strong> auf <code>${fileName}</code> und folge den Installationsschritten.`,
-        pkg: `Die Datei wurde im Download-Ordner gespeichert. <strong>Doppelklicke</strong> auf <code>${fileName}</code>, um zu installieren.`,
-        apk: `Die APK wurde gespeichert. Öffne auf deinem Android-Gerät den <strong>Download-Ordner</strong>, tippe auf die Datei und folge den Anweisungen.<br><small>Ggf. musst du unter <em>Einstellungen → Sicherheit</em> die Installation aus unbekannten Quellen erlauben.</small>`,
-        deb: `Die Datei wurde gespeichert. Installiere sie im Terminal mit:<br><code>sudo dpkg -i ${fileName}</code>`,
-        rpm: `Die Datei wurde gespeichert. Installiere sie im Terminal mit:<br><code>sudo rpm -i ${fileName}</code>`,
-        sh:  `Die Datei wurde gespeichert. Führe sie im Terminal aus:<br><code>chmod +x ${fileName} && ./${fileName}</code>`,
-        zip: `Die Datei wurde im Download-Ordner gespeichert. <strong>Entpacke</strong> das Archiv und öffne die enthaltene Anwendung.`,
-      };
-      const hint = openHints[fileExtension]
-        || `Die Datei <code>${fileName}</code> wurde im <strong>Download-Ordner</strong> gespeichert. Du kannst sie jetzt öffnen und ausführen.`;
-
-      showOpenHint(hint);
-
-      // Button-Status
-      btn.innerHTML = '<i class="bi bi-check-circle-fill mr-2"></i>Heruntergeladen';
-      btn.classList.remove('from-primary', 'to-secondary');
-      btn.classList.add('bg-green-500/20', 'text-green-400');
-
-      // Download-Zähler im UI hochzählen
-      const dlBadge = document.querySelector('.bi-download.text-primary');
-      if (dlBadge) {
-        const badge = dlBadge.parentElement;
-        const count = parseInt(badge.textContent.replace(/\D/g, '')) || 0;
-        badge.innerHTML = `<i class="bi bi-download mr-2 text-primary"></i>${count + 1} Downloads`;
-      }
-
-      setTimeout(() => {
-        iconContainer.classList.remove('icon-loading');
-        canvas.classList.add('hidden');
-        progressText.classList.add('hidden');
-        installed = true;
-      }, 2000);
-
-    } catch (error) {
-      showNotification('Download fehlgeschlagen: ' + error.message, 'error');
-      btn.innerHTML = '<i class="bi bi-download mr-2"></i>Erneut versuchen';
-      btn.disabled  = false;
-      iconContainer.classList.remove('icon-loading');
-      canvas.classList.add('hidden');
-      progressText.classList.add('hidden');
-      downloading = false;
-    }
-  }
-
-  function getCookie(name) {
-    let value = null;
-    if (document.cookie) {
-      document.cookie.split(';').forEach(c => {
-        c = c.trim();
-        if (c.startsWith(name + '='))
-          value = decodeURIComponent(c.substring(name.length + 1));
-      });
-    }
-    return value;
-  }
-
-  btn.addEventListener('click', startDownload);
-});
-
-// ─────────────────────────────────────────────
-// Öffnen-Hinweis Banner (nach erfolgreichem Download)
-// ─────────────────────────────────────────────
-function showOpenHint(message) {
-  document.querySelectorAll('.open-hint-banner').forEach(el => el.remove());
-
-  const banner = document.createElement('div');
-  banner.className = [
-    'open-hint-banner',
-    'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
-    'max-w-lg w-[calc(100%-2rem)]',
-    'px-6 py-4 rounded-2xl border',
-    'bg-green-500/20 text-green-300 border-green-500/30',
-    'backdrop-blur shadow-2xl',
-    'flex items-start gap-4',
-    'opacity-0 translate-y-4'
-  ].join(' ');
-
-  banner.innerHTML = `
-    <i class="bi bi-folder2-open text-2xl text-green-400 flex-shrink-0 mt-0.5"></i>
-    <div class="flex-1 min-w-0">
-      <p class="font-semibold text-green-200 mb-1">✓ Download abgeschlossen!</p>
-      <p class="text-sm leading-relaxed">${message}</p>
-    </div>
-    <button onclick="this.closest('.open-hint-banner').remove()"
-            class="text-green-400 hover:text-white transition flex-shrink-0 mt-0.5 ml-2">
-      <i class="bi bi-x-lg"></i>
-    </button>
-  `;
-
-  document.body.appendChild(banner);
-
-  // Einblend-Animation (doppeltes rAF für zuverlässigen Übergang)
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    banner.classList.remove('opacity-0', 'translate-y-4');
-  }));
-
-  // Nach 14 Sekunden automatisch ausblenden
-  setTimeout(() => {
-    banner.classList.add('opacity-0', 'translate-y-4');
-    setTimeout(() => banner.remove(), 400);
-  }, 14000);
+// Screenshot Modal
+function openScreenshotModal(src, alt) {
+  const modal = document.getElementById('screenshotModal');
+  document.getElementById('screenshotModalImg').src = src;
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  requestAnimationFrame(() => modal.classList.add('modal-active'));
+  document.body.style.overflow = 'hidden';
+}
+function closeScreenshotModal() {
+  const modal = document.getElementById('screenshotModal');
+  modal.classList.remove('modal-active');
+  setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); document.body.style.overflow = ''; }, 300);
 }
 
-// ─────────────────────────────────────────────
-// Allgemeine Benachrichtigungen (Toast)
-// ─────────────────────────────────────────────
-function showNotification(message, type = 'info') {
-  const colors = {
-    info:    'bg-primary/20 text-primary border-primary/30',
-    error:   'bg-red-500/20 text-red-400 border-red-500/30',
-    success: 'bg-green-500/20 text-green-400 border-green-500/30'
+// Share Modal
+function openShareModal() {
+  const modal = document.getElementById('shareModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  requestAnimationFrame(() => modal.classList.add('modal-active'));
+  document.body.style.overflow = 'hidden';
+}
+function closeShareModal() {
+  const modal = document.getElementById('shareModal');
+  modal.classList.remove('modal-active');
+  setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); document.body.style.overflow = ''; }, 300);
+}
+async function nativeShare() {
+  if (navigator.share) {
+    try { await navigator.share({ title: '{{ app.name }}', url: location.href }); closeShareModal(); } catch(e) {}
+  } else { shareTo('copy'); }
+}
+function shareTo(p) {
+  const u = encodeURIComponent(location.href);
+  const t = encodeURIComponent('Schau dir {{ app.name }} im JDS Appstore an!');
+  const links = {
+    whatsapp: `https://wa.me/?text=${t}%20${u}`,
+    telegram: `https://t.me/share/url?url=${u}&text=${t}`,
+    twitter:  `https://twitter.com/intent/tweet?text=${t}&url=${u}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${u}`,
+    email:    `mailto:?subject={{ app.name }}&body=${t}%0A${u}`,
+    sms:      `sms:?body=${t}%20${u}`,
   };
-  const icons = { info: 'info-circle', error: 'exclamation-triangle', success: 'check-circle' };
+  if (p === 'copy') {
+    navigator.clipboard.writeText(location.href)
+      .then(() => { showToast('Link kopiert!', 'success'); closeShareModal(); })
+      .catch(() => showToast('Kopieren fehlgeschlagen', 'error'));
+    return;
+  }
+  if (links[p]) { window.open(links[p], '_blank', 'width=600,height=420'); closeShareModal(); }
+}
 
-  const el = document.createElement('div');
-  el.className = `fixed top-24 right-4 px-6 py-4 rounded-xl border ${colors[type]} backdrop-blur z-50 transform translate-x-full transition-transform duration-300`;
-  el.innerHTML = `
-    <div class="flex items-center">
-      <i class="bi bi-${icons[type]} mr-3"></i>
-      <span class="font-medium">${message}</span>
-    </div>
-  `;
-  document.body.appendChild(el);
-  requestAnimationFrame(() => el.classList.remove('translate-x-full'));
-  setTimeout(() => {
-    el.classList.add('translate-x-full');
-    setTimeout(() => el.remove(), 300);
-  }, 3000);
+// Toast
+let _tTimer;
+function showToast(msg, type = 'info') {
+  const cfg = {
+    success: { cls: 'bg-green-500/15 border-green-500/30 text-green-400', ico: 'check-circle-fill' },
+    error:   { cls: 'bg-red-500/15 border-red-500/30 text-red-400',     ico: 'exclamation-triangle-fill' },
+    info:    { cls: 'bg-primary/15 border-primary/30 text-primary',      ico: 'info-circle-fill' },
+    warning: { cls: 'bg-yellow-500/15 border-yellow-500/30 text-yellow-400', ico: 'exclamation-circle-fill' },
+  };
+  const c = cfg[type] || cfg.info;
+  const el = document.getElementById('toastEl');
+  el.className = `fixed bottom-6 right-6 z-[9999] pointer-events-none px-5 py-4 rounded-2xl border backdrop-blur-xl flex items-center gap-3 text-sm font-medium max-w-sm ${c.cls}`;
+  document.getElementById('toastIco').className = `bi bi-${c.ico}`;
+  document.getElementById('toastTxt').textContent = msg;
+  el.style.transform = 'translateY(0)';
+  el.style.opacity = '1';
+  clearTimeout(_tTimer);
+  _tTimer = setTimeout(() => { el.style.transform = 'translateY(20px)'; el.style.opacity = '0'; }, 4000);
 }
 </script>
+
 {% endblock %}
