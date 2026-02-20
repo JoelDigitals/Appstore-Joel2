@@ -121,9 +121,11 @@ def get_notifications_for_user(request):
     notification_count = cache.get(f'notification_count_{user.id}')
     if notification_count is None:
         notification_count = Notification.objects.filter(user=user, read=False).count()
-        cache.set(f'notification_count_{user.id}', notification_count, timeout=60*5)  # Cache für 5 Minuten
+        cache.set(f'notification_count_{user.id}', notification_count, timeout=60*5)
+    
+    # Einfache Filter ohne Q-Objekte
     return Notification.objects.filter(
-        Q(user=user),
+        user=user, 
         read=False
     ).order_by('-created_at')
 

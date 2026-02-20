@@ -255,21 +255,37 @@
     .update-card.warnung { border-left-color: #f59e0b; }
     .update-card.kritisch { border-left-color: #ef4444; }
 
-    /* Mobile Menu */
-    @media (max-width: 1024px) {
-      #desktopMenu {
-        display: none;
-      }
-      #mobileMenu {
-        display: block;
-      }
+    /* Mobile Menu - KORRIGIERT: Immer standardmäßig ausgeblendet */
+    #mobileMenu {
+      display: none !important; /* Standardmäßig immer ausgeblendet */
     }
     
+    /* Nur sichtbar wenn explizit geöffnet */
+    #mobileMenu.mobile-open {
+      display: block !important;
+    }
+
     @media (min-width: 1025px) {
       #desktopMenu {
         display: flex !important;
       }
+      #mobileMenuBtn {
+        display: none !important;
+      }
       #mobileMenu {
+        display: none !important; /* Auf Desktop immer ausgeblendet */
+      }
+    }
+    
+    @media (max-width: 1024px) {
+      #desktopMenu {
+        display: none !important;
+      }
+      #mobileMenuBtn {
+        display: block !important;
+      }
+      /* Auf Mobile bleibt es ausgeblendet bis mobile-open Klasse gesetzt wird */
+      #mobileMenu:not(.mobile-open) {
         display: none !important;
       }
     }
@@ -445,17 +461,15 @@
           {% endif %}
         </div>
 
-        <!-- Mobile Menu Button -->
-        <div class="lg:hidden flex items-center space-x-4">
-          <button id="mobileMenuBtn" onclick="toggleMobileMenu()" class="p-2 text-gray-300 hover:text-primary transition">
-            <i class="bi bi-list text-2xl"></i>
-          </button>
-        </div>
+        <!-- Mobile Menu Button - KORRIGIERT: Nur sichtbar auf kleinen Bildschirmen -->
+        <button id="mobileMenuBtn" onclick="toggleMobileMenu()" class="p-2 text-gray-300 hover:text-primary transition lg:hidden">
+          <i class="bi bi-list text-2xl" id="mobileMenuIcon"></i>
+        </button>
       </div>
     </div>
 
-    <!-- Mobile Menu -->
-    <div id="mobileMenu" class="hidden lg:hidden glass border-t border-gray-700/50">
+    <!-- Mobile Menu - KORRIGIERT: Standardmäßig komplett ausgeblendet -->
+    <div id="mobileMenu" class="glass border-t border-gray-700/50">
       <div class="px-4 py-4 space-y-2">
         <a href="{% url 'jds_apps' %}" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition font-medium">
           <i class="bi bi-download mr-3"></i>Download
@@ -741,16 +755,17 @@
       }
     }
 
-    // Mobile Menu
+    // Mobile Menu - KORRIGIERT: Verwendet jetzt mobile-open Klasse
     function toggleMobileMenu() {
       const menu = document.getElementById('mobileMenu');
-      const btn = document.getElementById('mobileMenuBtn');
-      menu.classList.toggle('hidden');
-      const icon = btn.querySelector('i');
-      if (menu.classList.contains('hidden')) {
+      const icon = document.getElementById('mobileMenuIcon');
+      
+      if (menu.classList.contains('mobile-open')) {
+        menu.classList.remove('mobile-open');
         icon.classList.remove('bi-x-lg');
         icon.classList.add('bi-list');
       } else {
+        menu.classList.add('mobile-open');
         icon.classList.remove('bi-list');
         icon.classList.add('bi-x-lg');
       }
@@ -970,6 +985,16 @@
         }
         if (!e.target.closest('#download-area') && !e.target.closest('button[onclick="toggleDownloadArea()"]')) {
           document.getElementById('download-area')?.classList.remove('show');
+        }
+        // Mobile Menu schließen beim Klick außerhalb
+        if (!e.target.closest('#mobileMenu') && !e.target.closest('#mobileMenuBtn')) {
+          const mobileMenu = document.getElementById('mobileMenu');
+          const mobileIcon = document.getElementById('mobileMenuIcon');
+          if (mobileMenu.classList.contains('mobile-open')) {
+            mobileMenu.classList.remove('mobile-open');
+            mobileIcon.classList.remove('bi-x-lg');
+            mobileIcon.classList.add('bi-list');
+          }
         }
       });
     });
