@@ -195,7 +195,7 @@ class Version(models.Model):
     new_version = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.app.name} v{self.version.version_number}"
+        return f"{self.app.name} v{self.version_number}"
 
 
 WARNING_TYPES = [

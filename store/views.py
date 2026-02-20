@@ -1335,7 +1335,6 @@ def sso_callback(request):
                 first_name=user_data.get('first_name', ''),
                 last_name=user_data.get('last_name', ''),
                 is_active=True,
-                email_confirmed=True,
             )
             
             # Setze unbrauchbares Passwort (SSO-User)

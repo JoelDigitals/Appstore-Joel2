@@ -45,8 +45,10 @@ class VersionAdmin(admin.ModelAdmin):
     list_display = ("app", "version_number", "uploaded_at", "checking_status", "approved", "new_version")
     list_filter = ("checking_status", "approved", "new_version")
     search_fields = ("app__name", "version_number")
+    readonly_fields = ('checking_log',)  # checking_log immer schreibgeschützt
 
+    #Optional: Wenn du checking_log nur bei bestimmten Status schreibschützen willst:
     def get_readonly_fields(self, request, obj=None):
-        if obj and obj.checking_status == 'approved':
+        if obj and obj.checking_status in ['passed', 'failed']:
             return self.readonly_fields + ('checking_log',)
         return self.readonly_fields
