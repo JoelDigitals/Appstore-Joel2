@@ -1,53 +1,340 @@
 {% extends "base.html" %}
+{% load image_tags %}
 
-{% block title %}App-Details – {{ app.name }}{% endblock %}
+{% block title %}App verwalten – {{ app.name }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <h2>{{ app.name }}</h2>
-  <p><strong>Plattform:</strong> {{ app.platform }}</p>
-  <p><strong>Beschreibung:</strong> {{ app.description|linebreaks }}</p>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-  <a href="{% url 'edit_app' app.id %}" class="btn btn-primary">App bearbeiten</a>
-  <a href="{% url 'upload_version' app.id %}" class="btn btn-success">Neue Version hochladen</a>
-  <a href="{% url 'delete_app' app.id %}" class="btn btn-danger">App löschen</a>
-  <a href="{% url 'app_screenshots' app.id %}" class="btn btn-info">Screenshots verwalten</a>
+  <!-- Breadcrumb -->
+  <nav class="flex items-center text-sm text-gray-400 space-x-2">
+    <a href="{% url 'developer_dashboard' %}" class="hover:text-primary transition">Dashboard</a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <span class="text-gray-300 truncate max-w-[200px]">{{ app.name }}</span>
+  </nav>
 
-  <hr>
-
-  <h4>Versionen</h4>
-  {% if versions %}
-    <ul class="list-group">
-      {% for version in versions %}
-        <li class="list-group-item">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <strong>Version {{ version.version_number }}</strong><br>
-              <small>Hochgeladen am: {{ version.uploaded_at|date:"d.m.Y H:i" }}</small><br>
-              <small>Status: {{ version.checking_status }}</small>
+  <!-- Header -->
+  <div class="glass rounded-3xl p-6 md:p-8">
+    <div class="flex flex-col md:flex-row gap-6 items-start">
+      
+      <!-- App Icon mit ImgBB/Local -->
+      <div class="relative w-24 h-24 md:w-32 md:h-32 flex-shrink-0 mx-auto md:mx-0">
+        {% with icon_url=app|get_image_url:"icon" %}
+          {% if icon_url %}
+            <img src="{{ icon_url }}" alt="{{ app.name }}" 
+                 class="w-full h-full object-contain rounded-2xl shadow-2xl bg-slate-800/50 p-2"
+                 onerror="this.src='/static/images/default_app_icon.png'">
+          {% else %}
+            <div class="w-full h-full rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-2xl">
+              <span class="text-4xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
             </div>
+          {% endif %}
+        {% endwith %}
+        
+        <!-- Platform Badge -->
+        <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center shadow-lg border border-gray-700">
+          {% if app.platform == 'ios' %}
+            <i class="bi bi-apple text-primary text-sm"></i>
+          {% elif app.platform == 'android' %}
+            <i class="bi bi-android2 text-green-400 text-sm"></i>
+          {% elif app.platform == 'windows' %}
+            <i class="bi bi-microsoft text-blue-400 text-sm"></i>
+          {% elif app.platform == 'macos' %}
+            <i class="bi bi-apple text-gray-300 text-sm"></i>
+          {% elif app.platform == 'linux' %}
+            <i class="bi bi-terminal text-yellow-400 text-sm"></i>
+          {% else %}
+            <i class="bi bi-laptop text-primary text-sm"></i>
+          {% endif %}
+        </div>
+        
+        <!-- ImgBB Indicator -->
+        {% if app.icon_url %}
+          <div class="absolute -top-2 -right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow border-2 border-slate-900" title="ImgBB">
+            <i class="bi bi-cloud text-white text-xs"></i>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Info -->
+      <div class="flex-1 text-center md:text-left">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{{ app.name }}</h1>
+        
+        <!-- Storage Info -->
+        <div class="flex items-center justify-center md:justify-start gap-2 text-xs mb-4">
+          {% if app.icon_url %}
+            <span class="flex items-center gap-1 text-primary">
+              <i class="bi bi-cloud-check"></i>
+              <span>Icon bei ImgBB gespeichert</span>
+            </span>
+          {% elif app.icon %}
+            <span class="flex items-center gap-1 text-gray-500">
+              <i class="bi bi-hdd"></i>
+              <span>Icon lokal gespeichert</span>
+            </span>
+          {% else %}
+            <span class="flex items-center gap-1 text-yellow-500">
+              <i class="bi bi-exclamation-triangle"></i>
+              <span>Kein Icon vorhanden</span>
+            </span>
+          {% endif %}
+        </div>
+        
+        <div class="flex flex-wrap justify-center md:justify-start gap-3 text-sm mb-4">
+          <span class="px-3 py-1 glass rounded-full text-gray-300">
+            {{ app.platform|title }}
+          </span>
+          <span class="px-3 py-1 glass rounded-full text-gray-300">
+            {{ app.versions.count }} Versionen
+          </span>
+          <span class="px-3 py-1 glass rounded-full text-gray-300">
+            {{ app.download_count|default:"0" }} Downloads
+          </span>
+        </div>
+        <p class="text-gray-400 text-sm">{{ app.description|truncatechars:150 }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="flex flex-wrap gap-3">
+    <a href="{% url 'edit_app' app.id %}" 
+       class="inline-flex items-center px-6 py-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-medium transition-all">
+      <i class="bi bi-pencil-square mr-2"></i>
+      App bearbeiten
+    </a>
+    
+    <a href="{% url 'upload_version' app.id %}" 
+       class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:shadow-lg hover:shadow-green-500/30 text-white rounded-xl font-medium transition-all">
+      <i class="bi bi-cloud-upload mr-2"></i>
+      Neue Version
+    </a>
+    
+    <a href="{% url 'app_screenshots' app.id %}" 
+       class="inline-flex items-center px-6 py-3 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 rounded-xl font-medium transition-all">
+      <i class="bi bi-images mr-2"></i>
+      Screenshots
+    </a>
+    
+    <button onclick="confirmDelete()" 
+            class="inline-flex items-center px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl font-medium transition-all ml-auto">
+      <i class="bi bi-trash mr-2"></i>
+      App löschen
+    </button>
+  </div>
+
+  <!-- Versions Section -->
+  <div class="glass rounded-2xl p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-gray-100 flex items-center">
+        <i class="bi bi-box-seam mr-3 text-primary"></i>
+        Versionen
+      </h3>
+      {% if versions %}
+      <span class="px-3 py-1 bg-primary/20 text-primary text-sm rounded-full">
+        {{ versions|length }} Versionen
+      </span>
+      {% endif %}
+    </div>
+
+    {% if versions %}
+    <div class="space-y-4">
+      {% for version in versions %}
+      <div class="group rounded-xl bg-slate-800/30 border border-gray-700/30 hover:border-primary/30 transition-all overflow-hidden">
+        <!-- Version Header -->
+        <div class="p-4 flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <!-- Version Number -->
+            <div class="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <span class="text-lg font-bold text-primary">v{{ version.version_number }}</span>
+            </div>
+            
             <div>
-              {% if forloop.first %}
-                <a href="{% url 'version_app_status_view' version.id %}" class="btn btn-sm btn-outline-primary">Status</a>
-              {% else %}
-                <a href="{% url 'version_status' version.id %}" class="btn btn-sm btn-outline-secondary">Status</a>
-              {% endif %}
+              <h4 class="font-semibold text-gray-200">Version {{ version.version_number }}</h4>
+              <div class="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                <span class="flex items-center">
+                  <i class="bi bi-calendar mr-1"></i>
+                  {{ version.uploaded_at|date:"d.m.Y" }}
+                </span>
+                <span class="flex items-center">
+                  <i class="bi bi-clock mr-1"></i>
+                  {{ version.uploaded_at|time:"H:i" }}
+                </span>
+              </div>
             </div>
           </div>
 
-          {% if version.checking_log %}
-            <div class="mt-3">
-              <strong>Prüfungsprotokoll:</strong>
-              <pre class="bg-dark text-light p-3 rounded" style="white-space: pre-wrap; font-family: monospace;">
-                {{ version.checking_log }}
-              </pre>
+          <!-- Status Badge -->
+          <div class="flex items-center gap-3">
+            {% if version.checking_status == "approved" %}
+              <span class="px-3 py-1 bg-green-500/20 text-green-400 text-xs rounded-full flex items-center">
+                <i class="bi bi-check-circle mr-1"></i>
+                Freigegeben
+              </span>
+            {% elif version.checking_status == "pending" %}
+              <span class="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full flex items-center animate-pulse">
+                <i class="bi bi-hourglass mr-1"></i>
+                Prüfung läuft
+              </span>
+            {% elif version.checking_status == "rejected" %}
+              <span class="px-3 py-1 bg-red-500/20 text-red-400 text-xs rounded-full flex items-center">
+                <i class="bi bi-x-circle mr-1"></i>
+                Abgelehnt
+              </span>
+            {% else %}
+              <span class="px-3 py-1 bg-gray-700 text-gray-400 text-xs rounded-full">
+                {{ version.checking_status|title }}
+              </span>
+            {% endif %}
+            
+            <a href="{% if forloop.first %}{% url 'version_app_status_view' version.id %}{% else %}{% url 'version_status' version.id %}{% endif %}" 
+               class="px-4 py-2 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-lg text-sm font-medium transition-all">
+              Details
+            </a>
+          </div>
+        </div>
+
+        <!-- Checking Log (collapsible) -->
+        {% if version.checking_log %}
+        <div class="border-t border-gray-700/30">
+          <button onclick="toggleLog({{ version.id }})" 
+                  class="w-full px-4 py-2 text-xs text-gray-500 hover:text-gray-300 flex items-center justify-between transition-colors">
+            <span>Prüfungsprotokoll anzeigen</span>
+            <i class="bi bi-chevron-down transition-transform" id="logChevron{{ version.id }}"></i>
+          </button>
+          <div id="logContent{{ version.id }}" class="hidden px-4 pb-4">
+            <div class="bg-slate-900/50 rounded-lg p-4 font-mono text-xs text-gray-400 overflow-x-auto">
+              <pre class="whitespace-pre-wrap">{{ version.checking_log }}</pre>
             </div>
-          {% endif %}
-        </li>
+          </div>
+        </div>
+        {% endif %}
+      </div>
       {% endfor %}
-    </ul>
-  {% else %}
-    <p>Keine Versionen vorhanden.</p>
-  {% endif %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-12">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800 flex items-center justify-center">
+        <i class="bi bi-box text-2xl text-gray-600"></i>
+      </div>
+      <h4 class="text-lg font-semibold text-gray-300 mb-2">Keine Versionen</h4>
+      <p class="text-gray-500 text-sm mb-4">Lade deine erste Version hoch, um sie zu veröffentlichen.</p>
+      <a href="{% url 'upload_version' app.id %}" 
+         class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-medium transition-all">
+        <i class="bi bi-cloud-upload mr-2"></i>
+        Version hochladen
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="glass rounded-2xl p-6 text-center">
+      <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/20 flex items-center justify-center">
+        <i class="bi bi-download text-primary text-xl"></i>
+      </div>
+      <h4 class="text-2xl font-bold text-gray-100">{{ app.download_count|default:"0" }}</h4>
+      <p class="text-sm text-gray-500">Downloads</p>
+    </div>
+    
+    <div class="glass rounded-2xl p-6 text-center">
+      <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-green-500/20 flex items-center justify-center">
+        <i class="bi bi-check-circle text-green-400 text-xl"></i>
+      </div>
+      <h4 class="text-2xl font-bold text-gray-100">
+        {{ approved_count|default:"0" }}
+      </h4>
+      <p class="text-sm text-gray-500">Freigegeben</p>
+    </div>
+    
+    <div class="glass rounded-2xl p-6 text-center">
+      <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-yellow-500/20 flex items-center justify-center">
+        <i class="bi bi-clock text-yellow-400 text-xl"></i>
+      </div>
+      <h4 class="text-2xl font-bold text-gray-100">
+        {{ pending_count|default:"0" }}
+      </h4>
+      <p class="text-sm text-gray-500">In Prüfung</p>
+    </div>
+  </div>
+
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+  <div class="relative w-full max-w-md glass rounded-3xl p-6 transform scale-95 opacity-0 transition-all duration-300" id="deleteModalContent">
+    <div class="text-center">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+        <i class="bi bi-exclamation-triangle text-red-400 text-2xl"></i>
+      </div>
+      <h3 class="text-xl font-bold text-gray-100 mb-2">App löschen?</h3>
+      <p class="text-gray-400 mb-6">
+        Bist du sicher, dass du <strong>{{ app.name }}</strong> löschen möchtest? 
+        Diese Aktion kann nicht rückgängig gemacht werden.
+      </p>
+      <div class="flex gap-3 justify-center">
+        <button onclick="closeDeleteModal()" 
+                class="px-6 py-3 glass hover:bg-primary/10 text-gray-300 rounded-xl font-medium transition-all">
+          Abbrechen
+        </button>
+        <a href="{% url 'delete_app' app.id %}" 
+           class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-all">
+          Ja, löschen
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Toggle Log
+function toggleLog(versionId) {
+  const content = document.getElementById(`logContent${versionId}`);
+  const chevron = document.getElementById(`logChevron${versionId}`);
+  
+  if (content.classList.contains('hidden')) {
+    content.classList.remove('hidden');
+    chevron.style.transform = 'rotate(180deg)';
+  } else {
+    content.classList.add('hidden');
+    chevron.style.transform = 'rotate(0deg)';
+  }
+}
+
+// Delete Modal
+function confirmDelete() {
+  const modal = document.getElementById('deleteModal');
+  const content = document.getElementById('deleteModalContent');
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  
+  setTimeout(() => {
+    content.classList.remove('scale-95', 'opacity-0');
+    content.classList.add('scale-100', 'opacity-100');
+  }, 10);
+}
+
+function closeDeleteModal() {
+  const modal = document.getElementById('deleteModal');
+  const content = document.getElementById('deleteModalContent');
+  
+  content.classList.remove('scale-100', 'opacity-100');
+  content.classList.add('scale-95', 'opacity-0');
+  
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }, 300);
+}
+
+// Close on click outside
+document.getElementById('deleteModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    closeDeleteModal();
+  }
+});
+</script>
 {% endblock %}

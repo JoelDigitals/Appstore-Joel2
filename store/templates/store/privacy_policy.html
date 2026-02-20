@@ -1,0 +1,444 @@
+{% extends 'base.html' %}
+
+{% block title %}Datenschutzerklärung – Joel Appstore{% endblock %}
+
+{% block content %}
+<style>
+    .legal-page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem;
+    }
+
+    .legal-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .legal-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: 0.5rem;
+    }
+
+    .legal-header .last-updated {
+        color: #94a3b8;
+        font-size: 0.875rem;
+    }
+
+    .legal-section {
+        margin-bottom: 2.5rem;
+    }
+
+    .legal-section h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #f1f5f9;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .legal-section h2 i {
+        color: #6366f1;
+        font-size: 1.25rem;
+    }
+
+    .legal-section h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #e2e8f0;
+        margin: 1.5rem 0 0.75rem;
+    }
+
+    .legal-section p {
+        color: #cbd5e1;
+        line-height: 1.8;
+        margin-bottom: 1rem;
+    }
+
+    .legal-section ul {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+    }
+
+    .legal-section ul li {
+        color: #cbd5e1;
+        line-height: 1.8;
+        padding-left: 1.5rem;
+        position: relative;
+        margin-bottom: 0.5rem;
+    }
+
+    .legal-section ul li::before {
+        content: '•';
+        color: #6366f1;
+        position: absolute;
+        left: 0;
+        font-weight: bold;
+    }
+
+    .highlight-box {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+    }
+
+    .highlight-box p {
+        margin: 0;
+        color: #e2e8f0;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5rem 0;
+        background: rgba(30, 41, 59, 0.5);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .data-table th {
+        background: rgba(99, 102, 241, 0.2);
+        color: #f1f5f9;
+        font-weight: 600;
+    }
+
+    .data-table td {
+        color: #cbd5e1;
+    }
+
+    .data-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .rights-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+
+    .right-card {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 1.25rem;
+    }
+
+    .right-card h4 {
+        color: #f1f5f9;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .right-card h4 i {
+        color: #6366f1;
+    }
+
+    .right-card p {
+        color: #94a3b8;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+
+    .contact-info {
+        background: rgba(30, 41, 59, 0.5);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .contact-info p {
+        margin: 0.5rem 0;
+        color: #94a3b8;
+    }
+
+    .contact-info strong {
+        color: #f1f5f9;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #818cf8;
+        text-decoration: none;
+        font-weight: 500;
+        margin-bottom: 2rem;
+        transition: color 0.3s;
+    }
+
+    .back-link:hover {
+        color: #a5b4fc;
+    }
+
+    @media (max-width: 768px) {
+        .legal-page {
+            padding: 2rem 1rem;
+        }
+
+        .legal-header h1 {
+            font-size: 1.875rem;
+        }
+
+        .legal-section h2 {
+            font-size: 1.25rem;
+        }
+
+        .data-table {
+            font-size: 0.875rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 0.75rem;
+        }
+    }
+</style>
+
+<div class="legal-page">
+    <a href="{% url 'home' %}" class="back-link">
+        <i class="bi bi-arrow-left"></i>
+        Zurück zur Startseite
+    </a>
+
+    <div class="legal-header">
+        <h1>Datenschutzerklärung</h1>
+        <p class="last-updated">Zuletzt aktualisiert: 20.02.2026</p>
+    </div>
+
+    <div class="highlight-box">
+        <p><strong>Deine Privatsphäre ist uns wichtig.</strong> Diese Datenschutzerklärung informiert dich darüber, wie wir mit deinen personenbezogenen Daten umgehen und welche Rechte du hast.</p>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-building"></i> 1. Verantwortlicher</h2>
+        <p>Verantwortlich für die Datenverarbeitung im JDS Appstore ist:</p>
+        <div class="contact-info">
+            <p><strong>Joel Digitals</strong></p>
+            <p>E-Mail: info@joel-digitals.de</p>
+            <p>Website: https://joel-digitals.de</p>
+        </div>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-database"></i> 2. Welche Daten erheben wir?</h2>
+        
+        <h3>2.1 Bei der Registrierung</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Datenkategorie</th>
+                    <th>Zweck</th>
+                    <th>Speicherdauer</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Benutzername</td>
+                    <td>Account-Identifikation</td>
+                    <td>Bis zur Löschung</td>
+                </tr>
+                <tr>
+                    <td>E-Mail-Adresse</td>
+                    <td>Kontakt, Verifizierung</td>
+                    <td>Bis zur Löschung</td>
+                </tr>
+                <tr>
+                    <td>Passwort (gehasht)</td>
+                    <td>Authentifizierung</td>
+                    <td>Bis zur Löschung</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>2.2 Bei der Nutzung</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Datenkategorie</th>
+                    <th>Zweck</th>
+                    <th>Speicherdauer</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>IP-Adresse</td>
+                    <td>Sicherheit, Abuse-Prävention</td>
+                    <td>30 Tage</td>
+                </tr>
+                <tr>
+                    <td>Geräte-Informationen</td>
+                    <td>Technische Optimierung</td>
+                    <td>90 Tage</td>
+                </tr>
+                <tr>
+                    <td>Download-Verlauf</td>
+                    <td>Lizenzverwaltung</td>
+                    <td>Bis zur Löschung</td>
+                </tr>
+                <tr>
+                    <td>Zahlungsinformationen</td>
+                    <td>Abwicklung von Käufen</td>
+                    <td>10 Jahre (gesetzlich)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-gear"></i> 3. Zweck der Datenverarbeitung</h2>
+        <p>Wir verarbeiten deine Daten für folgende Zwecke:</p>
+        <ul>
+            <li>Bereitstellung und Verbesserung unserer Dienste</li>
+            <li>Account-Verwaltung und Authentifizierung</li>
+            <li>Abwicklung von Zahlungen und Bestellungen</li>
+            <li>Kundensupport und Kommunikation</li>
+            <li>Sicherheit und Betrugsprävention</li>
+            <li>Erfüllung gesetzlicher Verpflichtungen</li>
+        </ul>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-share"></i> 4. Weitergabe von Daten</h2>
+        <p>Wir geben deine Daten nur weiter, wenn dies notwendig ist:</p>
+        <ul>
+            <li><strong>Zahlungsdienstleister:</strong> Zur Abwicklung von Zahlungen (z.B. PayPal, Stripe)</li>
+            <li><strong>Hosting-Provider:</strong> Zur technischen Bereitstellung unserer Dienste</li>
+            <li><strong>Behörden:</strong> Bei gesetzlicher Verpflichtung oder gerichtlicher Anordnung</li>
+        </ul>
+        <div class="highlight-box">
+            <p><strong>Wichtig:</strong> Wir verkaufen deine Daten niemals an Dritte und nutzen sie nicht für Werbezwecke ohne deine ausdrückliche Zustimmung.</p>
+        </div>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-shield-lock"></i> 5. Datensicherheit</h2>
+        <p>Wir setzen technische und organisatorische Maßnahmen ein, um deine Daten zu schützen:</p>
+        <ul>
+            <li>SSL/TLS-Verschlüsselung für alle Datenübertragungen</li>
+            <li>Passwörter werden mit bcrypt gehasht gespeichert</li>
+            <li>Regelmäßige Sicherheitsaudits und Updates</li>
+            <li>Zugriffskontrolle auf Daten (Need-to-know-Prinzip)</li>
+            <li>Backups mit Verschlüsselung</li>
+        </ul>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-cookie"></i> 6. Cookies und Tracking</h2>
+        <p>Wir verwenden folgende Arten von Cookies:</p>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Cookie-Typ</th>
+                    <th>Zweck</th>
+                    <th>Dauer</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Notwendig</td>
+                    <td>Login, Sicherheit</td>
+                    <td>Sitzung / 1 Jahr</td>
+                </tr>
+                <tr>
+                    <td>Präferenzen</td>
+                    <td>Sprache, Einstellungen</td>
+                    <td>1 Jahr</td>
+                </tr>
+                <tr>
+                    <td>Analytisch</td>
+                    <td>Nutzungsstatistiken (anonym)</td>
+                    <td>2 Jahre</td>
+                </tr>
+            </tbody>
+        </table>
+        <p>Du kannst Cookies in deinen Browsereinstellungen verwalten. Beachte, dass das Deaktivieren notwendiger Cookies die Funktionalität einschränken kann.</p>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-person-check"></i> 7. Deine Rechte</h2>
+        <p>Du hast folgende Rechte bezüglich deiner Daten:</p>
+        <div class="rights-grid">
+            <div class="right-card">
+                <h4><i class="bi bi-eye"></i> Auskunft</h4>
+                <p>Du kannst jederzeit erfragen, welche Daten wir über dich speichern.</p>
+            </div>
+            <div class="right-card">
+                <h4><i class="bi bi-pencil"></i> Berichtigung</h4>
+                <p>Falsche Daten können von dir korrigiert werden.</p>
+            </div>
+            <div class="right-card">
+                <h4><i class="bi bi-trash"></i> Löschung</h4>
+                <p>Du kannst die Löschung deiner Daten verlangen ("Recht auf Vergessenwerden").</p>
+            </div>
+            <div class="right-card">
+                <h4><i class="bi bi-download"></i> Datenübertragbarkeit</h4>
+                <p>Du kannst deine Daten in einem maschinenlesbaren Format erhalten.</p>
+            </div>
+            <div class="right-card">
+                <h4><i class="bi bi-pause-circle"></i> Einschränkung</h4>
+                <p>Du kannst die Verarbeitung deiner Daten einschränken lassen.</p>
+            </div>
+            <div class="right-card">
+                <h4><i class="bi bi-x-octagon"></i> Widerspruch</h4>
+                <p>Du kannst der Datenverarbeitung widersprechen.</p>
+            </div>
+        </div>
+        <p style="margin-top: 1rem;">Um diese Rechte auszuüben, kontaktiere uns unter: <strong>info@joel-digitals.de</strong></p>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-globe"></i> 8. Internationale Datenübermittlung</h2>
+        <p>Unsere Server befinden sich in Deutschland und der EU. Bei der Nutzung von Drittdiensten (z.B. Zahlungsanbietern) können Daten in Drittländer übermittelt werden. In diesen Fällen stellen wir sicher, dass angemessene Schutzmaßnahmen (z.B. EU-Standardvertragsklauseln) vorhanden sind.</p>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-clock-history"></i> 9. Speicherdauer</h2>
+        <p>Wir speichern deine Daten nur so lange, wie es für die genannten Zwecke notwendig ist oder gesetzliche Aufbewahrungsfristen es erfordern. Nach Kündigung deines Accounts werden deine Daten innerhalb von 30 Tagen gelöscht, sofern keine gesetzlichen Aufbewahrungspflichten bestehen.</p>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-envelope"></i> 10. Kontakt Datenschutz</h2>
+        <p>Bei Fragen zum Datenschutz oder zur Ausübung deiner Rechte:</p>
+        <div class="contact-info">
+            <p><strong>Datenschutzbeauftragter</strong></p>
+            <p>Joel Digitals</p>
+            <p>E-Mail: info@joel-digitals.de</p>
+            <p>Betroffenenrechte: Wir antworten innerhalb von 30 Tagen auf deine Anfragen.</p>
+        </div>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-bank"></i> 11. Beschwerderecht</h2>
+        <p>Falls du der Meinung bist, dass wir mit deinen Daten nicht rechtmäßig umgehen, hast du das Recht, bei einer Datenschutzaufsichtsbehörde Beschwerde einzulegen. Zuständig ist:</p>
+        <div class="contact-info">
+            <p><strong>Der Landesdatenschutzbeauftragte</strong></p>
+            <p>in deinem Bundesland oder</p>
+            <p>Die Datenschutzaufsichtsbehörde des Landes, in dem du wohnst.</p>
+        </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top: 3rem;">
+        <p>Diese Datenschutzerklärung kann sich ändern. Über wesentliche Änderungen informieren wir dich per E-Mail oder beim nächsten Login.</p>
+    </div>
+</div>
+{% endblock %}

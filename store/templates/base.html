@@ -1,964 +1,1012 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% block title %}Appstore{% endblock %}</title>
+  <title>{% block title %}JDS Appstore{% endblock %}</title>
 
-  <!-- Favicon + Logo -->
+  <!-- Favicon -->
   <link rel="icon" type="image/png" href="https://jds-appstore.onrender.com/static/images/logo.png" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#0d6efd',
+            secondary: '#0066ff',
+            accent: '#10b981',
+            dark: {
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+            }
+          },
+          animation: {
+            'gradient': 'gradient 15s ease infinite',
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            gradient: {
+              '0%, 100%': { backgroundPosition: '0% 50%' },
+              '50%': { backgroundPosition: '100% 50%' },
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      background: #121212;
-      color: #f5f5f5;
-      font-family: 'Roboto', sans-serif;
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      font-size: 1rem;
-      line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
-    body > .container {
-      flex: 1 0 auto;
-      padding-left: 1rem;
-      padding-right: 1rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    footer {
-      flex-shrink: 0;
-      background-color: #1f1f1f;
-      color: #aaa;
-      padding: 1rem 1rem;
-      text-align: center;
-      margin-top: 2rem;
-      font-size: 0.9rem;
-    }
-
-    nav.navbar {
-      background-color: #1f1f1f;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-    }
-
-    .navbar-brand, .nav-link, footer a {
-      color: #f5f5f5 !important;
-    }
-
-    .navbar-nav .nav-link:hover {
-      color: #0d6efd !important;
-    }
-
-    a {
-      color: #0d6efd;
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
-    .btn-outline-light:hover {
-      background-color: #f5f5f5;
-      color: #121212;
-    }
-
-    input.form-control {
-      background-color: #1e1e1e;
-      border: 1px solid #444;
-      color: #f5f5f5;
-      min-width: 0; /* verhindert Überlauf bei Flexbox */
-    }
-
-    input.form-control::placeholder {
-      color: #aaa;
-    }
-
-    .btn-outline-light {
-      border-color: #aaa;
-      white-space: nowrap;
-    }
-
-    .btn-outline-light:hover {
-      border-color: #fff;
-    }
-
-    /* Karten mit dunklem Hintergrund */
-    .card-dark {
-      background-color: #1e1e1e;
-      border: 1px solid #333;
-      color: #eee;
-      border-radius: 12px;
-      transition: box-shadow 0.3s ease;
-    }
-
-    .card-dark:hover {
-      box-shadow: 0 0 10px #0d6efd;
-    }
-
-    .card-dark img {
-      border-radius: 10px;
-      max-width: 100%;
-      height: auto;
-      display: block;
-    }
-
-    hr {
-      border-top: 1px solid #333;
-    }
-
-    .auth-container {
-        max-width: 500px;
-        margin: 50px auto;
-        padding: 20px;
-        background: #1c1c1c;
-        color: white;
-        border-radius: 10px;
-        box-shadow: 0 0 10px #000;
-    }
-
-    .auth-info-box {
-        background-color: #333;
-        border-left: 4px solid #f39c12;
-        padding: 10px 15px;
-        margin-bottom: 20px;
-        border-radius: 6px;
-        font-size: 14px;
-    }
-
-    .alert-info {
-      background-color: rgba(13, 110, 253, 0.15);
-      color: #0d6efd;
-      border-color: #0d6efd;
-      border-radius: 10px;
     }
     
+    main {
+      flex: 1;
+    }
+
+    /* Glassmorphism */
+    .glass {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .light .glass {
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #0d6efd;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0b5ed7;
+    }
+
+    /* Hover Lift Effect */
+    .hover-lift {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hover-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(13, 110, 253, 0.2);
+    }
+
+    /* Card Glow */
+    .card-glow {
+      transition: all 0.3s ease;
+    }
+    .card-glow:hover {
+      box-shadow: 0 0 20px rgba(13, 110, 253, 0.4);
+    }
+
+    /* Gradient Text */
+    .text-gradient {
+      background: linear-gradient(135deg, #0d6efd 0%, #0066ff 50%, #10b981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Gradient Background */
+    .bg-gradient-animate {
+      background: linear-gradient(-45deg, #0d6efd, #0066ff, #10b981, #0d6efd);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+    }
+
+    /* Download Area */
     #download-area {
       position: fixed;
-      top: 60px; /* unter Navbar */
+      top: 80px;
       right: 20px;
-      width: 300px;
-      max-height: 400px;
-      background: #1e1e1e;
-      border: 1px solid #333;
-      border-radius: 8px;
-      box-shadow: 0 0 10px #0d6efd;
-      overflow-y: auto;
+      width: 320px;
+      max-height: 450px;
+      background: rgba(30, 41, 59, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
       z-index: 1050;
       display: none;
       flex-direction: column;
-      padding: 10px;
+      padding: 16px;
     }
+    
+    .light #download-area {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
     #download-area.show {
       display: flex;
     }
-    #download-area header {
-      font-weight: 600;
-      font-size: 1.1rem;
-      margin-bottom: 10px;
-      color: #0d6efd;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    #download-area ul {
-      list-style: none;
-      margin: 0; padding: 0;
-      flex: 1 1 auto;
-      overflow-y: auto;
-    }
-    #download-area ul li {
-      margin-bottom: 6px;
-    }
-    #download-area ul li a {
-      color: #fff;
-      text-decoration: underline;
-      cursor: pointer;
-    }
-    #download-toggle-btn {
-      cursor: pointer;
-      color: #0d6efd;
-      font-size: 1.4rem;
-      position: relative;
-    }
-    l {
-      color #000000
-    }
-    #download-toggle-btn .badge {
+
+    /* Notification Dropdown */
+    .dropdown-menu {
       position: absolute;
-      top: -6px;
-      right: -6px;
-      font-size: 0.7rem;
-    }
-
-    #fallback-message {
+      right: 0;
+      top: 100%;
+      min-width: 300px;
+      max-height: 400px;
+      overflow-y: auto;
+      background: rgba(30, 41, 59, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      z-index: 1000;
       display: none;
-      margin-top: 20px;
-      padding: 15px;
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-      border-radius: 5px;
     }
-    #fallback-message a {
-      color: #0056b3;
-      text-decoration: underline;
+    
+    .light .dropdown-menu {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(0, 0, 0, 0.1);
     }
 
-    /* Responsive Anpassungen */
+    .dropdown-menu.show {
+      display: block;
+    }
 
-    @media (max-width: 576px) {
-      body > .container {
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
-      }
+    /* Roadmap Timeline */
+    .roadmap {
+      position: relative;
+      margin-left: 30px;
+      padding-left: 20px;
+      border-left: 4px solid #334155;
+    }
 
-      .navbar-nav {
-        text-align: center;
-      }
+    .roadmap.finished {
+      border-left-color: #10b981;
+    }
 
-      .navbar-nav .nav-link {
-        padding-left: 0;
-        padding-right: 0;
-      }
+    .roadmap-entry {
+      position: relative;
+      margin-bottom: 30px;
+      padding-left: 10px;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp 0.6s ease-out forwards;
+    }
 
-      form.d-flex {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
+    .roadmap-entry:nth-child(1) { animation-delay: 0.1s; }
+    .roadmap-entry:nth-child(2) { animation-delay: 0.2s; }
+    .roadmap-entry:nth-child(3) { animation-delay: 0.3s; }
+    .roadmap-entry:nth-child(4) { animation-delay: 0.4s; }
+    .roadmap-entry:nth-child(5) { animation-delay: 0.5s; }
 
-      form.d-flex input.form-control {
-        width: 100%;
-      }
-
-      form.d-flex button {
-        width: 100%;
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
     }
-    /* ---------- KACHELN ---------- */
-  .updates {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-    margin-bottom: 40px;
-  }
 
-  .update-card {
-    background: #1e1e1e;;
-    padding: 18px;
-    border-left: 6px solid #2196f3;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  }
+    .roadmap-entry::before {
+      content: "";
+      position: absolute;
+      left: -34px;
+      top: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 4px solid #0f172a;
+      box-shadow: 0 0 0 2px currentColor;
+      transition: all 0.3s ease;
+    }
 
-  .update-card.warnung {
-    border-color: #ff9800;
-    background-color: #fffaf0;
-  }
+    .roadmap-entry.geplant { --dot-color: #64748b; }
+    .roadmap-entry.in_arbeit { --dot-color: #0d6efd; }
+    .roadmap-entry.abgeschlossen { --dot-color: #10b981; }
 
-  .update-card.kritisch {
-    border-color: #f44336;
-    background-color: #fff5f5;
-  }
+    .roadmap-entry::before {
+      background-color: var(--dot-color);
+      color: var(--dot-color);
+    }
 
-  .update-card h3 {
-    margin: 0 0 6px 0;
-    color #000000
-    font-size: 1.1rem;
-  }
+    /* Update Cards Grid */
+    .updates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
 
-  .update-card small {
-    color: #b8b0b0ff;
-    font-size: 0.85rem;
-  }
+    .update-card {
+      background: rgba(30, 41, 59, 0.6);
+      padding: 20px;
+      border-left: 4px solid #0d6efd;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+    
+    .light .update-card {
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
 
-  .update-card p {
-    margin: 8px 0;
-    color: #000000
-    font-size: 0.95rem;
-  }
+    .update-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(13, 110, 253, 0.2);
+    }
 
-  .update-card a {
-    font-size: 0.9rem;
-    color: #1976d2;
-  }
+    .update-card.warnung { border-left-color: #f59e0b; }
+    .update-card.kritisch { border-left-color: #ef4444; }
 
-  /* ---------- ROADMAP-ZEITLINIE ---------- */
-  /* --------------------------------------------------
-   ROADMAP-ZEITLINIE
--------------------------------------------------- */
-.roadmap {
-  position: relative;
-  margin-left: 30px;
-  padding-left: 20px;
-  /* Standard-Linienfarbe */
-  border-left: 4px solid #ccc;
-  overflow: hidden;            /* verhindert Überlauf der Animationen */
-}
-
-/* Grüne Linie, wenn alles erledigt ist */
-.roadmap.finished {
-  border-left-color: #4caf50;
-}
-
-/* Einzelner Eintrag */
-.roadmap-entry {
-  position: relative;
-  margin-bottom: 30px;
-  padding-left: 10px;
-
-  /* sanftes Einblenden */
-  opacity: 0;
-  transform: translateY(20px);
-  animation: fadeInUp 0.6s ease-out forwards;
-}
-
-/* Staggered-Delays für fließendes Erscheinen */
-.roadmap-entry:nth-child(1) { animation-delay: 0.1s; }
-.roadmap-entry:nth-child(2) { animation-delay: 0.2s; }
-.roadmap-entry:nth-child(3) { animation-delay: 0.3s; }
-.roadmap-entry:nth-child(4) { animation-delay: 0.4s; }
-.roadmap-entry:nth-child(5) { animation-delay: 0.5s; }
-.roadmap-entry:nth-child(6) { animation-delay: 0.6s; }
-
-@keyframes fadeInUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* --- Kreis (bleibt immer ganz) --- */
-.roadmap-entry::before {
-  content: "";
-  position: absolute;
-  left: -34px;          /* zentriert auf der Linie */
-  top: 4px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 4px solid #fff;
-  box-shadow: 0 0 0 2px currentColor; /* nimmt Farbe des Status an */
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* Farben der Kreise nach Status */
-.roadmap-entry.geplant   { --dot-color: #9e9e9e; }
-.roadmap-entry.in_arbeit { --dot-color: #2196f3; }
-.roadmap-entry.abgeschlossen { --dot-color: #4caf50; }
-
-.roadmap-entry::before {
-  background-color: var(--dot-color);
-  color: var(--dot-color);   /* wird für die Box-Shadow-Linie verwendet */
-}
-
-/* --------------------------------------------------
-   Optional: Überschriften & Text
--------------------------------------------------- */
-.roadmap-entry h4 {
-  margin: 0 0 4px 0;
-  font-size: 1.1rem;
-}
-
-.roadmap-entry small {
-  color: #d1d1d1ff;
-  font-size: 0.85rem;
-}
-
-.roadmap-entry p {
-  margin: 6px 0 0 0;
-  color: #ffffffff;
-}
+    /* Mobile Menu */
+    @media (max-width: 1024px) {
+      #desktopMenu {
+        display: none;
+      }
+      #mobileMenu {
+        display: block;
+      }
+    }
+    
+    @media (min-width: 1025px) {
+      #desktopMenu {
+        display: flex !important;
+      }
+      #mobileMenu {
+        display: none !important;
+      }
+    }
   </style>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-<script>
-  // Schlüssel für localStorage
-  const DOWNLOAD_STORAGE_KEY = 'jds_downloads';
-  const DOWNLOAD_STORAGE_TTL = 20 * 60 * 1000; // 20 Minuten in ms
+</head>
+<body class="bg-slate-900 text-gray-100 antialiased transition-colors duration-300" id="body">
 
-  // Lädt die Downloads aus localStorage, filtert alte heraus
-  function loadDownloads() {
-    let downloads = JSON.parse(localStorage.getItem(DOWNLOAD_STORAGE_KEY) || '[]');
-    const now = Date.now();
-    downloads = downloads.filter(item => (now - item.time) < DOWNLOAD_STORAGE_TTL);
-    localStorage.setItem(DOWNLOAD_STORAGE_KEY, JSON.stringify(downloads));
-    return downloads;
-  }
+  <!-- Navigation -->
+  <nav class="glass sticky top-0 z-50 border-b border-gray-700/50 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center">
 
-  // Fügt einen neuen Download hinzu (aufrufen wenn neue Datei runtergeladen)
-  function addDownload(name, url) {
-    let downloads = loadDownloads();
-    downloads.push({name, url, time: Date.now()});
-    localStorage.setItem(DOWNLOAD_STORAGE_KEY, JSON.stringify(downloads));
-    renderDownloads();
-  }
+        <!-- Logo -->
+        <div class="flex items-center space-x-3 group cursor-pointer" onclick="window.location.href='{% url 'home' %}'">
+          <div class="relative">
+            <img src="https://jds-appstore.de/static/images/logo.png" alt="JDS Logo" class="h-10 w-10 object-contain transition-transform duration-300 group-hover:scale-110">
+            <div class="absolute inset-0 bg-primary/30 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </div>
+          <span class="text-2xl font-bold text-gradient">JDS Appstore</span>
+        </div>
 
-  // Rendert die Downloadliste in den Bereich
-  function renderDownloads() {
-    const container = document.getElementById('download-list');
-    const downloads = loadDownloads();
-    container.innerHTML = '';
+        <!-- Desktop Menu -->
+        <div id="desktopMenu" class="items-center space-x-1">
+          
+          <!-- Navigation Links -->
+          <a href="{% url 'jds_apps' %}" class="px-3 py-2 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition-all duration-200 font-medium">
+            <i class="bi bi-download mr-1"></i>Download
+          </a>
+          
+          <a href="{% url 'infopage' %}" class="px-3 py-2 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition-all duration-200 font-medium">
+            <i class="bi bi-info-circle mr-1"></i>Infos
+          </a>
+          
+          <a href="{% url 'developer_list' %}" class="px-3 py-2 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition-all duration-200 font-medium">
+            <i class="bi bi-code-square mr-1"></i>Entwickler
+          </a>
 
-    if (downloads.length === 0) {
-      container.innerHTML = '<li style="color:#888;">Keine Downloads</li>';
-      document.getElementById('download-badge').style.display = 'none';
-    } else {
-      downloads.forEach((dl, i) => {
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.textContent = dl.name;
-        a.href = dl.url;
-        a.target = '_blank'; // öffnet in neuem Tab / Download-Dialog
-        li.appendChild(a);
-        container.appendChild(li);
-      });
-      // Badge anzeigen mit Anzahl
-      document.getElementById('download-badge').style.display = 'inline-block';
-      document.getElementById('download-badge').textContent = downloads.length;
+          <!-- Platform Dropdown -->
+          <div class="relative group">
+            <button class="px-3 py-2 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition-all duration-200 font-medium flex items-center">
+              <i class="bi bi-laptop mr-1"></i>Plattformen <i class="bi bi-chevron-down ml-1 text-xs"></i>
+            </button>
+            <div class="absolute left-0 mt-2 w-48 rounded-xl glass shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-left">
+              <a href="{% url 'platform' 'windows' %}" class="block px-4 py-3 text-sm text-gray-300 hover:bg-primary/10 hover:text-primary first:rounded-t-xl last:rounded-b-xl">
+                <i class="bi bi-windows mr-2"></i>Windows
+              </a>
+              <a href="{% url 'platform' 'linux' %}" class="block px-4 py-3 text-sm text-gray-300 hover:bg-primary/10 hover:text-primary">
+                <i class="bi bi-terminal mr-2"></i>Linux
+              </a>
+              <a href="{% url 'platform' 'android' %}" class="block px-4 py-3 text-sm text-gray-300 hover:bg-primary/10 hover:text-primary">
+                <i class="bi bi-phone mr-2"></i>Android
+              </a>
+              <a href="{% url 'platform' 'ios' %}" class="block px-4 py-3 text-sm text-gray-300 hover:bg-primary/10 hover:text-primary">
+                <i class="bi bi-apple mr-2"></i>iOS
+              </a>
+              <a href="{% url 'platform' 'macos' %}" class="block px-4 py-3 text-sm text-gray-300 hover:bg-primary/10 hover:text-primary last:rounded-b-xl">
+                <i class="bi bi-laptop mr-2"></i>Mac
+              </a>
+            </div>
+          </div>
+
+          <!-- Search -->
+          <form method="get" action="{% url 'home' %}" class="flex items-center ml-4" role="search">
+            <div class="relative">
+              <input type="search" name="q" placeholder="Suche Apps..." value="{{ request.GET.q|default:'' }}"
+                     class="w-64 bg-slate-800/50 border border-gray-600 rounded-full py-2 pl-4 pr-10 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder-gray-500">
+              <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </form>
+
+          {% if user.is_authenticated %}
+            <div class="h-6 w-px bg-gray-600 mx-2"></div>
+            <!-- Notifications -->
+            <div class="relative nav-item dropdown">
+              <button onclick="toggleNotifications()" class="relative p-2 text-gray-300 hover:text-primary transition">
+                <i class="bi bi-bell text-xl"></i>
+                <span id="notifBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center {% if notifications_count == 0 %}hidden{% endif %}">
+                  {{ notifications_count }}
+                </span>
+              </button>
+              <div id="notifDropdown" class="dropdown-menu mt-2">
+                <div class="p-3 border-b border-gray-700">
+                  <h6 class="font-semibold text-gray-200">Benachrichtigungen</h6>
+                </div>
+                <div id="notifList" class="max-h-80 overflow-y-auto">
+                  {% if notifications %}
+                    <a href="{% url 'mark_all_notifications_read' %}" class="block px-4 py-2 text-sm text-primary hover:bg-primary/10">
+                      Alle als gelesen markieren
+                    </a>
+                    {% for notif in notifications %}
+                      <a href="{% url 'notification_detail' notif.id %}" class="block px-4 py-3 hover:bg-primary/5 border-b border-gray-700/50 last:border-0">
+                        <div class="flex items-start">
+                          {% if not notif.read %}
+                            <span class="inline-block w-2 h-2 bg-primary rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                          {% endif %}
+                          <div>
+                            <p class="text-sm text-gray-300 line-clamp-2">{{ notif.message }}</p>
+                            <small class="text-xs text-gray-500">{{ notif.created_at|date:"d.m.Y H:i" }}</small>
+                          </div>
+                        </div>
+                      </a>
+                    {% endfor %}
+                  {% else %}
+                    <div class="px-4 py-8 text-center text-gray-500 text-sm">
+                      <i class="bi bi-bell-slash text-2xl mb-2 block"></i>
+                      Keine neuen Benachrichtigungen
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="p-3 border-t border-gray-700">
+                  <a href="{% url 'notifications_all' %}" class="block text-center text-sm text-primary hover:underline">Alle anzeigen</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- User Menu -->
+            <div class="relative ml-2">
+              <button onclick="toggleUserMenu()" class="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-700/50 transition">
+                {% if user.profile.avatar %}
+                  <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="w-9 h-9 rounded-full object-cover border-2 border-primary/30">
+                {% else %}
+                  <div class="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-sm">
+                    {{ user.first_name|default:user.username|slice:":1"|upper }}
+                  </div>
+                {% endif %}
+                <i class="bi bi-chevron-down text-xs text-gray-400"></i>
+              </button>
+              
+              <div id="userDropdown" class="dropdown-menu mt-2 w-56">
+                <div class="p-4 border-b border-gray-700">
+                  <p class="text-sm text-gray-400">Angemeldet als</p>
+                  <p class="font-semibold text-gray-200">{{ user.first_name|default:user.username }}</p>
+                </div>
+                <a href="{% url 'edit_user_profile' %}" class="block px-4 py-3 text-sm text-gray-300 hover:bg-primary/10 hover:text-primary">
+                  <i class="bi bi-person mr-2"></i>Profil bearbeiten
+                </a>
+                <a href="{% url 'my_installed_apps' %}" class="block px-4 py-3 text-sm text-gray-300 hover:bg-primary/10 hover:text-primary">
+                  <i class="bi bi-collection mr-2"></i>Meine Apps
+                </a>
+                <a href="{% url 'user_settings' %}" class="block px-4 py-3 text-sm text-gray-300 hover:bg-primary/10 hover:text-primary">
+                  <i class="bi bi-gear mr-2"></i>Einstellungen
+                </a>
+                <div class="border-t border-gray-700"></div>
+                <a href="{% url 'developer_dashboard' %}" class="block px-4 py-3 text-sm text-gray-300 hover:bg-primary/10 hover:text-primary">
+                  <i class="bi bi-speedometer2 mr-2"></i>Dashboard
+                </a>
+                {% if user.is_superuser %}
+                  <a href="{% url 'admin:index' %}" class="block px-4 py-3 text-sm text-gray-300 hover:bg-primary/10 hover:text-primary">
+                    <i class="bi bi-shield-lock mr-2"></i>Admin-Bereich
+                  </a>
+                {% endif %}
+                {% if user.is_staff %}
+                  <a href="{% url 'admin_media' %}" class="block px-4 py-3 text-sm text-gray-300 hover:bg-primary/10 hover:text-primary">
+                    <i class="bi bi-folder2-open mr-2"></i>Media-Dateien
+                  </a>
+                {% endif %}
+                <div class="border-t border-gray-700"></div>
+                <a href="{% url 'logout' %}" class="block px-4 py-3 text-sm text-red-400 hover:bg-red-500/10">
+                  <i class="bi bi-box-arrow-right mr-2"></i>Logout
+                </a>
+              </div>
+            </div>
+
+          {% else %}
+            <a href="{% url 'login' %}" class="ml-4 px-6 py-2 rounded-full border border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 font-medium">
+              Login
+            </a>
+            <a href="{% url 'register' %}" class="ml-2 px-6 py-2 rounded-full bg-gradient-to-r from-primary to-secondary text-white hover:shadow-lg hover:shadow-primary/30 hover:scale-105 transition-all duration-200 font-medium">
+              Registrieren
+            </a>
+          {% endif %}
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <div class="lg:hidden flex items-center space-x-4">
+          <button id="mobileMenuBtn" onclick="toggleMobileMenu()" class="p-2 text-gray-300 hover:text-primary transition">
+            <i class="bi bi-list text-2xl"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden lg:hidden glass border-t border-gray-700/50">
+      <div class="px-4 py-4 space-y-2">
+        <a href="{% url 'jds_apps' %}" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition font-medium">
+          <i class="bi bi-download mr-3"></i>Download
+        </a>
+        <a href="{% url 'infopage' %}" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition font-medium">
+          <i class="bi bi-info-circle mr-3"></i>Infos
+        </a>
+        <a href="{% url 'developer_list' %}" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition font-medium">
+          <i class="bi bi-code-square mr-3"></i>Entwickler
+        </a>
+        
+        <div class="border-t border-gray-700 my-2"></div>
+        
+        <p class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Plattformen</p>
+        <a href="{% url 'platform' 'windows' %}" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition font-medium">
+          <i class="bi bi-windows mr-3"></i>Windows
+        </a>
+        <a href="{% url 'platform' 'linux' %}" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition font-medium">
+          <i class="bi bi-terminal mr-3"></i>Linux
+        </a>
+        <a href="{% url 'platform' 'android' %}" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition font-medium">
+          <i class="bi bi-phone mr-3"></i>Android
+        </a>
+        <a href="{% url 'platform' 'ios' %}" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition font-medium">
+          <i class="bi bi-apple mr-3"></i>iOS
+        </a>
+        <a href="{% url 'platform' 'macos' %}" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition font-medium">
+          <i class="bi bi-laptop mr-3"></i>Mac
+        </a>
+
+        <div class="border-t border-gray-700 my-2"></div>
+
+        <form method="get" action="{% url 'home' %}" class="px-4 py-2">
+          <div class="relative">
+            <input type="search" name="q" placeholder="Suche Apps..." 
+                   class="w-full bg-slate-800/50 border border-gray-600 rounded-lg py-2 pl-4 pr-10 text-sm focus:outline-none focus:border-primary placeholder-gray-500">
+            <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </form>
+
+        {% if user.is_authenticated %}
+          <div class="px-4 py-3 bg-slate-800/50 rounded-lg mt-4">
+            <div class="flex items-center space-x-3 mb-3">
+              {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" class="w-10 h-10 rounded-full object-cover">
+              {% else %}
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold">
+                  {{ user.first_name|default:user.username|slice:":1"|upper }}
+                </div>
+              {% endif %}
+              <div>
+                <p class="font-semibold text-gray-200">{{ user.first_name|default:user.username }}</p>
+                <p class="text-xs text-gray-500">Angemeldet</p>
+              </div>
+            </div>
+          </div>
+          <a href="{% url 'edit_user_profile' %}" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition font-medium">
+            <i class="bi bi-person mr-3"></i>Profil
+          </a>
+          <a href="{% url 'my_installed_apps' %}" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-primary/10 hover:text-primary transition font-medium">
+            <i class="bi bi-collection mr-3"></i>Meine Apps
+          </a>
+          <a href="{% url 'developer_dashboard' %}" class="block px-4 py-3 rounded-lg text-primary hover:bg-primary/10 transition font-medium">
+            <i class="bi bi-speedometer2 mr-3"></i>Dashboard
+          </a>
+          <a href="{% url 'logout' %}" class="block px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 transition font-medium">
+            <i class="bi bi-box-arrow-right mr-3"></i>Logout
+          </a>
+        {% else %}
+          <div class="space-y-2 mt-4">
+            <a href="{% url 'login' %}" class="block w-full text-center px-4 py-3 rounded-lg border border-primary text-primary hover:bg-primary hover:text-white transition font-medium">
+              Login
+            </a>
+            <a href="{% url 'register' %}" class="block w-full text-center px-4 py-3 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-medium">
+              Registrieren
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <!-- Download Area -->
+  <div id="download-area">
+    <header class="flex justify-between items-center mb-4 pb-2 border-b border-gray-700">
+      <h3 class="font-bold text-primary flex items-center">
+        <i class="bi bi-download mr-2"></i>Downloads
+      </h3>
+      <button onclick="clearDownloads()" class="text-xs text-gray-400 hover:text-red-400 transition">
+        <i class="bi bi-trash"></i> Leeren
+      </button>
+    </header>
+    <ul id="download-list" class="flex-1 overflow-y-auto space-y-2">
+      <li class="text-gray-500 text-sm text-center py-4">Keine Downloads</li>
+    </ul>
+  </div>
+
+  <!-- Fallback Message -->
+  <div id="fallback-message" class="hidden fixed top-20 left-1/2 -translate-x-1/2 bg-red-500/90 backdrop-blur text-white px-6 py-4 rounded-xl shadow-2xl z-50 max-w-md text-center">
+    <i class="bi bi-exclamation-triangle text-2xl mb-2 block"></i>
+    <p class="mb-3">App scheint nicht installiert zu sein.</p>
+    <a href="https://jds-appstore.onrender.com/jds-appstore/" target="_blank" class="inline-block px-4 py-2 bg-white text-red-600 rounded-lg font-semibold hover:bg-gray-100 transition">
+      Jetzt installieren
+    </a>
+  </div>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 w-full">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="glass border-t border-gray-700/50 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div class="col-span-1 md:col-span-2">
+          <div class="flex items-center space-x-3 mb-4">
+            <img src="https://jds-appstore.de/static/images/logo.png" alt="JDS" class="h-12 w-12 object-contain">
+            <span class="text-2xl font-bold text-gradient">JDS Appstore</span>
+          </div>
+          <p class="text-gray-400 text-sm leading-relaxed max-w-md">
+            Deine zentrale Plattform für Apps, Tools und Software. Entdecke, lade herunter und verwalte deine Anwendungen an einem Ort.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="text-lg font-semibold text-gray-200 mb-4 flex items-center">
+            <i class="bi bi-link-45deg mr-2 text-primary"></i>Quick Links
+          </h3>
+          <ul class="space-y-3 text-sm">
+            <li><a href="{% url 'home' %}" class="text-gray-400 hover:text-primary transition flex items-center"><i class="bi bi-house mr-2"></i>Home</a></li>
+            <li><a href="{% url 'jds_apps' %}" class="text-gray-400 hover:text-primary transition flex items-center"><i class="bi bi-download mr-2"></i>Download</a></li>
+            <li><a href="{% url 'developer_list' %}" class="text-gray-400 hover:text-primary transition flex items-center"><i class="bi bi-code-square mr-2"></i>Entwickler</a></li>
+            <li><a href="{% url 'infopage' %}" class="text-gray-400 hover:text-primary transition flex items-center"><i class="bi bi-info-circle mr-2"></i>Infos</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="text-lg font-semibold text-gray-200 mb-4 flex items-center">
+            <i class="bi bi-shield-check mr-2 text-primary"></i>Rechtliches
+          </h3><ul class="space-y-3 text-sm">
+    <li>
+        <a href="https://joel-digitals.de/imprint" target="_blank" class="text-gray-400 hover:text-primary transition flex items-center">
+            <i class="bi bi-file-text mr-2"></i>Impressum
+        </a>
+    </li>
+    <li>
+        <a href="https://joel-digitals.de/privacy" target="_blank" class="text-gray-400 hover:text-primary transition flex items-center">
+            <i class="bi bi-shield-lock mr-2"></i>Datenschutz (Joel Digitals)
+        </a>
+    </li>
+    <li>
+        <a href="https://joel-digitals.de/terms" target="_blank" class="text-gray-400 hover:text-primary transition flex items-center">
+            <i class="bi bi-journal-text mr-2"></i>AGB (Joel Digitals)
+        </a>
+    </li>
+    <li>
+        <a href="{% url 'terms_of_service' %}" class="text-gray-400 hover:text-primary transition flex items-center">
+            <i class="bi bi-journal-text mr-2"></i>Nutzungsbedingungen (Appstore)
+        </a>
+    </li>
+    <li>
+        <a href="{% url 'privacy_policy' %}" class="text-gray-400 hover:text-primary transition flex items-center">
+            <i class="bi bi-journal-text mr-2"></i>Datenschutzerklärung (Appstore)
+        </a>
+    </li>
+</ul>
+        </div>
+      </div>
+      
+      <div class="border-t border-gray-700/50 mt-10 pt-6 flex flex-col md:flex-row justify-between items-center">
+        <div class="text-sm text-gray-500 mb-4 md:mb-0">
+          &copy; 2025-2026 Joel Digitals. Alle Rechte vorbehalten.
+        </div>
+        <div class="flex items-center space-x-4">
+          <span class="text-xs text-gray-600 bg-slate-800 px-3 py-1 rounded-full">Version 1.0.0.0</span>
+          <a href="#" class="text-gray-400 hover:text-primary transition text-xl"><i class="bi bi-github"></i></a>
+          <a href="#" class="text-gray-400 hover:text-primary transition text-xl"><i class="bi bi-twitter-x"></i></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Notification Banner -->
+  <div id="notification-banner" class="hidden fixed bottom-0 left-0 right-0 bg-slate-800/95 backdrop-blur border-t border-primary/30 p-4 z-40">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+          <i class="bi bi-bell-fill text-primary"></i>
+        </div>
+        <div>
+          <h4 class="font-semibold text-gray-200">Push-Benachrichtigungen aktivieren?</h4>
+          <p class="text-sm text-gray-400">Bleibe über Updates und neue Apps informiert.</p>
+        </div>
+      </div>
+      <div class="flex space-x-3">
+        <button onclick="dismissNotificationBanner()" class="px-4 py-2 text-gray-400 hover:text-gray-200 transition text-sm">
+          Später
+        </button>
+        <button onclick="enableNotifications()" class="px-6 py-2 bg-primary hover:bg-primary/80 text-white rounded-lg transition text-sm font-medium">
+          Aktivieren
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cookie Banner -->
+  <div id="cookie-banner" class="hidden fixed bottom-0 left-0 right-0 bg-slate-800/95 backdrop-blur border-t border-gray-700 p-6 z-50">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-gray-200 mb-2 flex items-center">
+            <i class="bi bi-cookie mr-2 text-primary"></i>Cookie-Einstellungen
+          </h3>
+          <p id="cookie-message" class="text-gray-400 text-sm mb-4">Wir verwenden Cookies, um deine Erfahrung zu verbessern.</p>
+          
+          <div class="flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center space-x-2 text-gray-300 cursor-pointer">
+              <input type="checkbox" id="essential" checked disabled class="rounded bg-slate-700 border-gray-600 text-primary focus:ring-primary">
+              <span>Essenziell</span>
+            </label>
+            <label class="flex items-center space-x-2 text-gray-300 cursor-pointer">
+              <input type="checkbox" id="functional" class="rounded bg-slate-700 border-gray-600 text-primary focus:ring-primary">
+              <span>Funktional</span>
+            </label>
+            <label class="flex items-center space-x-2 text-gray-300 cursor-pointer">
+              <input type="checkbox" id="analytics" class="rounded bg-slate-700 border-gray-600 text-primary focus:ring-primary">
+              <span>Analyse</span>
+            </label>
+            <label class="flex items-center space-x-2 text-gray-300 cursor-pointer">
+              <input type="checkbox" id="marketing" class="rounded bg-slate-700 border-gray-600 text-primary focus:ring-primary">
+              <span>Marketing</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          <select id="language-select" onchange="setLanguage(this.value)" class="bg-slate-700 border border-gray-600 text-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary">
+            <option value="de">Deutsch</option>
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+          </select>
+          <button onclick="rejectEssentials()" class="px-4 py-2 text-gray-400 hover:text-gray-200 transition text-sm whitespace-nowrap">
+            Nur Essenzielle
+          </button>
+          <button onclick="savePreferences()" class="px-4 py-2 border border-primary text-primary hover:bg-primary/10 rounded-lg transition text-sm whitespace-nowrap">
+            Einstellungen speichern
+          </button>
+          <button onclick="acceptAll()" class="px-6 py-2 bg-primary hover:bg-primary/80 text-white rounded-lg transition text-sm font-medium whitespace-nowrap">
+            Alle akzeptieren
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    // Dark Mode
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const body = document.getElementById('body');
+      const iconDesktop = document.getElementById('darkModeIcon');
+      const iconMobile = document.getElementById('darkModeIconMobile');
+      
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        body.classList.remove('light');
+        body.classList.add('bg-slate-900', 'text-gray-100');
+        localStorage.setItem('theme', 'dark');
+        if(iconDesktop) iconDesktop.textContent = '🌙';
+        if(iconMobile) iconMobile.textContent = '🌙';
+      } else {
+        html.classList.add('dark');
+        body.classList.add('light');
+        body.classList.remove('bg-slate-900', 'text-gray-100');
+        body.classList.add('bg-gray-50', 'text-gray-900');
+        localStorage.setItem('theme', 'light');
+        if(iconDesktop) iconDesktop.textContent = '☀️';
+        if(iconMobile) iconMobile.textContent = '☀️';
+      }
     }
-  }
 
-  // Toggle Downloadbereich ein/ausblenden
-  function toggleDownloadArea() {
-    const area = document.getElementById('download-area');
-    area.classList.toggle('show');
-    if (area.classList.contains('show')) {
+    // Mobile Menu
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobileMenu');
+      const btn = document.getElementById('mobileMenuBtn');
+      menu.classList.toggle('hidden');
+      const icon = btn.querySelector('i');
+      if (menu.classList.contains('hidden')) {
+        icon.classList.remove('bi-x-lg');
+        icon.classList.add('bi-list');
+      } else {
+        icon.classList.remove('bi-list');
+        icon.classList.add('bi-x-lg');
+      }
+    }
+
+    // User Menu Toggle
+    function toggleUserMenu() {
+      const dropdown = document.getElementById('userDropdown');
+      dropdown.classList.toggle('show');
+    }
+
+    // Notifications Toggle
+    function toggleNotifications() {
+      const dropdown = document.getElementById('notifDropdown');
+      dropdown.classList.toggle('show');
+    }
+
+    // Download System
+    const DOWNLOAD_STORAGE_KEY = 'jds_downloads';
+    const DOWNLOAD_STORAGE_TTL = 20 * 60 * 1000;
+
+    function loadDownloads() {
+      let downloads = JSON.parse(localStorage.getItem(DOWNLOAD_STORAGE_KEY) || '[]');
+      const now = Date.now();
+      downloads = downloads.filter(item => (now - item.time) < DOWNLOAD_STORAGE_TTL);
+      localStorage.setItem(DOWNLOAD_STORAGE_KEY, JSON.stringify(downloads));
+      return downloads;
+    }
+
+    function addDownload(name, url) {
+      let downloads = loadDownloads();
+      downloads.push({name, url, time: Date.now()});
+      localStorage.setItem(DOWNLOAD_STORAGE_KEY, JSON.stringify(downloads));
       renderDownloads();
     }
-  }
 
-  // Löschen aller Downloads (auch in localStorage)
-  function clearDownloads() {
-    localStorage.removeItem(DOWNLOAD_STORAGE_KEY);
-    renderDownloads();
-  }
+    function renderDownloads() {
+      const container = document.getElementById('download-list');
+      const downloads = loadDownloads();
+      container.innerHTML = '';
 
-  document.addEventListener('DOMContentLoaded', () => {
-    renderDownloads();
-  });
-</script>
-<script>
-  // Manuell toggle, da Bootstrap Dropdown sonst bei Klick schließt
-  function toggleDownloadArea(event) {
-    event.preventDefault();
-    const dropdownMenu = document.getElementById('download-area');
-    const isShown = dropdownMenu.classList.contains('show');
-    if (isShown) {
-      bootstrap.Dropdown.getInstance(document.getElementById('downloadToggle')).hide();
-    } else {
-      bootstrap.Dropdown.getOrCreateInstance(document.getElementById('downloadToggle')).show();
-    }
-  }
-
-  function clearDownloads() {
-    const list = document.getElementById('download-list');
-    list.innerHTML = '';
-    const badge = document.getElementById('download-badge');
-    badge.style.display = 'none';
-  }
-</script>
-</head>
-<body>
-<nav class="navbar navbar-expand-lg navbar-dark mb-4">
-  <div class="container">
-    <a class="navbar-brand fw-bold d-flex align-items-center" href="{% url 'home' %}">
-      <img src="{% static 'images/logo.png' %}" alt="JDS Logo" style="height: 30px; margin-right: 8px;">
-    </a>
-
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Navigation umschalten">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <!-- Rechts fester Bereich -->
-    <div class="d-flex align-items-center order-lg-2 ms-auto gap-3">
-    
-      <!-- Benachrichtigungen -->
-      {% if user.is_authenticated %}
-      <div class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle position-relative p-0" href="#" role="button" data-bs-toggle="dropdown"
-           aria-expanded="false" id="notificationsDropdown" title="Benachrichtigungen">
-          <i class="bi bi-bell text-white fs-5"></i>
-          <span id="notifBadge"
-                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                style="display: {% if notifications_count > 0 %}inline{% else %}none{% endif %};">
-            {{ notifications_count }}
-            <span class="visually-hidden">ungelesene Benachrichtigungen</span>
-          </span>
-        </a>
-        <ul id="notifDropdown" class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown"
-            style="min-width: 300px; max-height: 400px; overflow-y: auto;">
-          <li><h6 class="dropdown-header">Benachrichtigungen</h6></li>
-          {% if notifications %}
-            <a class="dropdown-item small" href="{% url 'mark_all_notifications_read' %}">
-              <strong>Alle gelesen</strong>
+      if (downloads.length === 0) {
+        container.innerHTML = '<li class="text-gray-500 text-sm text-center py-4">Keine Downloads</li>';
+        document.getElementById('download-badge').classList.add('hidden');
+      } else {
+        downloads.forEach((dl) => {
+          const li = document.createElement('li');
+          li.className = 'flex items-center justify-between p-2 rounded-lg hover:bg-primary/10 transition group';
+          li.innerHTML = `
+            <a href="${dl.url}" target="_blank" class="text-sm text-gray-300 hover:text-primary truncate flex-1">
+              <i class="bi bi-file-earmark mr-2"></i>${dl.name}
             </a>
-            {% for notif in notifications %}
-              <li>
-                <a class="dropdown-item small" href="{% url 'notification_detail' notif.id %}">
-                  {% if not notif.read and notif.user %}
-                    <span class="badge bg-primary me-2">Neu</span>
-                  {% endif %}
-                  {{ notif.message|truncatechars:60 }}<br>
-                  <small class="text-muted">{{ notif.created_at|date:"d.m.Y H:i" }}</small>
-                </a>
-              </li>
-            {% endfor %}
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item text-center" href="{% url 'notifications_all' %}">Alle anzeigen</a></li>
-          {% else %}
-            <li><span class="dropdown-item small text-muted">Keine neuen Benachrichtigungen</span></li>
-            <li><a class="dropdown-item text-center" href="{% url 'notifications_all' %}">Alle anzeigen</a></li>
-          {% endif %}
-        </ul>
-      </div>
-    
-      <!-- Benutzer Avatar -->
-      <div class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle d-flex align-items-center p-0" href="#" id="userDropdown"
-           role="button" data-bs-toggle="dropdown" aria-expanded="false">
-          {% if user.profile.avatar %}
-            <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="rounded-circle"
-                 style="width: 36px; height: 36px; object-fit: cover;">
-          {% else %}
-            <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center"
-                 style="width: 36px; height: 36px; font-weight: bold;">
-              {{ user.first_name|default:user.username|slice:":1"|upper }}
-            </div>
-          {% endif %}
-        </a>
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-          <li><h6 class="dropdown-header">Hallo, {{ user.first_name|default:user.username }}!</h6></li>
-          <li><a class="dropdown-item" href="{% url 'edit_user_profile' %}"><i class="bi bi-person me-2"></i> Profil bearbeiten</a></li>
-          <li><a class="dropdown-item" href="{% url 'my_installed_apps' %}"><i class="bi bi-download me-2"></i> Meine Apps</a></li>
-          <li><a class="dropdown-item" href="{% url 'user_settings' %}"><i class="bi bi-gear me-2"></i> Einstellungen</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="{% url 'developer_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
-          {% if user.is_superuser %}
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-shield-lock me-2"></i> Admin-Bereich</a></li>
-          {% endif %}
-          {% if user.is_staff %}
-            <li><a class="dropdown-item" href="{% url 'admin_media' %}"><i class="bi bi-folder2-open me-2"></i> Media-Dateien</a></li>
-          {% endif %}
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
-        </ul>
-      </div>
-      {% else %}
-        <a href="{% url 'login' %}" class="btn btn-outline-light">Login</a>
-      {% endif %}
-    </div>
-    
-
-    <!-- Nav-Inhalt -->
-    <div id="navbarNav" class="collapse navbar-collapse order-lg-1">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a href="{% url 'jds_apps' %}" class="nav-link">JDS Appstore Download</a></li>
-        <li class="nav-item"><a href="{% url 'infopage' %}" class="nav-link">Infos</a></li>
-        <li class="nav-item"><a href="{% url 'developer_list' %}" class="nav-link">Entwickler</a></li>
-        <li class="nav-item"><a href="{% url 'platform' 'windows' %}" class="nav-link">Windows</a></li>
-        <li class="nav-item"><a href="{% url 'platform' 'linux' %}" class="nav-link">Linux</a></li>
-        <li class="nav-item"><a href="{% url 'platform' 'android' %}" class="nav-link">Android</a></li>
-        <li class="nav-item"><a href="{% url 'platform' 'ios' %}" class="nav-link">iOS</a></li>
-        <li class="nav-item"><a href="{% url 'platform' 'macos' %}" class="nav-link">Mac</a></li>
-      </ul>
-      <form method="get" action="{% url 'home' %}" class="d-flex me-3" role="search" autocomplete="off">
-        <input class="form-control me-2" type="search" name="q" placeholder="Suche Apps" value="{{ request.GET.q|default:'' }}" aria-label="Suche Apps" />
-        <button class="btn btn-outline-light" type="submit">Suchen</button>
-      </form>
-    </div>
-  </div>
-</nav>
-
-<div id="fallback-message">
-  App scheint nicht installiert zu sein. <a href="https://jds-appstore.onrender.com/jds-appstore/" target="_blank">Jetzt installieren</a>
-</div>
-
-<script>
-function openMedainApp() {
-  const fallbackMessage = document.getElementById("fallback-message");
-  const now = Date.now();
-  
-  // Verlängere Timeout auf 2.5 Sekunden
-  const timeout = setTimeout(() => {
-    const elapsed = Date.now() - now;
-    if (elapsed < 2500) {
-      fallbackMessage.style.display = "block";
+            <button onclick="removeDownload('${dl.name}')" class="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition">
+              <i class="bi bi-x"></i>
+            </button>
+          `;
+          container.appendChild(li);
+        });
+        const badge = document.getElementById('download-badge');
+        badge.classList.remove('hidden');
+        badge.textContent = downloads.length;
+      }
     }
-  }, 2500);
 
-  // Korrigierter Intent-URI (verwende den offiziellen Scheme)
-  window.location.href = "intent://start#Intent;scheme=median;package=co.median.android.ljrnrp;end";
-}
-</script>
+    function removeDownload(name) {
+      let downloads = loadDownloads();
+      downloads = downloads.filter(d => d.name !== name);
+      localStorage.setItem(DOWNLOAD_STORAGE_KEY, JSON.stringify(downloads));
+      renderDownloads();
+    }
 
-<div id="notification-banner" style="display:none; position: fixed; bottom: 0; left: 0; right: 0; background: #222; border-top: 1px solid #444; padding: 15px; z-index: 9998; font-size: 14px; color: white;">
-  <div style="max-width: 900px; margin: auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-    <div style="flex: 1;">
-      <strong>Möchtest du Benachrichtigungen erhalten?</strong><br>
-      Aktiviere Push-Benachrichtigungen, um über Updates, neue Apps und wichtige Informationen informiert zu werden.
-    </div>
-    <div style="display: flex; flex-direction: column; gap: 5px; min-width: 180px;">
-      <button onclick="enableNotifications()" class="btn btn-sm btn-primary">Benachrichtigungen aktivieren</button>
-      <button onclick="dismissNotificationBanner()" class="btn btn-sm btn-secondary" style="background-color: #444; color: #fff;">Nicht jetzt</button>
-    </div>
-  </div>
-</div>
+    function toggleDownloadArea() {
+      const area = document.getElementById('download-area');
+      area.classList.toggle('show');
+      if (area.classList.contains('show')) {
+        renderDownloads();
+      }
+    }
 
-<div id="cookie-banner" style="display:none; position: fixed; bottom: 0; left: 0; right: 0; background: #333333; border-top: 1px solid #555555; padding: 20px; z-index: 9999; font-size: 14px; color: white;">
-    <div style="max-width: 900px; margin: auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-            <div style="flex: 1;">
-                <p id="cookie-message" style="color: white;"></p>
-                <div id="cookie-options" style="margin-top: 10px; color: white;">
-                    <label><input type="checkbox" id="essential" disabled checked> <span id="label-essential"></span></label><br>
-                    <label><input type="checkbox" id="functional"> <span id="label-functional"></span></label><br>
-                    <label><input type="checkbox" id="analytics"> <span id="label-analytics"></span></label><br>
-                    <label><input type="checkbox" id="marketing"> <span id="label-marketing"></span></label>
-                </div>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 10px; min-width: 200px;">
-                <select id="language-select" onchange="setLanguage(this.value)" style="color: black; padding: 5px;">
-                    <option value="en">English</option>
-                    <option value="de">Deutsch</option>
-                    <option value="fr">Français</option>
-                </select>
-                <button onclick="acceptAll()" class="button">Alle akzeptieren</button>
-                <button onclick="savePreferences()" class="button">Einstellungen speichern</button>
-                <button onclick="rejectEssentials()" class="button" style="background-color: #555;">Nur Essenzielle</button>
-            </div>
-        </div>
-    </div>
-</div>
+    function clearDownloads() {
+      localStorage.removeItem(DOWNLOAD_STORAGE_KEY);
+      renderDownloads();
+    }
 
-
-
-<div class="container">
-  {% block content %}
-  {% endblock %}
-</div>
-
-<footer>
-  &copy; 2025-2026 Joel Digitals &middot; 
-  <a href="https://joel-digitals.onrender.com/imprint" target="_blank" rel="noopener">Impressum</a> &middot; 
-  <a href="https://joel-digitals.onrender.com/privacy" target="_blank" rel="noopener">Datenschutz</a> &middot; 
-  <a href="https://joel-digitals.onrender.com/terms" target="_blank" rel="noopener">AGB</a>
-
-  <br>
-  <p>Version 1.0.0.0</p>
-  <br>    
-</footer>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
+    // Cookie Banner
     const translations = {
-        de: {
-            message: "Wir verwenden Cookies, um Ihre Erfahrung zu verbessern. Sie können auswählen, welchen Kategorien Sie zustimmen.",
-            labels: {
-                essential: "Essenzielle Cookies (immer aktiv)",
-                functional: "Funktionale Cookies (z. B. Warenkorb speichern)",
-                analytics: "Analyse-Cookies (z. B. Besucherzahlen messen)",
-                marketing: "Marketing-Cookies (z. B. für Werbung & Tracking)"
-            },
-            buttons: {
-                acceptAll: "Alle akzeptieren",
-                save: "Einstellungen speichern",
-                essentialsOnly: "Nur Essenzielle"
-            }
-        },
-        en: {
-            message: "We use cookies to improve your experience. You can choose which categories to allow.",
-            labels: {
-                essential: "Essential cookies (always active)",
-                functional: "Functional cookies (e.g., save cart)",
-                analytics: "Analytics cookies (e.g., visitor stats)",
-                marketing: "Marketing cookies (e.g., ads & tracking)"
-            },
-            buttons: {
-                acceptAll: "Accept all",
-                save: "Save preferences",
-                essentialsOnly: "Essentials only"
-            }
-        },
-        fr: {
-            message: "Nous utilisons des cookies pour améliorer votre expérience. Choisissez les catégories que vous souhaitez autoriser.",
-            labels: {
-                essential: "Cookies essentiels (toujours actifs)",
-                functional: "Cookies fonctionnels (ex. panier)",
-                analytics: "Cookies d’analyse (ex. nombre de visiteurs)",
-                marketing: "Cookies marketing (ex. publicité)"
-            },
-            buttons: {
-                acceptAll: "Tout accepter",
-                save: "Enregistrer",
-                essentialsOnly: "Essentiels uniquement"
-            }
-        }
+      de: {
+        message: "Wir verwenden Cookies, um deine Erfahrung zu verbessern. Wähle aus, welche Cookies du akzeptieren möchtest.",
+        essential: "Essenziell",
+        functional: "Funktional",
+        analytics: "Analyse",
+        marketing: "Marketing"
+      },
+      en: {
+        message: "We use cookies to improve your experience. Choose which cookies you want to accept.",
+        essential: "Essential",
+        functional: "Functional",
+        analytics: "Analytics",
+        marketing: "Marketing"
+      },
+      fr: {
+        message: "Nous utilisons des cookies pour améliorer votre expérience. Choisissez les cookies que vous souhaitez accepter.",
+        essential: "Essentiel",
+        functional: "Fonctionnel",
+        analytics: "Analytique",
+        marketing: "Marketing"
+      }
     };
 
     let currentLang = 'de';
 
     function setLanguage(lang) {
-        currentLang = lang;
-        const t = translations[lang];
-        document.getElementById('cookie-message').innerText = t.message;
-        document.getElementById('label-essential').innerText = t.labels.essential;
-        document.getElementById('label-functional').innerText = t.labels.functional;
-        document.getElementById('label-analytics').innerText = t.labels.analytics;
-        document.getElementById('label-marketing').innerText = t.labels.marketing;
-        document.querySelector("button[onclick='acceptAll()']").innerText = t.buttons.acceptAll;
-        document.querySelector("button[onclick='savePreferences()']").innerText = t.buttons.save;
-        document.querySelector("button[onclick='rejectEssentials()']").innerText = t.buttons.essentialsOnly;
+      currentLang = lang;
+      const t = translations[lang];
+      document.getElementById('cookie-message').innerText = t.message;
     }
 
     function showBannerIfNeeded() {
-        if (!localStorage.getItem('cookieConsent')) {
-            document.getElementById('cookie-banner').style.display = 'block';
-            setLanguage(currentLang);
-        }
+      if (!localStorage.getItem('cookieConsent')) {
+        document.getElementById('cookie-banner').classList.remove('hidden');
+        setLanguage(currentLang);
+      }
     }
 
     function savePreferences() {
-        const consent = {
-            essential: true,
-            functional: document.getElementById('functional').checked,
-            analytics: document.getElementById('analytics').checked,
-            marketing: document.getElementById('marketing').checked
-        };
-        localStorage.setItem('cookieConsent', JSON.stringify(consent));
-        document.getElementById('cookie-banner').style.display = 'none';
+      const consent = {
+        essential: true,
+        functional: document.getElementById('functional').checked,
+        analytics: document.getElementById('analytics').checked,
+        marketing: document.getElementById('marketing').checked
+      };
+      localStorage.setItem('cookieConsent', JSON.stringify(consent));
+      document.getElementById('cookie-banner').classList.add('hidden');
     }
 
     function acceptAll() {
-        document.getElementById('functional').checked = true;
-        document.getElementById('analytics').checked = true;
-        document.getElementById('marketing').checked = true;
-        savePreferences();
+      document.getElementById('functional').checked = true;
+      document.getElementById('analytics').checked = true;
+      document.getElementById('marketing').checked = true;
+      savePreferences();
     }
 
     function rejectEssentials() {
-        document.getElementById('functional').checked = false;
-        document.getElementById('analytics').checked = false;
-        document.getElementById('marketing').checked = false;
-        savePreferences();
+      document.getElementById('functional').checked = false;
+      document.getElementById('analytics').checked = false;
+      document.getElementById('marketing').checked = false;
+      savePreferences();
     }
 
-    document.addEventListener('DOMContentLoaded', showBannerIfNeeded);
-</script>
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    if ('Notification' in window) {
-      const notifPermission = Notification.permission;
-      const bannerDismissed = localStorage.getItem("notifBannerDismissed");
-
-      if (notifPermission === "default" && !bannerDismissed) {
-        document.getElementById("notification-banner").style.display = "block";
-      }
+    // Push Notifications
+    function enableNotifications() {
+      Notification.requestPermission().then(permission => {
+        localStorage.setItem("notifBannerDismissed", "true");
+        document.getElementById("notification-banner").classList.add("hidden");
+        
+        if (permission === "granted") {
+          new Notification("Benachrichtigungen aktiviert! 🎉", {
+            body: "Du erhältst nun wichtige Updates.",
+            icon: "/static/images/logo.png"
+          });
+        }
+      });
     }
-  });
 
-  function enableNotifications() {
-    Notification.requestPermission().then(permission => {
+    function dismissNotificationBanner() {
       localStorage.setItem("notifBannerDismissed", "true");
-      document.getElementById("notification-banner").style.display = "none";
+      document.getElementById("notification-banner").classList.add("hidden");
+    }
 
-      if (permission === "granted") {
-        // Optional: Ein Beispiel zeigen oder registrieren
-        new Notification("Benachrichtigungen aktiviert! 🎉", {
-          body: "Du erhältst nun wichtige Updates.",
-          icon: "/static/images/logo.png"
-        });
+    // Median App
+    function openMedainApp() {
+      const fallback = document.getElementById("fallback-message");
+      const now = Date.now();
+      
+      const timeout = setTimeout(() => {
+        if (Date.now() - now < 2500) {
+          fallback.classList.remove("hidden");
+        }
+      }, 2500);
 
-        // Hier kannst du zusätzlich deinen ServiceWorker registrieren
-        // navigator.serviceWorker.register('/sw.js');
+      window.location.href = "intent://start#Intent;scheme=median;package=co.median.android.ljrnrp;end";
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      // Theme
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      if (savedTheme === 'light' || (!savedTheme && !prefersDark)) {
+        document.documentElement.classList.add('dark');
+        document.getElementById('body').classList.add('light');
+        document.getElementById('body').classList.remove('bg-slate-900', 'text-gray-100');
+        document.getElementById('body').classList.add('bg-gray-50', 'text-gray-900');
+        document.getElementById('darkModeIcon').textContent = '☀️';
+        document.getElementById('darkModeIconMobile').textContent = '☀️';
       }
+
+      // Downloads
+      renderDownloads();
+
+      // Cookies
+      showBannerIfNeeded();
+
+      // Push Notification Banner
+      if ('Notification' in window && Notification.permission === "default" && !localStorage.getItem("notifBannerDismissed")) {
+        document.getElementById("notification-banner").classList.remove("hidden");
+      }
+
+      // Close dropdowns when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.nav-item')) {
+          document.getElementById('notifDropdown')?.classList.remove('show');
+        }
+        if (!e.target.closest('#userDropdown') && !e.target.closest('button[onclick="toggleUserMenu()"]')) {
+          document.getElementById('userDropdown')?.classList.remove('show');
+        }
+        if (!e.target.closest('#download-area') && !e.target.closest('button[onclick="toggleDownloadArea()"]')) {
+          document.getElementById('download-area')?.classList.remove('show');
+        }
+      });
     });
-  }
 
-  function dismissNotificationBanner() {
-    localStorage.setItem("notifBannerDismissed", "true");
-    document.getElementById("notification-banner").style.display = "none";
-  }
-</script>
-
-
-{% if user.is_authenticated %}
-<script>
-  async function fetchNotifications() {
-    try {
-      const response = await fetch("{% url 'notifications_check' %}", {
-        method: "GET",
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Accept": "application/json"
-        },
-        credentials: "same-origin"
-      });
-
-      if (!response.ok) throw new Error("Netzwerkfehler");
-
-      const data = await response.json();
-
-      // Badge aktualisieren
-      const badge = document.getElementById("notifBadge");
-      if (data.count > 0) {
-        badge.style.display = "inline";
-        badge.textContent = data.count;
-        const sr = document.createElement("span");
-        sr.className = "visually-hidden";
-        sr.textContent = "ungelesene Benachrichtigungen";
-        badge.appendChild(sr);
-      } else {
-        badge.style.display = "none";
-      }
-
-      // Dropdown aktualisieren
-      const dropdown = document.getElementById("notifDropdown");
-      // Zuerst alle bisherigen Benachrichtigungen entfernen außer Header und "Alle anzeigen"
-      dropdown.querySelectorAll("li:not(:first-child):not(:last-child):not(:nth-last-child(2))").forEach(el => el.remove());
-
-      if (data.notifications.length > 0) {
-        data.notifications.forEach(notif => {
-          const li = document.createElement("li");
-          const a = document.createElement("a");
-          a.className = "dropdown-item small";
-          a.href = "#";  // ggf. anpassen, wenn Links vorhanden
-          a.innerHTML = `${notif.message.substring(0, 60)}<br><small class="text-muted">${notif.created_at}</small>`;
-          li.appendChild(a);
-          // Vor dem letzten Divider einfügen
-          const divider = dropdown.querySelector("li.dropdown-divider");
-          dropdown.insertBefore(li, divider);
+    {% if user.is_authenticated %}
+    // Fetch Notifications
+    async function fetchNotifications() {
+      try {
+        const response = await fetch("{% url 'notifications_check' %}", {
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "application/json"
+          },
+          credentials: "same-origin"
         });
-      } else {
-        const li = document.createElement("li");
-        li.innerHTML = '<span class="dropdown-item small text-muted">Keine neuen Benachrichtigungen</span>';
-        const divider = dropdown.querySelector("li.dropdown-divider");
-        dropdown.insertBefore(li, divider);
+        
+        if (!response.ok) throw new Error("Network error");
+        
+        const data = await response.json();
+        const badge = document.getElementById("notifBadge");
+        
+        if (data.count > 0) {
+          badge.classList.remove("hidden");
+          badge.textContent = data.count;
+        } else {
+          badge.classList.add("hidden");
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
       }
-    } catch (error) {
-      console.error("Fehler beim Laden der Benachrichtigungen:", error);
     }
-  }
+    
+    fetchNotifications();
+    setInterval(fetchNotifications, 15000);
+    {% endif %}
+  </script>
 
-  // Initiales Laden + alle 15 Sekunden neu laden
-  fetchNotifications();
-  setInterval(fetchNotifications, 15000);
-</script>
-{% endif %}
-
-<script>
-  // Prüfe lokalen Speicher
-  const pushPermissionStored = localStorage.getItem('pushAllowed');
-
-  function showPushRequestBanner() {
-    // Einfacher Banner am unteren Rand (Style kannst du anpassen)
-    const banner = document.createElement('div');
-    banner.id = 'pushRequestBanner';
-    banner.style = `
-      position: fixed; bottom: 0; left: 0; right: 0; background: #222; color: white; 
-      padding: 15px; text-align: center; z-index: 10000; font-family: Roboto, sans-serif;
-    `;
-    banner.innerHTML = `
-      <span>Möchtest du Push-Benachrichtigungen aktivieren?</span>
-      <button id="allowPushBtn" style="margin-left:1rem; padding: 5px 10px;">Erlauben</button>
-      <button id="denyPushBtn" style="margin-left:1rem; padding: 5px 10px;">Ablehnen</button>
-    `;
-    document.body.appendChild(banner);
-
-    document.getElementById('allowPushBtn').onclick = async () => {
-      const perm = await Notification.requestPermission();
-      if (perm === 'granted') {
-        subscribeUserToPush();
-        localStorage.setItem('pushAllowed', 'true');
-      } else {
-        localStorage.setItem('pushAllowed', 'false');
-      }
-      banner.remove();
-    };
-
-    document.getElementById('denyPushBtn').onclick = () => {
-      localStorage.setItem('pushAllowed', 'false');
-      banner.remove();
-    };
-  }
-
-  async function subscribeUserToPush() {
-    if (!('serviceWorker' in navigator)) {
-      console.warn('Service Worker nicht unterstützt');
-      return;
-    }
-
-    try {
-      const registration = await navigator.serviceWorker.ready;
-
-      // VAPID-Public-Key vom Backend abrufen oder hier hardcoden
-      const vapidPublicKey = "{{ vapid_public_key }}"; // Django Context-Variable (string base64url)
-
-      const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: convertedVapidKey
-      });
-
-      // Subscription an Backend senden
-      await fetch("{% url 'push_subscribe' %}", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ csrf_token }}',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify(subscription.toJSON())
-      });
-
-      console.log('Push-Benachrichtigung registriert');
-    } catch (err) {
-      console.error('Fehler bei der Push-Registrierung:', err);
-    }
-  }
-
-  // Hilfsfunktion: Base64URL zu Uint8Array (für VAPID-Key)
-  function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-      .replace(/\-/g, '+')
-      .replace(/_/g, '/');
-
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for(let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  }
-
-  // Hauptlogik: Prüfen ob gefragt werden muss
-  if (pushPermissionStored === null) {
-    // Noch nicht entschieden
-    if (Notification.permission === 'default') {
-      // Noch nie gefragt → Banner anzeigen
-      showPushRequestBanner();
-    } else if (Notification.permission === 'denied') {
-      // Nutzer hat Browserseitig abgelehnt, trotzdem localStorage speichern, damit kein Banner
-      localStorage.setItem('pushAllowed', 'false');
-    } else if (Notification.permission === 'granted') {
-      localStorage.setItem('pushAllowed', 'true');
-      // Optional: direkt abonnieren, wenn noch nicht geschehen
-      subscribeUserToPush();
-    }
-  }
-</script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

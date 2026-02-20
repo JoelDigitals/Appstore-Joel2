@@ -1,27 +1,229 @@
 {% extends "base.html" %}
+
 {% block title %}Mein Profil{% endblock %}
 
 {% block content %}
-<h1>Mein Profil</h1>
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-<div class="profile">
-    {% if profile.avatar %}
-        <img src="{{ profile.avatar.url }}" alt="Avatar" style="max-width:150px;"/>
-    {% else %}
-        <p>Kein Avatar hochgeladen.</p>
-    {% endif %}
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl md:text-4xl font-bold text-gray-100 flex items-center gap-3">
+        <i class="bi bi-person-circle text-primary"></i>
+        Mein Profil
+      </h1>
+      <p class="text-gray-400 mt-2">Verwalte deine persönlichen Informationen</p>
+    </div>
+    <div class="flex gap-3">
+      <a href="{% url 'edit_user_profile' %}" 
+         class="inline-flex items-center px-4 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl transition-all text-sm font-medium">
+        <i class="bi bi-pencil mr-2"></i>
+        Bearbeiten
+      </a>
+      <a href="{% url 'user_settings' %}" 
+         class="inline-flex items-center px-4 py-2.5 glass hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-xl transition-all text-sm font-medium">
+        <i class="bi bi-gear mr-2"></i>
+        Einstellungen
+      </a>
+    </div>
+  </div>
 
-    <p><strong>Bio:</strong> {{ profile.bio|linebreaks }}</p>
-    <p><strong>Geburtsdatum:</strong> {{ profile.birth_date }}</p>
-    <p><strong>Website:</strong> {{ profile.website }}</p>
-    <p><strong>Standort:</strong> {{ profile.location }}</p>
-    <p><strong>Social Links:</strong> {{ profile.social_links }}</p>
-    <p><strong>E-Mail:</strong> {{ profile.email }}</p>
-    <p><strong>Telefonnummer:</strong> {{ profile.phone_number }}</p>
+  <!-- Profile Card -->
+  <div class="glass rounded-3xl overflow-hidden mb-6">
+    <!-- Cover / Header -->
+    <div class="h-32 bg-gradient-to-r from-primary/20 via-secondary/20 to-primary/20 relative">
+      <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%236366f1\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
+    </div>
+
+    <!-- Profile Info -->
+    <div class="px-6 pb-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4 -mt-12 mb-6">
+        <!-- Avatar -->
+        <div class="relative">
+          <div class="w-24 h-24 rounded-2xl bg-slate-800 border-4 border-slate-900 overflow-hidden shadow-2xl">
+            {% if profile.avatar %}
+              <img src="{{ profile.avatar.url }}" alt="Avatar" class="w-full h-full object-cover">
+            {% else %}
+              <div class="w-full h-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                <span class="text-4xl font-bold text-white">{{ user.username|slice:":1"|upper }}</span>
+              </div>
+            {% endif %}
+          </div>
+          <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-4 border-slate-900 shadow-lg">
+            <i class="bi bi-check-lg text-white text-sm"></i>
+          </div>
+        </div>
+
+        <!-- User Info -->
+        <div class="flex-1 mb-1">
+          <h2 class="text-2xl font-bold text-gray-100">{{ user.username }}</h2>
+          <p class="text-gray-400 text-sm flex items-center gap-2">
+            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+            Online
+          </p>
+        </div>
+      </div>
+
+      <!-- Bio Section -->
+      {% if profile.bio %}
+      <div class="mb-6 p-4 bg-slate-800/30 rounded-2xl border border-gray-700/30">
+        <h3 class="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
+          <i class="bi bi-quote text-primary"></i>
+          Über mich
+        </h3>
+        <p class="text-gray-100 leading-relaxed">{{ profile.bio|linebreaks }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Info Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Personal Info -->
+        <div class="space-y-4">
+          <h3 class="text-sm font-semibold text-gray-300 flex items-center gap-2 mb-3">
+            <i class="bi bi-person-vcard text-primary"></i>
+            Persönliche Informationen
+          </h3>
+
+          {% if profile.birth_date %}
+          <div class="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl border border-gray-700/30">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <i class="bi bi-calendar3 text-primary"></i>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Geburtsdatum</p>
+              <p class="text-gray-100 font-medium">{{ profile.birth_date|date:"d. F Y" }}</p>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if profile.location %}
+          <div class="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl border border-gray-700/30">
+            <div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center flex-shrink-0">
+              <i class="bi bi-geo-alt text-secondary"></i>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Standort</p>
+              <p class="text-gray-100 font-medium">{{ profile.location }}</p>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Contact Info -->
+        <div class="space-y-4">
+          <h3 class="text-sm font-semibold text-gray-300 flex items-center gap-2 mb-3">
+            <i class="bi bi-envelope-at text-primary"></i>
+            Kontakt
+          </h3>
+
+          {% if profile.email %}
+          <div class="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl border border-gray-700/30">
+            <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+              <i class="bi bi-envelope text-blue-400"></i>
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs text-gray-500">E-Mail</p>
+              <a href="mailto:{{ profile.email }}" class="text-gray-100 font-medium hover:text-primary transition-colors truncate block">{{ profile.email }}</a>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if profile.phone_number %}
+          <div class="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl border border-gray-700/30">
+            <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
+              <i class="bi bi-telephone text-green-400"></i>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Telefon</p>
+              <a href="tel:{{ profile.phone_number }}" class="text-gray-100 font-medium hover:text-primary transition-colors">{{ profile.phone_number }}</a>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if profile.website %}
+          <div class="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl border border-gray-700/30">
+            <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+              <i class="bi bi-globe text-purple-400"></i>
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs text-gray-500">Website</p>
+              <a href="{{ profile.website }}" target="_blank" rel="noopener" class="text-gray-100 font-medium hover:text-primary transition-colors truncate block">{{ profile.website }}</a>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Social Links -->
+      {% if social_links_list %}
+      <div class="mt-6 pt-6 border-t border-gray-700/30">
+        <h3 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+          <i class="bi bi-share text-primary"></i>
+          Social Media
+        </h3>
+        <div class="flex flex-wrap gap-3">
+          {% for link in social_links_list %}
+          <a href="{{ link }}" target="_blank" rel="noopener" 
+             class="inline-flex items-center gap-2 px-4 py-2 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-xl transition-all text-sm">
+            <i class="bi bi-link-45deg"></i>
+            {{ link|cut:"https://"|cut:"http://"|cut:"www."|truncatechars:20 }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Stats Card -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="glass rounded-2xl p-4 text-center border border-primary/10">
+      <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-primary/10 flex items-center justify-center">
+        <i class="bi bi-download text-primary text-xl"></i>
+      </div>
+      <p class="text-2xl font-bold text-gray-100">{{ download_count|default:"0" }}</p>
+      <p class="text-xs text-gray-500">Downloads</p>
+    </div>
+    <div class="glass rounded-2xl p-4 text-center border border-secondary/10">
+      <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-secondary/10 flex items-center justify-center">
+        <i class="bi bi-heart text-secondary text-xl"></i>
+      </div>
+      <p class="text-2xl font-bold text-gray-100">{{ favorite_count|default:"0" }}</p>
+      <p class="text-xs text-gray-500">Favoriten</p>
+    </div>
+    <div class="glass rounded-2xl p-4 text-center border border-green-500/10">
+      <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-green-500/10 flex items-center justify-center">
+        <i class="bi bi-box text-green-400 text-xl"></i>
+      </div>
+      <p class="text-2xl font-bold text-gray-100">{{ app_count|default:"0" }}</p>
+      <p class="text-xs text-gray-500">Meine Apps</p>
+    </div>
+    <div class="glass rounded-2xl p-4 text-center border border-blue-500/10">
+      <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-blue-500/10 flex items-center justify-center">
+        <i class="bi bi-calendar-check text-blue-400 text-xl"></i>
+      </div>
+      <p class="text-2xl font-bold text-gray-100">{{ user.date_joined|date:"Y" }}</p>
+      <p class="text-xs text-gray-500">Mitglied seit</p>
+    </div>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="glass rounded-2xl p-6 border border-red-500/20 bg-red-500/5">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h3 class="text-sm font-semibold text-red-400 mb-1 flex items-center gap-2">
+          <i class="bi bi-exclamation-triangle"></i>
+          Gefahrenzone
+        </h3>
+        <p class="text-gray-400 text-sm">Dein Profil und alle zugehörigen Daten dauerhaft löschen</p>
+      </div>
+      <a href="{% url 'delete_user_profile' %}" 
+         class="inline-flex items-center px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-all text-sm font-medium border border-red-500/20">
+        <i class="bi bi-trash3 mr-2"></i>
+        Profil löschen
+      </a>
+    </div>
+  </div>
+
 </div>
-
-<p>
-    <a href="{% url 'edit_user_profile' %}" class="btn btn-primary">Profil bearbeiten</a>
-    <a href="{% url 'delete_user_profile' %}" class="btn btn-danger">Profil löschen</a>
-</p>
 {% endblock %}

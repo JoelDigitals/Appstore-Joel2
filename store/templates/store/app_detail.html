@@ -1,390 +1,739 @@
 {% extends "base.html" %}
-{% load static filename_filters %}
+{% load static filename_filters image_tags %}
 
-{% block title %}{{ app.name }} – Joel Appstore{% endblock %}
+{% block title %}{{ app.name }} – JDS Appstore{% endblock %}
 
 {% block content %}
-<div class="container my-5 text-white">
-  <div class="row">
-    <div class="col-lg-9">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+  
+  <!-- Breadcrumb -->
+  <nav class="flex items-center text-sm text-gray-400 space-x-2">
+    <a href="{% url 'home' %}" class="hover:text-primary transition">Home</a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <a href="{% url 'jds_apps' %}" class="hover:text-primary transition">Apps</a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <span class="text-gray-300 truncate max-w-[200px]">{{ app.name }}</span>
+  </nav>
 
-      <!-- App Kopfbereich -->
-      <div class="d-flex flex-column flex-md-row align-items-start gap-4 mb-5">
-        <!-- App Icon mit Fortschrittskreis -->
-        <div id="icon-container" class="position-relative" style="width: 100px; height: 100px;">
-          <img id="app-icon" src="{{ app.icon.url }}" alt="{{ app.name }} Icon" class="rounded shadow w-100 h-100" style="transition: transform 0.3s ease;">
-          <canvas id="progress-circle" width="100" height="100" class="position-absolute top-0 start-0" style="pointer-events:none;"></canvas>
-          <div id="progress-text" class="position-absolute top-50 start-50 translate-middle text-white fw-bold d-none" style="user-select:none;">0%</div>
-        </div>
-
-        <!-- App Info -->
-        <div class="flex-grow-1">
-          <h1 class="display-5 fw-bold text-light mb-2">{{ app.name }}</h1>
-          <p class="mb-1 text-light">
-            von <a href="{% url 'developer_detail' app.developer.name %}" class="text-decoration-underline link-light">{{ app.developer.name }}</a>
-          </p>
-        
-          <p class="text-light small mb-1">
-            {{ app.platform|title }} • {{ app.language }} • Ab {{ app.age_rating }} • {{ app.download_count|default:"0" }} Downloads
-          </p>
-          <p class="text-light small mb-3">
-            Kategorie:
-            {% if app.category %}
-              {{ app.category }}
-            {% else %}
-              Unbekannt
-            {% endif %}
-          </p>
-       
-          <!-- Download Button -->
-          {% if latest_version %}
-            {% if user.is_authenticated %}
-              {% if user_installed_version and user_installed_version.id == latest_version.id %}
-                <button class="btn btn-secondary btn-lg rounded-pill" disabled>
-                  Installiert
-                </button>
-              {% else %}
-                <button id="downloadBtn" class="btn btn-success btn-lg rounded-pill">
-                  {% if user_installed_version %}
-                    Aktualisieren
-                  {% else %}
-                    Download
-                  {% endif %}
-                </button>
-              {% endif %}
-            {% else %}
-              <a href="{% url 'login' %}" class="btn btn-primary btn-lg rounded-pill">Anmelden zum Download</a>
-            {% endif %}
-          {% endif %}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <!-- Hauptbereich -->
+    <div class="lg:col-span-2 space-y-8">
+      
+      <!-- Hero Section -->
+      <div class="glass rounded-3xl p-6 md:p-8">
+        <div class="flex flex-col md:flex-row gap-6 items-start">
           
+          <!-- Icon mit Download-Fortschritt und ImgBB/Local -->
+          <div class="relative flex-shrink-0 mx-auto md:mx-0">
+            <div id="icon-container" class="relative w-32 h-32 md:w-40 md:h-40">
+              {% with icon_url=app|get_image_url:"icon" %}
+                {% if icon_url %}
+                  <img id="app-icon" src="{{ icon_url }}" alt="{{ app.name }}" 
+                       class="w-full h-full object-contain rounded-3xl shadow-2xl transition-all duration-500 bg-slate-800/50 p-2"
+                       onerror="this.src='/static/images/default_app_icon.png'">
+                {% else %}
+                  <div class="w-full h-full rounded-3xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-2xl">
+                    <span class="text-5xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
+                  </div>
+                {% endif %}
+              {% endwith %}
+              
+              <!-- ImgBB Indicator -->
+              {% if app.icon_url %}
+                <div class="absolute -top-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-slate-900" title="ImgBB">
+                  <i class="bi bi-cloud text-white text-sm"></i>
+                </div>
+              {% endif %}
+              
+              <canvas id="progress-circle" width="160" height="160" 
+                      class="absolute top-0 left-0 w-full h-full pointer-events-none hidden"></canvas>
+              <div id="progress-text" class="absolute inset-0 flex items-center justify-center text-white font-bold text-lg hidden">
+                0%
+              </div>
+            </div>
+          </div>
+
+          <!-- App Info -->
+          <div class="flex-1 text-center md:text-left space-y-4">
+            <div>
+              <h1 class="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{{ app.name }}</h1>
+              <a href="{% url 'developer_detail' app.developer.name %}" 
+                 class="inline-flex items-center text-primary hover:text-primary/80 transition font-medium">
+                <i class="bi bi-person-circle mr-2"></i>
+                {{ app.developer.name }}
+              </a>
+            </div>
+
+            <!-- Meta Info -->
+            <div class="flex flex-wrap justify-center md:justify-start gap-3 text-sm">
+              <span class="px-3 py-1 glass rounded-full flex items-center text-gray-300">
+                {% if app.platform == 'ios' %}
+                  <i class="bi bi-apple mr-2 text-primary"></i>
+                {% elif app.platform == 'android' %}
+                  <i class="bi bi-android2 mr-2 text-green-400"></i>
+                {% elif app.platform == 'windows' %}
+                  <i class="bi bi-microsoft mr-2 text-blue-400"></i>
+                {% elif app.platform == 'macos' %}
+                  <i class="bi bi-apple mr-2 text-gray-300"></i>
+                {% elif app.platform == 'linux' %}
+                  <i class="bi bi-terminal mr-2 text-yellow-400"></i>
+                {% else %}
+                  <i class="bi bi-laptop mr-2 text-primary"></i>
+                {% endif %}
+                {{ app.platform|title }}
+              </span>
+              <span class="px-3 py-1 glass rounded-full text-gray-300">
+                <i class="bi bi-globe mr-2"></i>{{ app.language }}
+              </span>
+              <span class="px-3 py-1 glass rounded-full text-gray-300">
+                <i class="bi bi-person-badge mr-2"></i>Ab {{ app.age_rating }}
+              </span>
+              <span class="px-3 py-1 glass rounded-full text-gray-300">
+                <i class="bi bi-download mr-2 text-primary"></i>{{ app.download_count|default:"0" }} Downloads
+              </span>
+            </div>
+
+            {% if app.category %}
+            <div class="text-sm text-gray-400">
+              <span class="text-gray-500">Kategorie:</span>
+              <span class="text-gray-300">{{ app.category }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap justify-center md:justify-start gap-3 pt-4">
+              {% if latest_version %}
+                {% if user.is_authenticated %}
+                  {% if user_installed_version and user_installed_version.id == latest_version.id %}
+                    <button class="px-8 py-3 bg-green-500/20 text-green-400 rounded-full font-semibold flex items-center cursor-default" disabled>
+                      <i class="bi bi-check-circle-fill mr-2"></i>
+                      Installiert
+                    </button>
+                  {% else %}
+                    <button id="downloadBtn" data-version-id="{{ latest_version.id }}" class="group px-8 py-4 bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/30 text-white rounded-full font-semibold flex items-center transition-all duration-300 hover:scale-105">
+                      <i class="bi bi-download mr-2 text-xl group-hover:animate-bounce"></i>
+                      {% if user_installed_version %}
+                        Aktualisieren
+                      {% else %}
+                        Jetzt herunterladen
+                      {% endif %}
+                    </button>
+                  {% endif %}
+                {% else %}
+                  <a href="{% url 'login' %}" class="inline-flex items-center px-8 py-4 bg-primary/10 hover:bg-primary/20 text-primary rounded-full font-semibold transition-all">
+                    <i class="bi bi-box-arrow-in-right mr-2"></i>
+                    Anmelden zum Download
+                  </a>
+                {% endif %}
+              {% endif %}
+
+              <!-- Teilen Button -->
+              <button onclick="openShareModal()" class="px-6 py-4 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-full font-semibold flex items-center transition-all">
+                <i class="bi bi-share-fill mr-2"></i>
+                Teilen
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-
-      <!-- Beschreibung in Card -->
+      <!-- Beschreibung -->
       {% with app.description|default_if_none:"" as full_desc %}
-        {% if full_desc|length > 250 %}
-          <div class="card bg-dark border-light mb-4 rounded text-white">
-            <div class="card-body" style="white-space: pre-wrap; word-break: break-word;">
-              <p class="fst-italic mb-2" id="descPreview">{{ full_desc|slice:":250" }}…</p>
-              <p class="fst-italic mb-2 d-none" id="descFull">{{ full_desc }}</p>
-              <button id="toggleDescBtn" class="btn btn-link p-0 text-decoration-underline text-light" type="button">mehr</button>
+        {% if full_desc|length > 300 %}
+          <div class="glass rounded-2xl p-6">
+            <h3 class="text-lg font-semibold text-gray-200 mb-4 flex items-center">
+              <i class="bi bi-file-text mr-2 text-primary"></i>
+              Beschreibung
+            </h3>
+            <div class="prose prose-invert max-w-none">
+              <p id="descPreview" class="text-gray-300 leading-relaxed">{{ full_desc|slice:":300" }}...</p>
+              <p id="descFull" class="text-gray-300 leading-relaxed hidden whitespace-pre-wrap">{{ full_desc }}</p>
             </div>
+            <button id="toggleDescBtn" class="mt-4 text-primary hover:text-primary/80 font-medium flex items-center transition">
+              <span>Mehr anzeigen</span>
+              <i class="bi bi-chevron-down ml-2 transition-transform"></i>
+            </button>
           </div>
-        {% else %}
-          <div class="card bg-dark border-light mb-4 rounded text-white">
-            <div class="card-body" style="white-space: pre-wrap; word-break: break-word;">
-              <p class="fst-italic mb-2">{{ full_desc }}</p>
-            </div>
+        {% elif full_desc %}
+          <div class="glass rounded-2xl p-6">
+            <h3 class="text-lg font-semibold text-gray-200 mb-4 flex items-center">
+              <i class="bi bi-file-text mr-2 text-primary"></i>
+              Beschreibung
+            </h3>
+            <p class="text-gray-300 leading-relaxed whitespace-pre-wrap">{{ full_desc }}</p>
           </div>
         {% endif %}
       {% endwith %}
 
-      <!-- Screenshots -->
+      <!-- Screenshots mit ImgBB/Local -->
       {% if app.screenshots.all %}
-      <div class="card bg-dark border-light mb-4 rounded text-white">
-        <div class="card-body">
-          <h4 class="card-title">Screenshots</h4>
-          <div class="row g-3">
-            {% for shot in app.screenshots.all %}
-            <div class="col-6 col-md-4 col-lg-3">
-              <div class="screenshot-thumb rounded shadow overflow-hidden" style="cursor: pointer;">
-                <a href="#" data-bs-toggle="modal" data-bs-target="#screenshotModal{{ shot.id }}">
-                  <img src="{{ shot.image.url }}" alt="Screenshot von {{ app.name }}" class="img-fluid rounded" />
-                </a>
+      <div class="glass rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-gray-200 flex items-center">
+            <i class="bi bi-images mr-2 text-primary"></i>
+            Screenshots
+          </h3>
+          <span class="text-xs text-gray-500">{{ app.screenshots.count }} Bilder</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {% for shot in app.screenshots.all %}
+          <div class="group relative aspect-video rounded-xl overflow-hidden cursor-pointer bg-slate-800" 
+               onclick="openScreenshotModal('{{ shot|get_image_url:"image" }}', '{{ app.name }}')">
+            <img src="{{ shot|get_image_url:"image" }}" alt="Screenshot {{ forloop.counter }}" 
+                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                 onerror="this.src='/static/images/default_screenshot.png'">
+            
+            <!-- ImgBB Indicator -->
+            {% if shot.image_url %}
+              <div class="absolute top-2 right-2 px-2 py-1 bg-primary/80 rounded text-xs text-white" title="ImgBB">
+                <i class="bi bi-cloud"></i>
               </div>
+            {% endif %}
+            
+            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <i class="bi bi-arrows-fullscreen text-white text-2xl"></i>
             </div>
-
-            <!-- Modal für Screenshot -->
-            <div class="modal fade" id="screenshotModal{{ shot.id }}" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-centered modal-xl">
-                <div class="modal-content bg-dark border-light rounded">
-                  <div class="modal-body p-0 d-flex justify-content-center align-items-center" style="max-height: 90vh; overflow: hidden;">
-                    <img src="{{ shot.image.url }}" alt="Großer Screenshot von {{ app.name }}" 
-                         style="max-width: 100%; max-height: 90vh; object-fit: contain;" class="rounded" />
-                  </div>
-                  <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-outline-light rounded-pill" data-bs-dismiss="modal">Schließen</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {% endfor %}
           </div>
+          {% endfor %}
         </div>
       </div>
       {% endif %}
 
-      <!-- Neueste Version -->
+      <!-- Versionen -->
       {% if latest_version %}
-      <div class="card bg-dark border-light mb-4 rounded text-white">
-        <div class="card-body">
-          <h4 class="card-title">Neueste Version</h4>
-          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="glass rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-gray-200 flex items-center">
+            <i class="bi bi-box-seam mr-2 text-primary"></i>
+            Versionen
+          </h3>
+          {% if app.versions.count > 1 %}
+          <button onclick="toggleVersions()" class="text-sm text-primary hover:text-primary/80 font-medium flex items-center">
+            <span id="versionsToggleText">Alle anzeigen</span>
+            <i class="bi bi-chevron-down ml-2 transition-transform" id="versionsToggleIcon"></i>
+          </button>
+          {% endif %}
+        </div>
+
+        <!-- Aktuellste Version -->
+        <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4">
+          <div class="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <strong class="fs-4">{{ latest_version.version_number }}</strong><br>
-              <small class="text-light">Veröffentlicht am {{ latest_version.uploaded_at|date:"d.m.Y" }}</small>
+              <div class="flex items-center gap-3 mb-1">
+                <span class="text-2xl font-bold text-white">{{ latest_version.version_number }}</span>
+                <span class="px-2 py-1 bg-primary/20 text-primary text-xs rounded-full">Neueste</span>
+              </div>
+              <p class="text-sm text-gray-400">{{ latest_version.uploaded_at|date:"d.m.Y" }}</p>
             </div>
-            <div>
-              {% if latest_version.release_notes %}
-                <button class="btn btn-outline-light btn-sm rounded-pill" type="button" data-bs-toggle="collapse" data-bs-target="#releaseNotesCollapse" aria-expanded="false" aria-controls="releaseNotesCollapse">
-                  Release Notes anzeigen
-                </button>
-              {% endif %}
-              {% if app.versions.count > 1 %}
-                <button type="button" class="btn btn-outline-light btn-sm rounded-pill ms-2" data-bs-toggle="modal" data-bs-target="#alleVersionenModal">
-                  Mehr Versionen anzeigen
-                </button>
-              {% endif %}
-            </div>
+            {% if latest_version.release_notes %}
+            <button onclick="toggleReleaseNotes()" class="text-sm text-primary hover:text-primary/80 font-medium">
+              Release Notes
+            </button>
+            {% endif %}
           </div>
+          
           {% if latest_version.release_notes %}
-          <div class="collapse mt-3" id="releaseNotesCollapse">
-            <p style="white-space: pre-wrap; word-break: break-word;">{{ latest_version.release_notes }}</p>
+          <div id="releaseNotes" class="hidden mt-4 pt-4 border-t border-primary/10">
+            <p class="text-gray-300 text-sm whitespace-pre-wrap">{{ latest_version.release_notes }}</p>
           </div>
           {% endif %}
         </div>
+
+        <!-- Ältere Versionen -->
+        {% if app.versions.count > 1 %}
+        <div id="olderVersions" class="hidden space-y-3">
+          {% for version in app.versions.all|dictsortreversed:"uploaded_at" %}
+            {% if version.id != latest_version.id %}
+            <div class="flex items-center justify-between p-4 rounded-xl bg-slate-800/30 border border-gray-700/30">
+              <div>
+                <span class="font-semibold text-gray-200">{{ version.version_number }}</span>
+                <p class="text-xs text-gray-500 mt-1">{{ version.uploaded_at|date:"d.m.Y" }}</p>
+              </div>
+              {% if version.release_notes %}
+              <button onclick="toggleOldReleaseNotes({{ version.id }})" class="text-xs text-primary hover:text-primary/80">
+                Details
+              </button>
+              {% endif %}
+            </div>
+            {% if version.release_notes %}
+            <div id="oldReleaseNotes{{ version.id }}" class="hidden p-4 text-sm text-gray-400 bg-slate-800/20 rounded-xl -mt-2">
+              {{ version.release_notes }}
+            </div>
+            {% endif %}
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
       {% endif %}
 
-      <div class="text-end mt-4">
-        <a href="{% url 'home' %}" class="btn btn-outline-light rounded-pill">Zurück zum App Store</a>
+      <!-- Zurück Button -->
+      <div class="flex justify-start">
+        <a href="{% url 'home' %}" class="inline-flex items-center px-6 py-3 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-full font-medium transition-all">
+          <i class="bi bi-arrow-left mr-2"></i>
+          Zurück zum Store
+        </a>
       </div>
     </div>
 
-    {% if suggestions %}
-    <div class="col-lg-3 mt-4 mt-lg-0">
-      <div class="card bg-dark border-light rounded text-white">
-        <div class="card-body">
-          <h5 class="card-title">Ähnliche Apps</h5>
+    <!-- Sidebar -->
+    <div class="lg:col-span-1 space-y-6">
+      
+      <!-- Ähnliche Apps mit ImgBB/Local -->
+      {% if suggestions %}
+      <div class="glass rounded-2xl p-6 sticky top-24">
+        <h3 class="text-lg font-semibold text-gray-200 mb-4 flex items-center">
+          <i class="bi bi-lightbulb mr-2 text-yellow-400"></i>
+          Ähnliche Apps
+        </h3>
+        <div class="space-y-4">
           {% for suggestion in suggestions %}
-            <a href="{% url 'app_detail' suggestion.id %}" class="d-block text-decoration-none mb-3 p-2 rounded hover-bg-light">
-              <div class="d-flex align-items-center">
-                <img src="{{ suggestion.icon.url }}" alt="{{ suggestion.name }}" class="img-fluid rounded shadow me-3" style="width: 60px; height: 60px; object-fit: cover;">
-                <div>
-                  <strong>{{ suggestion.name }}</strong><br>
-                  <small>Ab {{ suggestion.age_rating }} • {{ suggestion.developer.name }}</small>
+          <a href="{% url 'app_detail' suggestion.id %}" class="group flex items-center p-3 rounded-xl hover:bg-primary/5 transition-colors">
+            <div class="relative w-16 h-16 flex-shrink-0">
+              {% with sugg_icon=suggestion|get_image_url:"icon" %}
+                {% if sugg_icon %}
+                  <img src="{{ sugg_icon }}" alt="{{ suggestion.name }}" 
+                       class="w-full h-full object-contain rounded-xl bg-slate-800/50 p-1"
+                       onerror="this.src='/static/images/default_app_icon.png'">
+                {% else %}
+                  <div class="w-full h-full rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                    <span class="text-xl font-bold text-white">{{ suggestion.name|slice:":1"|upper }}</span>
+                  </div>
+                {% endif %}
+              {% endwith %}
+              
+              <!-- ImgBB Indicator -->
+              {% if suggestion.icon_url %}
+                <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow border border-slate-900" title="ImgBB">
+                  <i class="bi bi-cloud text-white text-[8px]"></i>
                 </div>
+              {% endif %}
+            </div>
+            <div class="ml-4 flex-1 min-w-0">
+              <h4 class="font-medium text-gray-200 group-hover:text-primary transition-colors truncate">
+                {{ suggestion.name }}
+              </h4>
+              <p class="text-xs text-gray-500 truncate">{{ suggestion.developer.name }}</p>
+              <div class="flex items-center mt-1 text-xs text-gray-400">
+                <i class="bi bi-person-badge mr-1"></i>
+                Ab {{ suggestion.age_rating }}
               </div>
-            </a>
+            </div>
+          </a>
           {% endfor %}
         </div>
       </div>
+      {% endif %}
     </div>
-    {% endif %}
   </div>
 </div>
 
-<!-- Modal für alle Versionen -->
-<div class="modal fade" id="alleVersionenModal" tabindex="-1" aria-labelledby="alleVersionenModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content bg-dark text-white border-light rounded">
-      <div class="modal-header border-secondary">
-        <h5 class="modal-title" id="alleVersionenModalLabel">Alle Versionen von {{ app.name }}</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
-      </div>
-      <div class="modal-body">
-        <ul class="list-group list-group-flush">
-          {% for version in app.versions.all|dictsortreversed:"uploaded_at" %}
-            <li class="list-group-item bg-dark text-white border-secondary">
-              <div class="d-flex justify-content-between">
-                <div>
-                  <strong>{{ version.version_number }}</strong>
-                  <small class="text-light ms-2">{{ version.uploaded_at|date:"d.m.Y" }}</small>
-                </div>
-              </div>
-              {% if version.release_notes %}
-                <p class="mb-0 small mt-1" style="white-space: pre-wrap; word-break: break-word;">{{ version.release_notes }}</p>
-              {% endif %}
-            </li>
-          {% endfor %}
-        </ul>
-      </div>
-      <div class="modal-footer border-secondary">
-        <button type="button" class="btn btn-outline-light rounded-pill" data-bs-dismiss="modal">Schließen</button>
+<!-- Share Modal mit ImgBB/Local Icon -->
+<div id="shareModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onclick="closeShareModal()">
+  <div class="relative w-full max-w-md glass rounded-3xl p-6 transform scale-95 opacity-0 transition-all duration-300" 
+       id="shareModalContent" onclick="event.stopPropagation()">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-gray-100 flex items-center">
+        <i class="bi bi-share-fill mr-3 text-primary"></i>
+        App teilen
+      </h3>
+      <button onclick="closeShareModal()" class="text-gray-400 hover:text-white transition">
+        <i class="bi bi-x-lg text-2xl"></i>
+      </button>
+    </div>
+
+    <!-- App Preview mit ImgBB/Local Icon -->
+    <div class="flex items-center p-4 bg-slate-800/50 rounded-2xl mb-6">
+      {% with share_icon=app|get_image_url:"icon" %}
+        {% if share_icon %}
+          <img src="{{ share_icon }}" alt="{{ app.name }}" class="w-16 h-16 object-contain rounded-xl bg-slate-800 p-2">
+        {% else %}
+          <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+            <span class="text-2xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
+          </div>
+        {% endif %}
+      {% endwith %}
+      <div class="ml-4">
+        <h4 class="font-semibold text-gray-200">{{ app.name }}</h4>
+        <p class="text-sm text-gray-500">{{ app.developer.name }}</p>
+        {% if app.icon_url %}
+          <span class="text-xs text-primary flex items-center gap-1">
+            <i class="bi bi-cloud-check"></i> ImgBB
+          </span>
+        {% endif %}
       </div>
     </div>
+
+    <!-- Share Options -->
+    <div class="grid grid-cols-4 gap-4 mb-6">
+      <!-- WhatsApp -->
+      <button onclick="shareTo('whatsapp')" class="flex flex-col items-center gap-2 group">
+        <div class="w-14 h-14 rounded-2xl bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-all group-hover:scale-110">
+          <i class="bi bi-whatsapp text-2xl text-green-400"></i>
+        </div>
+        <span class="text-xs text-gray-400">WhatsApp</span>
+      </button>
+
+      <!-- Instagram -->
+      <button onclick="shareTo('instagram')" class="flex flex-col items-center gap-2 group">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all group-hover:scale-110">
+          <i class="bi bi-instagram text-2xl text-pink-400"></i>
+        </div>
+        <span class="text-xs text-gray-400">Instagram</span>
+      </button>
+
+      <!-- Twitter/X -->
+      <button onclick="shareTo('twitter')" class="flex flex-col items-center gap-2 group">
+        <div class="w-14 h-14 rounded-2xl bg-slate-700/50 flex items-center justify-center group-hover:bg-slate-600/50 transition-all group-hover:scale-110">
+          <i class="bi bi-twitter-x text-2xl text-white"></i>
+        </div>
+        <span class="text-xs text-gray-400">X</span>
+      </button>
+
+      <!-- Facebook -->
+      <button onclick="shareTo('facebook')" class="flex flex-col items-center gap-2 group">
+        <div class="w-14 h-14 rounded-2xl bg-blue-600/20 flex items-center justify-center group-hover:bg-blue-600/30 transition-all group-hover:scale-110">
+          <i class="bi bi-facebook text-2xl text-blue-500"></i>
+        </div>
+        <span class="text-xs text-gray-400">Facebook</span>
+      </button>
+
+      <!-- Telegram -->
+      <button onclick="shareTo('telegram')" class="flex flex-col items-center gap-2 group">
+        <div class="w-14 h-14 rounded-2xl bg-sky-500/20 flex items-center justify-center group-hover:bg-sky-500/30 transition-all group-hover:scale-110">
+          <i class="bi bi-telegram text-2xl text-sky-400"></i>
+        </div>
+        <span class="text-xs text-gray-400">Telegram</span>
+      </button>
+
+      <!-- Email -->
+      <button onclick="shareTo('email')" class="flex flex-col items-center gap-2 group">
+        <div class="w-14 h-14 rounded-2xl bg-red-500/20 flex items-center justify-center group-hover:bg-red-500/30 transition-all group-hover:scale-110">
+          <i class="bi bi-envelope-fill text-2xl text-red-400"></i>
+        </div>
+        <span class="text-xs text-gray-400">E-Mail</span>
+      </button>
+
+      <!-- SMS -->
+      <button onclick="shareTo('sms')" class="flex flex-col items-center gap-2 group">
+        <div class="w-14 h-14 rounded-2xl bg-yellow-500/20 flex items-center justify-center group-hover:bg-yellow-500/30 transition-all group-hover:scale-110">
+          <i class="bi bi-chat-dots-fill text-2xl text-yellow-400"></i>
+        </div>
+        <span class="text-xs text-gray-400">SMS</span>
+      </button>
+
+      <!-- Link kopieren -->
+      <button onclick="shareTo('copy')" class="flex flex-col items-center gap-2 group">
+        <div class="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-all group-hover:scale-110">
+          <i class="bi bi-link-45deg text-2xl text-primary"></i>
+        </div>
+        <span class="text-xs text-gray-400">Link</span>
+      </button>
+    </div>
+
+    <!-- Native Share (Mobile) -->
+    <button onclick="nativeShare()" class="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all">
+      <i class="bi bi-box-arrow-up"></i>
+      Mehr Optionen...
+    </button>
+  </div>
+</div>
+
+<!-- Screenshot Modal -->
+<div id="screenshotModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/90 backdrop-blur-sm" onclick="closeScreenshotModal()">
+  <div class="relative max-w-6xl max-h-[90vh] w-full flex items-center justify-center" onclick="event.stopPropagation()">
+    <img id="screenshotModalImg" src="" alt="" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl">
+    <button onclick="closeScreenshotModal()" class="absolute -top-12 right-0 text-white hover:text-primary transition">
+      <i class="bi bi-x-lg text-3xl"></i>
+    </button>
   </div>
 </div>
 
 <style>
-  .hover-bg-light:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-  .screenshot-thumb img {
-    transition: transform 0.3s ease;
-  }
-  .screenshot-thumb:hover img {
-    transform: scale(1.05);
-  }
-  #app-icon {
-    transition: transform 0.3s ease;
-  }
-  /* Icon wird kleiner, wenn Kreis aktiv */
+  /* Icon Animation beim Download */
   .icon-loading #app-icon {
-    transform: scale(0.7);
-    filter: brightness(0.9);
+    transform: scale(0.85);
+    filter: brightness(0.7);
+  }
+  
+  .icon-loading canvas {
+    display: block !important;
+  }
+  
+  .icon-loading #progress-text {
+    display: flex !important;
   }
 
-  /* Fortschritts-Kreis Halb-Drehung Animation */
-  @keyframes half-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(180deg); }
+  /* Modal Animationen */
+  #shareModal.active #shareModalContent {
+    transform: scale(1);
+    opacity: 1;
   }
-  .half-spin {
-    animation: half-spin 2s linear infinite;
+
+  #screenshotModal {
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
-  /* Für den drehenden Lade-Kreis ohne Prozent */
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  
+  #screenshotModal.active {
+    opacity: 1;
   }
-  .spinning {
-    animation: spin 1s linear infinite;
+  
+  #screenshotModal img {
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
   }
-  /* Icon-Vergrößerung */
-  .icon-loading #app-icon {
-    width: 50px; /* klein */
-    height: 50px;
-    opacity: 0.5;
-    transition: all 0.3s;
-  }
-  #app-icon {
-    width: 100px;
-    height: 100px;
-    transition: all 0.3s;
+  
+  #screenshotModal.active img {
+    transform: scale(1);
   }
 </style>
+
 <script>
+// Share Modal
+function openShareModal() {
+  const modal = document.getElementById('shareModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  setTimeout(() => modal.classList.add('active'), 10);
+  document.body.style.overflow = 'hidden';
+}
+
+function closeShareModal() {
+  const modal = document.getElementById('shareModal');
+  modal.classList.remove('active');
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+  }, 300);
+}
+
+// Native Web Share API
+async function nativeShare() {
+  const shareData = {
+    title: '{{ app.name }}',
+    text: 'Schau dir {{ app.name }} im JDS Appstore an! {{ app.description|truncatechars:100 }}',
+    url: window.location.href
+  };
+
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+      closeShareModal();
+    } catch (err) {
+      console.log('Share cancelled');
+    }
+  } else {
+    shareTo('copy');
+  }
+}
+
+// Share zu spezifischen Plattformen
+function shareTo(platform) {
+  const url = encodeURIComponent(window.location.href);
+  const text = encodeURIComponent(`Schau dir {{ app.name }} im JDS Appstore an!`);
+  const title = encodeURIComponent('{{ app.name }}');
+  
+  let shareUrl = '';
+
+  switch(platform) {
+    case 'whatsapp':
+      shareUrl = `https://wa.me/?text=${text}%20${url}`;
+      break;
+    case 'instagram':
+      if (navigator.share) {
+        nativeShare();
+        return;
+      } else {
+        shareTo('copy');
+        showNotification('Link kopiert! Füge ihn in Instagram ein.', 'success');
+        return;
+      }
+    case 'twitter':
+      shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+      break;
+    case 'facebook':
+      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+      break;
+    case 'telegram':
+      shareUrl = `https://t.me/share/url?url=${url}&text=${text}`;
+      break;
+    case 'email':
+      shareUrl = `mailto:?subject=${title}&body=${text}%0A%0A${url}`;
+      break;
+    case 'sms':
+      shareUrl = `sms:?body=${text}%20${url}`;
+      break;
+    case 'copy':
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        showNotification('Link in Zwischenablage kopiert!', 'success');
+        closeShareModal();
+      }).catch(() => {
+        showNotification('Konnte Link nicht kopieren', 'error');
+      });
+      return;
+  }
+
+  if (shareUrl) {
+    const width = 600;
+    const height = 400;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    
+    window.open(
+      shareUrl, 
+      'share', 
+      `width=${width},height=${height},left=${left},top=${top},toolbar=0,menubar=0`
+    );
+    
+    closeShareModal();
+  }
+}
+
+// Screenshot Modal
+function openScreenshotModal(src, alt) {
+  const modal = document.getElementById('screenshotModal');
+  const img = document.getElementById('screenshotModalImg');
+  img.src = src;
+  img.alt = alt;
+  modal.classList.remove('hidden');
+  modal.classList.add('flex', 'active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeScreenshotModal() {
+  const modal = document.getElementById('screenshotModal');
+  modal.classList.remove('active');
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+  }, 300);
+}
+
+// Toggle Functions
+function toggleVersions() {
+  const container = document.getElementById('olderVersions');
+  const text = document.getElementById('versionsToggleText');
+  const icon = document.getElementById('versionsToggleIcon');
+  
+  if (container.classList.contains('hidden')) {
+    container.classList.remove('hidden');
+    text.textContent = 'Weniger anzeigen';
+    icon.style.transform = 'rotate(180deg)';
+  } else {
+    container.classList.add('hidden');
+    text.textContent = 'Alle anzeigen';
+    icon.style.transform = 'rotate(0deg)';
+  }
+}
+
+function toggleReleaseNotes() {
+  const notes = document.getElementById('releaseNotes');
+  notes.classList.toggle('hidden');
+}
+
+function toggleOldReleaseNotes(id) {
+  const notes = document.getElementById('oldReleaseNotes' + id);
+  notes.classList.toggle('hidden');
+}
+
+// Beschreibung Toggle
+document.addEventListener('DOMContentLoaded', function () {
+  const btn = document.getElementById('toggleDescBtn');
+  if (!btn) return;
+  
+  const preview = document.getElementById('descPreview');
+  const full = document.getElementById('descFull');
+  const icon = btn.querySelector('i');
+  const text = btn.querySelector('span');
+
+  btn.addEventListener('click', function () {
+    if (full.classList.contains('hidden')) {
+      full.classList.remove('hidden');
+      preview.classList.add('hidden');
+      text.textContent = 'Weniger anzeigen';
+      icon.style.transform = 'rotate(180deg)';
+    } else {
+      full.classList.add('hidden');
+      preview.classList.remove('hidden');
+      text.textContent = 'Mehr anzeigen';
+      icon.style.transform = 'rotate(0deg)';
+    }
+  });
+});
+
+// Download System mit VersionDownload Tracking
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('downloadBtn');
+  if (!btn) return;
+
   const iconContainer = document.getElementById('icon-container');
-  const appIcon = document.getElementById('app-icon');
-
-  let canvas = document.getElementById('progress-circle');
-  let progressText = document.getElementById('progress-text');
-
-  if (!canvas) {
-    canvas = document.createElement('canvas');
-    canvas.id = 'progress-circle';
-    canvas.width = iconContainer.clientWidth;
-    canvas.height = iconContainer.clientHeight;
-    canvas.style.position = 'absolute';
-    canvas.style.top = '0';
-    canvas.style.left = '0';
-    iconContainer.appendChild(canvas);
-  }
-
-  if (!progressText) {
-    progressText = document.createElement('div');
-    progressText.id = 'progress-text';
-    progressText.style.position = 'absolute';
-    progressText.style.top = '40%';
-    progressText.style.left = '0';
-    progressText.style.width = '100%';
-    progressText.style.textAlign = 'center';
-    progressText.style.fontWeight = 'bold';
-    progressText.style.color = 'white';
-    progressText.style.pointerEvents = 'none';
-    progressText.style.userSelect = 'none';
-    iconContainer.appendChild(progressText);
-  }
-
+  const canvas = document.getElementById('progress-circle');
+  const progressText = document.getElementById('progress-text');
   const ctx = canvas.getContext('2d');
-  const versionId = {{ latest_version.id }};
-  const downloadUrl = "{% url 'download_file_view' latest_version.id %}";
-  const platform = '{{ app.platform|lower }}';
-  const originalFileName = '{{ latest_version.file.name }}';
-  const fileExtension = originalFileName.split('.').pop().toLowerCase();
-  const fileName = '{{ app.name|slugify }}-v{{ latest_version.version }}.' + fileExtension;
+  
+  const versionId = btn.dataset.versionId;
+  const downloadUrl = "{% url 'download_file_view' 0 %}".replace('0', versionId);
+  const fileExtension = '{{ latest_version.file.name|default:"" }}'.split('.').pop().toLowerCase();
+  const fileName = '{{ app.name|slugify }}-v{{ latest_version.version_number|default:"" }}.' + fileExtension;
 
   let installed = {% if user_installed_version and user_installed_version.id == latest_version.id %}true{% else %}false{% endif %};
   let downloading = false;
 
-  const DOWNLOAD_STORAGE_KEY = 'jds_downloads';
-  const DOWNLOAD_STORAGE_TTL = 20 * 60 * 1000;
-
-  function loadDownloads() {
-    let downloads = JSON.parse(localStorage.getItem(DOWNLOAD_STORAGE_KEY) || '[]');
-    const now = Date.now();
-    downloads = downloads.filter(item => (now - item.time) < DOWNLOAD_STORAGE_TTL);
-    localStorage.setItem(DOWNLOAD_STORAGE_KEY, JSON.stringify(downloads));
-    return downloads;
-  }
-
-  function addDownload(name, url) {
-    let downloads = loadDownloads();
-    const exists = downloads.some(dl => dl.name === name && dl.url === url);
-    if (!exists) {
-      downloads.push({name, url, time: Date.now()});
-      try {
-        localStorage.setItem(DOWNLOAD_STORAGE_KEY, JSON.stringify(downloads));
-      } catch(e) {
-        console.warn('localStorage voll oder gesperrt, kann Download nicht speichern.', e);
-      }
-    }
-    renderDownloads();
-  }
-
-  function renderDownloads() {
-    const container = document.getElementById('download-list');
-    const downloads = loadDownloads();
-    container.innerHTML = '';
-    if (downloads.length === 0) {
-      container.innerHTML = '<li style="color:#888;">Keine Downloads</li>';
-      document.getElementById('download-badge').style.display = 'none';
-    } else {
-      downloads.forEach(dl => {
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.textContent = dl.name;
-        a.href = dl.url;
-        a.target = '_blank';
-        li.appendChild(a);
-        container.appendChild(li);
-      });
-      const badge = document.getElementById('download-badge');
-      badge.style.display = 'inline-block';
-      badge.textContent = downloads.length;
-    }
-  }
-
   function drawProgress(percent) {
     const size = canvas.width;
     const center = size / 2;
-    const radius = center - 6;
+    const radius = center - 8;
     const startAngle = -Math.PI / 2;
+    
     ctx.clearRect(0, 0, size, size);
+    
     ctx.beginPath();
     ctx.arc(center, center, radius, 0, 2 * Math.PI);
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
     ctx.lineWidth = 6;
     ctx.stroke();
 
     ctx.beginPath();
     const endAngle = startAngle + (2 * Math.PI * percent / 100);
-    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    const gradient = ctx.createConicGradient(startAngle, center, center);
+    gradient.addColorStop(0, '#0d6efd');
+    gradient.addColorStop(1, '#0066ff');
+    ctx.strokeStyle = gradient;
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
     ctx.arc(center, center, radius, startAngle, endAngle);
     ctx.stroke();
 
-    progressText.textContent = percent < 100 ? Math.floor(percent) + '%' : 'Wird installiert...';
+    progressText.textContent = percent < 100 ? Math.floor(percent) + '%' : '✓';
   }
 
-  async function fakeLoading(duration = 4000) {
-    const interval = 50;
-    const steps = duration / interval;
-    for (let i = 0; i <= steps; i++) {
-      const percent = (i / steps) * 20;
-      drawProgress(percent);
-      await new Promise(resolve => setTimeout(resolve, interval));
-    }
+  async function animateProgress(start, end, duration) {
+    const startTime = performance.now();
+    return new Promise(resolve => {
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const current = start + (end - start) * progress;
+        drawProgress(current);
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        } else {
+          resolve();
+        }
+      }
+      requestAnimationFrame(update);
+    });
   }
 
   async function startDownload() {
     if (installed) {
-      alert("App ist bereits installiert.");
+      showNotification('App ist bereits installiert', 'info');
       return;
     }
     if (downloading) return;
@@ -392,30 +741,38 @@ document.addEventListener('DOMContentLoaded', () => {
     downloading = true;
     btn.disabled = true;
     iconContainer.classList.add('icon-loading');
-    progressText.classList.remove('d-none');
-    drawProgress(0);
-    btn.textContent = 'Lädt...';
+    canvas.classList.remove('hidden');
+    progressText.classList.remove('hidden');
+    
+    btn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin mr-2"></i>Lädt...';
 
-    await fakeLoading();
-
-    await fetch("{% url 'api_increment_download' %}", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ csrf_token }}'
-      },
-      body: JSON.stringify({ version_id: versionId }),
-    });
-
-    btn.textContent = 'Wird heruntergeladen...';
+    await animateProgress(0, 20, 1500);
 
     try {
+      // 1. Zuerst den Download-Tracking-Eintrag erstellen
+      const trackResponse = await fetch(`/track-download/${versionId}/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!trackResponse.ok) {
+        console.warn('Download-Tracking fehlgeschlagen, fahre trotzdem fort');
+      } else {
+        const trackData = await trackResponse.json();
+        if (trackData.success) {
+          console.log('Download erfolgreich getrackt');
+        }
+      }
+
+      // 2. Dann die Datei herunterladen
       const response = await fetch(downloadUrl);
       if (!response.ok) throw new Error('Download fehlgeschlagen');
 
       const contentLength = response.headers.get('content-length');
-      const total = contentLength ? parseInt(contentLength, 10) : null;
-
+      const total = contentLength ? parseInt(contentLength, 10) : 0;
       const reader = response.body.getReader();
       let receivedLength = 0;
       const chunks = [];
@@ -425,99 +782,102 @@ document.addEventListener('DOMContentLoaded', () => {
         if (done) break;
         chunks.push(value);
         receivedLength += value.length;
+        
         if (total) {
-          const percent = 20 + ((receivedLength / total) * 80);
+          const percent = 20 + ((receivedLength / total) * 75);
           drawProgress(percent);
         }
       }
 
-      const mimeType = fileExtension === 'apk'
-        ? 'application/vnd.android.package-archive'
-        : fileExtension === 'ipa'
-        ? 'application/octet-stream'
-        : 'application/octet-stream';
+      await animateProgress(95, 100, 500);
 
-      const apkBlob = new Blob(chunks, { type: mimeType });
-      const apkUrl = URL.createObjectURL(apkBlob);
+      const mimeType = fileExtension === 'apk' ? 'application/vnd.android.package-archive' : 'application/octet-stream';
+      const blob = new Blob(chunks, { type: mimeType });
+      const url = URL.createObjectURL(blob);
 
-      // Versuch die Datei "auszuführen"
       const a = document.createElement('a');
-      a.href = apkUrl;
-      a.download = fileName;      
-
-      if (fileExtension === 'apk') {
-        a.target = '_blank'; // Versucht, APK zu öffnen
-      } else {
-        a.target = '_self'; // Normales Downloadverhalten
-      }
+      a.href = url;
+      a.download = fileName;
+      a.target = fileExtension === 'apk' ? '_blank' : '_self';
       document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      URL.revokeObjectURL(url);
 
-      try {
-        a.click();  // Chrome öffnet ggf. direkt
-        // Speichern für späteren Zugriff
-        addDownload(fileName, apkUrl);
-        drawProgress(100);
-        btn.textContent = 'Wird installiert...';
-
-        setTimeout(() => {
-          progressText.textContent = 'Installiert';
-          btn.textContent = 'Installiert';
-          btn.disabled = true;
-          iconContainer.classList.remove('icon-loading');
-          URL.revokeObjectURL(apkUrl);
-          installed = true;
-        }, 3000);
-      } catch (e) {
-        alert("Die Datei konnte nicht automatisch geöffnet werden. Sie wurde im Download-Ordner gespeichert und muss manuell installiert werden.");
-        addDownload(fileName, apkUrl);
-        drawProgress(100);
-        btn.textContent = 'Gespeichert';
-        iconContainer.classList.remove('icon-loading');
-        URL.revokeObjectURL(apkUrl);
-      } finally {
-        document.body.removeChild(a);
+      btn.innerHTML = '<i class="bi bi-check-circle-fill mr-2"></i>Installiert';
+      btn.classList.remove('from-primary', 'to-secondary');
+      btn.classList.add('bg-green-500/20', 'text-green-400');
+      
+      // Download-Count im UI aktualisieren
+      const downloadCountEl = document.querySelector('.bi-download').parentElement;
+      if (downloadCountEl) {
+        const currentText = downloadCountEl.textContent;
+        const currentCount = parseInt(currentText.replace(/\D/g, '')) || 0;
+        downloadCountEl.innerHTML = `<i class="bi bi-download mr-2 text-primary"></i>${currentCount + 1} Downloads`;
       }
+
+      setTimeout(() => {
+        iconContainer.classList.remove('icon-loading');
+        canvas.classList.add('hidden');
+        progressText.classList.add('hidden');
+        installed = true;
+      }, 2000);
 
     } catch (error) {
-      alert('Download fehlgeschlagen: ' + error.message);
-      btn.textContent = 'Download';
+      showNotification('Download fehlgeschlagen: ' + error.message, 'error');
+      btn.innerHTML = '<i class="bi bi-download mr-2"></i>Erneut versuchen';
       btn.disabled = false;
       iconContainer.classList.remove('icon-loading');
-      progressText.classList.add('d-none');
-      progressText.textContent = '0%';
+      canvas.classList.add('hidden');
+      progressText.classList.add('hidden');
       downloading = false;
     }
   }
 
-  if (btn) {
-    btn.addEventListener('click', startDownload);
+  // CSRF Token Helper
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
   }
 
-  renderDownloads();
+  btn.addEventListener('click', startDownload);
 });
+
+// Notification Helper
+function showNotification(message, type = 'info') {
+  const colors = {
+    info: 'bg-primary/20 text-primary border-primary/30',
+    error: 'bg-red-500/20 text-red-400 border-red-500/30',
+    success: 'bg-green-500/20 text-green-400 border-green-500/30'
+  };
+  
+  const notification = document.createElement('div');
+  notification.className = `fixed top-24 right-4 px-6 py-4 rounded-xl border ${colors[type]} backdrop-blur z-50 transform translate-x-full transition-transform duration-300`;
+  notification.innerHTML = `
+    <div class="flex items-center">
+      <i class="bi bi-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'} mr-3"></i>
+      <span class="font-medium">${message}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  requestAnimationFrame(() => notification.classList.remove('translate-x-full'));
+  
+  setTimeout(() => {
+    notification.classList.add('translate-x-full');
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
 </script>
-
-
-</script>
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const btn = document.getElementById('toggleDescBtn');
-    if (!btn) return;
-    const preview = document.getElementById('descPreview');
-    const full = document.getElementById('descFull');
-
-    btn.addEventListener('click', function () {
-      if (full.classList.contains('d-none')) {
-        full.classList.remove('d-none');
-        preview.classList.add('d-none');
-        btn.textContent = 'weniger';
-      } else {
-        full.classList.add('d-none');
-        preview.classList.remove('d-none');
-        btn.textContent = 'mehr';
-      }
-    });
-  });
-</script>
-
 {% endblock %}

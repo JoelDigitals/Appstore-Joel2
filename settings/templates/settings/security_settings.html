@@ -1,86 +1,288 @@
 {% extends "base.html" %}
-{% block title %}Security Settings{% endblock %}
+
+{% block title %}Sicherheitseinstellungen{% endblock %}
 
 {% block content %}
-<h2>Security Settings</h2>
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-<p><strong>Status:</strong>
-    {% if security.is_deactivated %}
-        <span class="text-danger">Deaktiviert</span>
-    {% else %}
-        <span class="text-success">Aktiv</span>
-    {% endif %}
-</p>
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="{% url 'user_settings' %}" class="hover:text-primary transition-colors flex items-center gap-1">
+      <i class="bi bi-sliders2"></i>
+      Einstellungen
+    </a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <span class="text-gray-300">Sicherheit</span>
+  </nav>
 
-<!-- Deaktivieren-Modal -->
-<div class="modal fade" id="deactivateModal" tabindex="-1" aria-labelledby="deactivateModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content bg-dark text-white">
-      <div class="modal-header">
-        <h5 class="modal-title" id="deactivateModalLabel">Konto deaktivieren</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-100 flex items-center gap-3">
+      <i class="bi bi-shield-lock text-primary"></i>
+      Sicherheit
+    </h1>
+    <p class="text-gray-400 mt-2">Schütze dein Konto und verwalte Zugriffsrechte</p>
+  </div>
+
+  <!-- Status Card -->
+  <div class="glass rounded-2xl p-6 mb-6 border {% if security.is_deactivated %}border-red-500/30 bg-red-500/5{% else %}border-green-500/30 bg-green-500/5{% endif %}">
+    <div class="flex items-center gap-4">
+      <div class="w-14 h-14 rounded-xl {% if security.is_deactivated %}bg-red-500/10{% else %}bg-green-500/10{% endif %} flex items-center justify-center flex-shrink-0">
+        {% if security.is_deactivated %}
+          <i class="bi bi-shield-exclamation text-2xl text-red-400"></i>
+        {% else %}
+          <i class="bi bi-shield-check text-2xl text-green-400"></i>
+        {% endif %}
       </div>
-      <form method="post">
-        <div class="modal-body">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="deactivate">
-          <p class="text-warning">Gib dein Passwort ein, um das Konto zu deaktivieren:</p>
-          <input type="password" name="password" class="form-control" placeholder="Passwort" required>
+      <div>
+        <p class="text-sm text-gray-400">Kontostatus</p>
+        <p class="text-lg font-semibold {% if security.is_deactivated %}text-red-400{% else %}text-green-400{% endif %} flex items-center gap-2">
+          {% if security.is_deactivated %}
+            <span class="w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
+            Deaktiviert
+          {% else %}
+            <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+            Aktiv und geschützt
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2FA Section -->
+  <div class="glass rounded-3xl p-6 mb-6">
+    <div class="flex items-start justify-between gap-4 mb-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <i class="bi bi-shield-shaded text-2xl text-primary"></i>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-          <button type="submit" class="btn btn-warning">Konto deaktivieren</button>
+        <div>
+          <h3 class="font-semibold text-gray-100">Zwei-Faktor-Authentifizierung</h3>
+          <p class="text-sm text-gray-400">Zusätzliche Sicherheitsebene für dein Konto</p>
+        </div>
+      </div>
+      <span class="px-3 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+        Demnächst
+      </span>
+    </div>
+    
+    <div class="p-4 bg-slate-800/30 rounded-xl border border-gray-700/30">
+      <div class="flex items-center gap-3 text-sm text-gray-400">
+        <i class="bi bi-clock-history text-primary"></i>
+        <span>Die 2FA-Funktion wird in Kürze verfügbar sein. Wir benachrichtigen dich, sobald sie aktiv ist.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login History -->
+  <div class="glass rounded-3xl p-6 mb-6">
+    <h3 class="font-semibold text-gray-100 mb-4 flex items-center gap-2">
+      <i class="bi bi-clock-history text-primary"></i>
+      Letzte Anmeldungen
+    </h3>
+    
+    <div class="space-y-3">
+      {% for session in recent_sessions|slice:":3" %}
+      <div class="flex items-center justify-between p-3 bg-slate-800/30 rounded-xl border border-gray-700/30">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center">
+            <i class="bi bi-laptop text-gray-400"></i>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-100">{{ session.device_name|default:"Unbekanntes Gerät" }}</p>
+            <p class="text-xs text-gray-500">{{ session.location|default:"Unbekannter Standort" }} • {{ session.created_at|date:"d.m.Y H:i" }}</p>
+          </div>
+        </div>
+        {% if forloop.first %}
+          <span class="px-2 py-1 rounded-lg bg-green-500/10 text-green-400 text-xs border border-green-500/20">Aktuell</span>
+        {% endif %}
+      </div>
+      {% empty %}
+      <p class="text-sm text-gray-500 text-center py-4">Keine aktuellen Anmeldungen</p>
+      {% endfor %}
+    </div>
+    
+    <!-- KORRIGIERT: connected_devices statt session_management -->
+    <a href="{% url 'connected_devices' %}" class="mt-4 inline-flex items-center gap-2 text-sm text-primary hover:text-secondary transition-colors">
+      <i class="bi bi-box-arrow-up-right"></i>
+      Alle Sitzungen verwalten
+    </a>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="glass rounded-3xl p-6 border border-red-500/20 bg-red-500/5">
+    <h3 class="text-lg font-semibold text-red-400 mb-6 flex items-center gap-2">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      Gefahrenzone
+    </h3>
+
+    <!-- Deactivate Account -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-800/50 rounded-xl border border-gray-700/30 mb-4">
+      <div>
+        <h4 class="font-semibold text-gray-100 mb-1">Konto deaktivieren</h4>
+        <p class="text-sm text-gray-400">Dein Konto vorübergehend deaktivieren. Du kannst dich jederzeit wieder anmelden.</p>
+      </div>
+      <button type="button" 
+              onclick="openModal('deactivateModal')"
+              class="px-4 py-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 hover:text-yellow-300 rounded-xl transition-all text-sm font-medium border border-yellow-500/20 flex items-center gap-2 whitespace-nowrap">
+        <i class="bi bi-pause-circle"></i>
+        Deaktivieren
+      </button>
+    </div>
+
+    <!-- Delete Account -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-800/50 rounded-xl border border-red-500/20">
+      <div>
+        <h4 class="font-semibold text-gray-100 mb-1">Konto dauerhaft löschen</h4>
+        <p class="text-sm text-gray-400">Alle deine Daten werden unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+      </div>
+      <button type="button" 
+              onclick="openModal('deleteModal')"
+              class="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-all text-sm font-medium border border-red-500/20 flex items-center gap-2 whitespace-nowrap">
+        <i class="bi bi-trash3"></i>
+        Löschen
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Deactivate Modal -->
+<div id="deactivateModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('deactivateModal')"></div>
+  <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+    <div class="glass rounded-3xl p-6 max-w-md w-full border border-yellow-500/20 shadow-2xl transform scale-95 opacity-0 transition-all duration-300" id="deactivateModalContent">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+          <i class="bi bi-pause-circle text-2xl text-yellow-400"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold text-gray-100">Konto deaktivieren</h3>
+          <p class="text-sm text-gray-400">Vorübergehend deaktivieren</p>
+        </div>
+      </div>
+      
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="deactivate">
+        
+        <div class="p-4 bg-yellow-500/5 rounded-xl border border-yellow-500/20">
+          <p class="text-sm text-gray-300 mb-3">Gib dein Passwort ein, um die Deaktivierung zu bestätigen:</p>
+          <div class="relative">
+            <i class="bi bi-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input type="password" 
+                   name="password" 
+                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-all"
+                   placeholder="Dein Passwort"
+                   required>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <button type="button" 
+                  onclick="closeModal('deactivateModal')"
+                  class="flex-1 px-4 py-3 glass hover:bg-gray-700/50 text-gray-300 rounded-xl transition-all">
+            Abbrechen
+          </button>
+          <button type="submit" 
+                  class="flex-1 px-4 py-3 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 hover:text-yellow-300 border border-yellow-500/20 rounded-xl transition-all font-medium">
+            Deaktivieren
+          </button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<!-- Button that opens the modal -->
-<button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#deactivateModal">
-    Konto deaktivieren
-</button>
-
-<hr>
-
-<h3>Konto löschen</h3>
-<p class="text-danger">Wenn du dein Konto löschen willst, wirst du unwiderruflich entfernt.</p>
-<!-- Button trigger modal -->
-<button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-    Konto löschen
-</button>
-
-<!-- Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content bg-dark text-white">
-      <div class="modal-header">
-        <h5 class="modal-title" id="deleteModalLabel">Konto dauerhaft löschen</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
-      </div>
-      <form method="post">
-        <div class="modal-body">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="delete">
-            <p class="text-warning">Bitte gib dein Passwort ein, um dein Konto dauerhaft zu löschen:</p>
-            <input type="password" name="password" class="form-control" placeholder="Passwort" required>
+<!-- Delete Modal -->
+<div id="deleteModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('deleteModal')"></div>
+  <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+    <div class="glass rounded-3xl p-6 max-w-md w-full border border-red-500/20 shadow-2xl transform scale-95 opacity-0 transition-all duration-300" id="deleteModalContent">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center">
+          <i class="bi bi-exclamation-triangle text-2xl text-red-400"></i>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-          <button type="submit" class="btn btn-danger">Konto löschen</button>
+        <div>
+          <h3 class="text-xl font-bold text-red-400">Konto löschen</h3>
+          <p class="text-sm text-gray-400">Dauerhaft entfernen</p>
+        </div>
+      </div>
+      
+      <form method="post" class="space-y-4" onsubmit="return confirmDelete()">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete">
+        
+        <div class="space-y-3">
+          <div class="p-4 bg-red-500/5 rounded-xl border border-red-500/20">
+            <p class="text-sm text-gray-300 mb-2">Dies wird folgendes löschen:</p>
+            <ul class="text-sm text-gray-400 space-y-1">
+              <li class="flex items-center gap-2"><i class="bi bi-x-octagon text-red-400"></i> Alle persönlichen Daten</li>
+              <li class="flex items-center gap-2"><i class="bi bi-x-octagon text-red-400"></i> Alle hochgeladenen Apps</li>
+              <li class="flex items-center gap-2"><i class="bi bi-x-octagon text-red-400"></i> Download-Verlauf</li>
+              <li class="flex items-center gap-2"><i class="bi bi-x-octagon text-red-400"></i> Einstellungen</li>
+            </ul>
+          </div>
+          
+          <p class="text-sm text-gray-300">Gib dein Passwort ein, um zu bestätigen:</p>
+          <div class="relative">
+            <i class="bi bi-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input type="password" 
+                   name="password" 
+                   id="deletePassword"
+                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+                   placeholder="Dein Passwort"
+                   required>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <button type="button" 
+                  onclick="closeModal('deleteModal')"
+                  class="flex-1 px-4 py-3 glass hover:bg-gray-700/50 text-gray-300 rounded-xl transition-all">
+            Abbrechen
+          </button>
+          <button type="submit" 
+                  id="deleteBtn"
+                  class="flex-1 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 rounded-xl transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+            Konto löschen
+          </button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<hr>
+<script>
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    const content = document.getElementById(modalId + 'Content');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
 
-<h3>2-Faktor-Authentifizierung</h3>
-<p>Diese Funktion wird bald verfügbar sein.</p>
-<button class="btn btn-secondary" disabled>2FA aktivieren</button>
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    const content = document.getElementById(modalId + 'Content');
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
 
-<!-- Bootstrap JS (falls noch nicht enthalten) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+function confirmDelete() {
+    return confirm('Bist du absolut sicher? Diese Aktion kann NICHT rückgängig gemacht werden!');
+}
 
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeModal('deactivateModal');
+        closeModal('deleteModal');
+    }
+});
+</script>
 {% endblock %}

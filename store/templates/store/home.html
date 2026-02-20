@@ -1,118 +1,402 @@
 {% extends "base.html" %}
+{% load image_tags %}
+
 {% block title %}Alle Apps - JDS Appstore{% endblock %}
 
 {% block content %}
-<h1 class="mb-4 text-white">Alle Apps</h1>
+<div class="space-y-12">
+  
+  <!-- Header -->
+  <div class="text-center space-y-4">
+    <h1 class="text-4xl md:text-5xl font-bold text-gradient">Alle Apps</h1>
+    {% if query %}
+      <p class="text-gray-400 text-lg">
+        Suchergebnisse für <span class="text-primary font-semibold">"{{ query }}"</span>
+      </p>
+    {% else %}
+      <p class="text-gray-400">Entdecke die besten Apps für dein Gerät</p>
+    {% endif %}
+  </div>
 
-{% if query %}
-  <p class="text-white">Suchergebnisse für "<strong>{{ query }}</strong>":</p>
-{% endif %}
+  <!-- Platform Filter -->
+  <div class="flex flex-wrap justify-center gap-3 mb-8">
+    <a href="{% url 'platform' 'windows' %}" class="px-4 py-2 glass rounded-full text-sm font-medium text-gray-300 hover:text-primary hover:border-primary/50 transition-all flex items-center">
+      <i class="bi bi-microsoft mr-2"></i>Windows
+    </a>
+    <a href="{% url 'platform' 'linux' %}" class="px-4 py-2 glass rounded-full text-sm font-medium text-gray-300 hover:text-primary hover:border-primary/50 transition-all flex items-center">
+      <i class="bi bi-terminal mr-2"></i>Linux
+    </a>
+    <a href="{% url 'platform' 'android' %}" class="px-4 py-2 glass rounded-full text-sm font-medium text-gray-300 hover:text-primary hover:border-primary/50 transition-all flex items-center">
+      <i class="bi bi-android2 mr-2"></i>Android
+    </a>
+    <a href="{% url 'platform' 'ios' %}" class="px-4 py-2 glass rounded-full text-sm font-medium text-gray-300 hover:text-primary hover:border-primary/50 transition-all flex items-center border-primary/30">
+      <i class="bi bi-apple mr-2"></i>iOS
+    </a>
+    <a href="{% url 'platform' 'macos' %}" class="px-4 py-2 glass rounded-full text-sm font-medium text-gray-300 hover:text-primary hover:border-primary/50 transition-all flex items-center">
+      <i class="bi bi-apple mr-2"></i>macOS
+    </a>
+  </div>
 
-<style>
-  /* Mehrzeiliger Ellipsis (max 2 Zeilen) */
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;  
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: normal;
-  }
-</style>
-
-{# Empfohlene Apps (große Cards) ohne Beschreibung #}
-{% if recommended_apps %}
-  <h2 class="text-white mb-3">Empfohlen für dich</h2>
-  <p class="text-white mb-3"><small>Basierend auf deinen bisherigen Downloads</small></p>
-  <div class="row">
-    {% for app in recommended_apps %}
-      <div class="col-12 col-sm-6 col-md-4 mb-3">
-        <a href="{% url 'app_detail' app.pk %}" class="text-decoration-none text-white">
-          <div class="card bg-dark text-white h-100">
-            <img src="{{ app.icon.url }}" class="card-img-top img-fluid" alt="{{ app.name }} Icon" />
-            <div class="card-body">
-              <h5 class="card-title">{{ app.name }}</h5>
-              {# Beschreibung entfernt für Vorschau #}
-              <p><small>Plattform: {{ app.platform|title }}</small></p>
-              <p><small>Autor: {{ app.developer }}</small></p>
-              <p><small>{{ app.download_count }} Downloads</small></p>
+  <!-- Empfohlene Apps -->
+  {% if recommended_apps %}
+  <section>
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-100 flex items-center">
+          <i class="bi bi-stars text-yellow-400 mr-3"></i>
+          Empfohlen für dich
+        </h2>
+        <p class="text-sm text-gray-500 mt-1">Basierend auf deinen bisherigen Downloads</p>
+      </div>
+      <span class="px-3 py-1 bg-primary/20 text-primary text-sm rounded-full">
+        {{ recommended_apps|length }} Apps
+      </span>
+    </div>
+    
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+      {% for app in recommended_apps %}
+        <a href="{% url 'app_detail' app.pk %}" class="group">
+          <div class="flex flex-col items-center text-center">
+            <!-- Icon Container 1:1 mit ImgBB/Local -->
+            <div class="relative w-full aspect-square max-w-[140px] mb-4">
+              <div class="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-3xl rotate-6 group-hover:rotate-12 transition-transform duration-500 opacity-0 group-hover:opacity-100"></div>
+              
+              {% with icon_url=app|get_image_url:"icon" %}
+                {% if icon_url %}
+                  <img src="{{ icon_url }}" alt="{{ app.name }}" 
+                       class="relative w-full h-full object-contain rounded-3xl shadow-2xl group-hover:scale-110 group-hover:shadow-primary/20 transition-all duration-500 bg-slate-800/50 p-2"
+                       onerror="this.src='/static/images/default_app_icon.png'">
+                {% else %}
+                  <div class="relative w-full h-full rounded-3xl shadow-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-all duration-500">
+                    <span class="text-4xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
+                  </div>
+                {% endif %}
+              {% endwith %}
+              
+              <!-- Platform Badge -->
+              <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center shadow-lg border border-gray-700">
+                {% if app.platform == 'ios' %}
+                  <i class="bi bi-apple text-primary text-sm"></i>
+                {% elif app.platform == 'android' %}
+                  <i class="bi bi-android2 text-green-400 text-sm"></i>
+                {% elif app.platform == 'windows' %}
+                  <i class="bi bi-microsoft text-blue-400 text-sm"></i>
+                {% elif app.platform == 'macos' %}
+                  <i class="bi bi-apple text-gray-300 text-sm"></i>
+                {% elif app.platform == 'linux' %}
+                  <i class="bi bi-terminal text-yellow-400 text-sm"></i>
+                {% else %}
+                  <i class="bi bi-laptop text-primary text-sm"></i>
+                {% endif %}
+              </div>
+              
+              <!-- ImgBB Indicator -->
+              {% if app.icon_url %}
+                <div class="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow border border-slate-900" title="ImgBB">
+                  <i class="bi bi-cloud text-white text-[8px]"></i>
+                </div>
+              {% endif %}
+            </div>
+            <!-- Text Info -->
+            <h3 class="font-semibold text-gray-100 text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1 w-full px-2">
+              {{ app.name }}
+            </h3>
+            <p class="text-xs text-gray-500 line-clamp-1">{{ app.developer }}</p>
+            <div class="flex items-center mt-2 text-xs text-gray-400 space-x-3">
+              <span class="flex items-center">
+                <i class="bi bi-download mr-1 text-primary"></i>
+                {{ app.download_count }}
+              </span>
+              {% if app.icon_url %}
+                <span class="text-primary" title="ImgBB">
+                  <i class="bi bi-cloud-check"></i>
+                </span>
+              {% endif %}
             </div>
           </div>
         </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Top Downloads -->
+  {% if top_downloads %}
+  <section>
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-gray-100 flex items-center">
+        <i class="bi bi-trophy text-yellow-500 mr-3"></i>
+        Top Downloads
+      </h2>
+      <span class="text-sm text-gray-500">Die beliebtesten Apps</span>
+    </div>
+    
+    <div class="glass rounded-2xl p-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for app in top_downloads %}
+          <a href="{% url 'app_detail' app.pk %}" class="group flex items-center p-4 rounded-xl hover:bg-primary/5 transition-all duration-300 border border-transparent hover:border-primary/20">
+            <!-- Rank Number -->
+            <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center mr-4">
+              <span class="text-3xl font-bold {% if forloop.counter <= 3 %}text-gradient{% else %}text-gray-600{% endif %} font-black">
+                {{ forloop.counter }}
+              </span>
+            </div>
+            <!-- Icon 1:1 mit ImgBB/Local -->
+            <div class="flex-shrink-0 w-16 h-16 relative">
+              {% with icon_url=app|get_image_url:"icon" %}
+                {% if icon_url %}
+                  <img src="{{ icon_url }}" alt="{{ app.name }}" 
+                       class="w-full h-full object-contain rounded-2xl shadow-lg bg-slate-800/30 p-1"
+                       onerror="this.src='/static/images/default_app_icon.png'">
+                {% else %}
+                  <div class="w-full h-full rounded-2xl shadow-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                    <span class="text-xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
+                  </div>
+                {% endif %}
+              {% endwith %}
+              
+              {% if app.icon_url %}
+                <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center shadow" title="ImgBB">
+                  <i class="bi bi-cloud text-white text-[6px]"></i>
+                </div>
+              {% endif %}
+            </div>
+            <!-- Info -->
+            <div class="ml-4 flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-100 group-hover:text-primary transition-colors truncate">
+                {{ app.name }}
+              </h3>
+              <p class="text-xs text-gray-500 truncate">{{ app.developer }}</p>
+              <div class="flex items-center mt-1 text-xs text-gray-400 space-x-3">
+                <span class="flex items-center">
+                  <i class="bi bi-download mr-1 text-primary"></i>
+                  {{ app.download_count }}
+                </span>
+                <span class="px-2 py-0.5 bg-slate-700/50 rounded text-[10px] flex items-center">
+                  {% if app.platform == 'ios' %}
+                    <i class="bi bi-apple mr-1"></i>
+                  {% elif app.platform == 'android' %}
+                    <i class="bi bi-android2 mr-1"></i>
+                  {% elif app.platform == 'windows' %}
+                    <i class="bi bi-microsoft mr-1"></i>
+                  {% elif app.platform == 'macos' %}
+                    <i class="bi bi-apple mr-1"></i>
+                  {% else %}
+                    <i class="bi bi-laptop mr-1"></i>
+                  {% endif %}
+                  {{ app.platform|title }}
+                </span>
+              </div>
+            </div>
+            <i class="bi bi-chevron-right text-gray-600 group-hover:text-primary group-hover:translate-x-1 transition-all"></i>
+          </a>
+        {% endfor %}
       </div>
-    {% endfor %}
-  </div>
-{% endif %}
+    </div>
+  </section>
+  {% endif %}
 
-{# Bereich Top Downloads - Beschreibung nur als Tooltip #}
-{% if top_downloads %}
-  <h2 class="text-white mt-4 mb-3">Top Downloads</h2>
-  <div class="list-group">
-    {% for app in top_downloads %}
-      <a href="{% url 'app_detail' app.pk %}" 
-         class="list-group-item list-group-item-action bg-dark text-white d-flex align-items-center flex-wrap"
-         title="{{ app.description }}">
-        <img src="{{ app.icon.url }}" alt="{{ app.name }} Icon" style="width:48px; height:48px; object-fit:cover;" class="me-3 rounded">
-        <div class="flex-grow-1">
-          <h6 class="mb-1 line-clamp-2">{{ app.name }}</h6>
-          {# Keine sichtbare Beschreibung #}
-        </div>
-        <small class="text-end ms-3">
-          <div>Downloads: {{ app.download_count }}</div>
-          <div>Plattform: {{ app.platform|title }}</div>
-        </small>
-      </a>
-    {% endfor %}
-  </div>
-{% endif %}
+  <!-- Trending Apps -->
+  {% if trending_apps %}
+  <section>
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-gray-100 flex items-center">
+        <i class="bi bi-graph-up-arrow text-green-400 mr-3"></i>
+        Trending Now
+      </h2>
+      <span class="px-3 py-1 bg-green-500/20 text-green-400 text-sm rounded-full animate-pulse">
+        Hot
+      </span>
+    </div>
+    
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6">
+      {% for app in trending_apps %}
+        <a href="{% url 'app_detail' app.pk %}" class="group">
+          <div class="flex flex-col items-center text-center relative">
+            <!-- Hot Indicator -->
+            <div class="absolute -top-2 -right-2 z-10">
+              <span class="flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-white text-xs font-bold animate-pulse">
+                <i class="bi bi-arrow-up-short"></i>
+              </span>
+            </div>
+            <!-- Icon 1:1 mit ImgBB/Local -->
+            <div class="relative w-full aspect-square max-w-[120px] mb-3">
+              <div class="absolute inset-0 bg-green-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              
+              {% with icon_url=app|get_image_url:"icon" %}
+                {% if icon_url %}
+                  <img src="{{ icon_url }}" alt="{{ app.name }}" 
+                       class="relative w-full h-full object-contain rounded-2xl shadow-xl group-hover:scale-105 group-hover:shadow-green-500/20 transition-all duration-300 bg-slate-800/50 p-2"
+                       onerror="this.src='/static/images/default_app_icon.png'">
+                {% else %}
+                  <div class="relative w-full h-full rounded-2xl shadow-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center group-hover:scale-105 transition-all duration-300">
+                    <span class="text-3xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
+                  </div>
+                {% endif %}
+              {% endwith %}
+              
+              <!-- Platform Badge -->
+              <div class="absolute -bottom-2 -right-2 w-7 h-7 bg-slate-800 rounded-full flex items-center justify-center shadow-lg border border-gray-700">
+                {% if app.platform == 'ios' %}
+                  <i class="bi bi-apple text-primary text-xs"></i>
+                {% elif app.platform == 'android' %}
+                  <i class="bi bi-android2 text-green-400 text-xs"></i>
+                {% elif app.platform == 'windows' %}
+                  <i class="bi bi-microsoft text-blue-400 text-xs"></i>
+                {% elif app.platform == 'macos' %}
+                  <i class="bi bi-apple text-gray-300 text-xs"></i>
+                {% else %}
+                  <i class="bi bi-laptop text-primary text-xs"></i>
+                {% endif %}
+              </div>
+              
+              <!-- ImgBB Indicator -->
+              {% if app.icon_url %}
+                <div class="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center shadow" title="ImgBB">
+                  <i class="bi bi-cloud text-white text-[6px]"></i>
+                </div>
+              {% endif %}
+            </div>
+            <h4 class="font-medium text-gray-100 text-sm mb-1 group-hover:text-green-400 transition-colors line-clamp-1 w-full px-2">
+              {{ app.name }}
+            </h4>
+            <p class="text-xs text-gray-500">{{ app.download_count }} Downloads</p>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
-{# Bereich Trendende Apps - Beschreibung nur als Tooltip #}
-{% if trending_apps %}
-  <h2 class="text-white mt-4 mb-3">Trendende Apps</h2>
-  <div class="list-group">
-    {% for app in trending_apps %}
-      <a href="{% url 'app_detail' app.pk %}" 
-         class="list-group-item list-group-item-action bg-dark text-white d-flex align-items-center flex-wrap"
-         title="{{ app.description }}">
-        <img src="{{ app.icon.url }}" alt="{{ app.name }} Icon" style="width:48px; height:48px; object-fit:cover;" class="me-3 rounded">
-        <div class="flex-grow-1">
-          <h6 class="mb-1 line-clamp-2">{{ app.name }}</h6>
-          {# Keine sichtbare Beschreibung #}
-        </div>
-        <small class="text-end ms-3">
-          <div>Downloads: {{ app.download_count }}</div>
-          <div>Plattform: {{ app.platform|title }}</div>
-        </small>
-      </a>
-    {% endfor %}
-  </div>
-{% endif %}
-
-{# Alle Apps (große Cards) ohne Beschreibung #}
-{% if all_apps %}
-  <h2 class="text-white mt-4 mb-3">Alle Apps</h2>
-  <div class="row">
-    {% for app in all_apps %}
-      <div class="col-12 col-sm-6 col-md-4 mb-3">
-        <a href="{% url 'app_detail' app.pk %}" class="text-decoration-none text-white">
-          <div class="card bg-dark text-white h-100">
-            <img src="{{ app.icon.url }}" class="card-img-top img-fluid" alt="{{ app.name }} Icon" />
-            <div class="card-body">
-              <h5 class="card-title">{{ app.name }}</h5>
-              {# Beschreibung entfernt für Übersicht #}
-              <p><small>Plattform: {{ app.platform|title }}</small></p>
-              <p><small>Autor: {{ app.developer }}</small></p>
-              <p><small>{{ app.download_count }} Downloads</small></p>
+  <!-- Alle Apps -->
+  {% if all_apps %}
+  <section>
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-gray-100 flex items-center">
+        <i class="bi bi-grid-3x3-gap text-primary mr-3"></i>
+        Alle Apps
+      </h2>
+      <div class="flex items-center space-x-2">
+        <span class="text-sm text-gray-500">{{ all_apps|length }} Apps verfügbar</span>
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+      {% for app in all_apps %}
+        <a href="{% url 'app_detail' app.pk %}" class="group">
+          <div class="flex flex-col items-center text-center">
+            <!-- Icon Container 1:1 mit ImgBB/Local -->
+            <div class="relative w-full aspect-square max-w-[130px] mb-4">
+              <!-- Background Glow -->
+              <div class="absolute inset-0 bg-primary/10 rounded-3xl scale-90 group-hover:scale-110 transition-transform duration-500 blur-xl"></div>
+              
+              {% with icon_url=app|get_image_url:"icon" %}
+                {% if icon_url %}
+                  <img src="{{ icon_url }}" alt="{{ app.name }}" 
+                       class="relative w-full h-full object-contain rounded-3xl shadow-2xl group-hover:scale-105 group-hover:shadow-primary/30 transition-all duration-500 bg-slate-800/50 p-2 border border-gray-700/30 group-hover:border-primary/30"
+                       onerror="this.src='/static/images/default_app_icon.png'">
+                {% else %}
+                  <div class="relative w-full h-full rounded-3xl shadow-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center group-hover:scale-105 transition-all duration-500">
+                    <span class="text-3xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
+                  </div>
+                {% endif %}
+              {% endwith %}
+              
+              <!-- Platform Icon -->
+              <div class="absolute -bottom-2 -right-2 w-7 h-7 bg-slate-800 rounded-full flex items-center justify-center shadow-lg border border-gray-700 group-hover:border-primary/50 transition-colors">
+                {% if app.platform == 'ios' %}
+                  <i class="bi bi-apple text-xs text-gray-400 group-hover:text-primary transition-colors"></i>
+                {% elif app.platform == 'android' %}
+                  <i class="bi bi-android2 text-xs text-gray-400 group-hover:text-green-400 transition-colors"></i>
+                {% elif app.platform == 'windows' %}
+                  <i class="bi bi-microsoft text-xs text-gray-400 group-hover:text-blue-400 transition-colors"></i>
+                {% elif app.platform == 'macos' %}
+                  <i class="bi bi-apple text-xs text-gray-400 group-hover:text-gray-300 transition-colors"></i>
+                {% elif app.platform == 'linux' %}
+                  <i class="bi bi-terminal text-xs text-gray-400 group-hover:text-yellow-400 transition-colors"></i>
+                {% else %}
+                  <i class="bi bi-laptop text-xs text-gray-400 group-hover:text-primary transition-colors"></i>
+                {% endif %}
+              </div>
+              
+              <!-- ImgBB Indicator -->
+              {% if app.icon_url %}
+                <div class="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center shadow" title="ImgBB">
+                  <i class="bi bi-cloud text-white text-[6px]"></i>
+                </div>
+              {% endif %}
+            </div>
+            <!-- Info -->
+            <h3 class="font-semibold text-gray-100 text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1 w-full px-2">
+              {{ app.name }}
+            </h3>
+            <p class="text-xs text-gray-500 line-clamp-1 mb-2">{{ app.developer }}</p>
+            <div class="flex items-center text-xs text-gray-400 space-x-2">
+              <span class="flex items-center px-2 py-1 bg-slate-800/50 rounded-full">
+                <i class="bi bi-download mr-1 text-primary"></i>
+                {{ app.download_count }}
+              </span>
+              {% if app.icon_url %}
+                <span class="text-primary" title="ImgBB">
+                  <i class="bi bi-cloud-check"></i>
+                </span>
+              {% endif %}
             </div>
           </div>
         </a>
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
+      {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if all_apps|length > 24 %}
+    <div class="mt-12 flex justify-center">
+      <button class="px-8 py-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-full font-medium transition-colors flex items-center group">
+        Mehr laden 
+        <i class="bi bi-chevron-down ml-2 group-hover:translate-y-1 transition-transform"></i>
+      </button>
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
 
-{# Falls keine Apps gefunden wurden #}
-{% if not recommended_apps and not all_apps and not top_downloads and not trending_apps %}
-  <p class="text-white mt-4">Keine Apps gefunden.</p>
-{% endif %}
+  <!-- Empty State -->
+  {% if not recommended_apps and not all_apps and not top_downloads and not trending_apps %}
+  <div class="text-center py-20">
+    <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-800 flex items-center justify-center">
+      <i class="bi bi-search text-4xl text-gray-600"></i>
+    </div>
+    <h3 class="text-xl font-semibold text-gray-300 mb-2">Keine Apps gefunden</h3>
+    <p class="text-gray-500 mb-6">Versuche eine andere Suche oder durchstöbere alle Kategorien.</p>
+    <a href="{% url 'home' %}" class="inline-flex items-center px-6 py-3 bg-primary hover:bg-primary/80 text-white rounded-full font-medium transition-colors">
+      <i class="bi bi-arrow-left mr-2"></i>
+      Zurück zur Übersicht
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Lazy loading with fade-in
+  document.addEventListener('DOMContentLoaded', () => {
+    const images = document.querySelectorAll('img[loading="lazy"]');
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          img.style.opacity = '0';
+          img.onload = () => {
+            img.style.transition = 'opacity 0.5s ease';
+            img.style.opacity = '1';
+          };
+          observer.unobserve(img);
+        }
+      });
+    });
+
+    images.forEach(img => imageObserver.observe(img));
+  });
+</script>
 {% endblock %}

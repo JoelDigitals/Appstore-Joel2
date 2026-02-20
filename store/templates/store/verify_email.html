@@ -2,164 +2,481 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8" />
-    <title>Verifizierung</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verifizierung - JDS Appstore</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        :root {
-            --primary: #667eea;
-            --primary-dark: #5a6fd8;
-            --bg: #f5f7fa;
-            --white: #ffffff;
-            --text: #333;
-            --error: #e74c3c;
-        }
-
+        /* [Deine bestehenden CSS-Styles bleiben gleich] */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --error: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
         body {
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+            animation: pulse 15s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
 
         .card {
-            background: var(--white);
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            padding: 40px 32px;
+            position: relative;
+            z-index: 1;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            padding: 48px 40px;
             width: 100%;
-            max-width: 420px;
+            max-width: 480px;
             text-align: center;
         }
 
-        h1 {
-            font-size: 24px;
-            color: var(--text);
-            margin-bottom: 8px;
+        .brand-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
         }
 
-        p {
+        .brand-icon i {
+            font-size: 32px;
+            color: white;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+
+        .subtitle {
             font-size: 15px;
-            color: #666;
+            color: var(--text-muted);
             margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .email-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .email-display i {
+            color: var(--primary);
+        }
+
+        .email-display strong {
+            color: var(--primary);
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .email-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-link {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-link:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--secondary);
         }
 
         .code-input {
             display: flex;
             justify-content: center;
             gap: 12px;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
 
         .code-input input {
-            width: 48px;
-            height: 56px;
-            font-size: 24px;
+            width: 56px;
+            height: 64px;
+            font-size: 28px;
+            font-weight: 700;
             text-align: center;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            transition: border-color 0.3s, box-shadow 0.3s;
+            color: var(--text);
+            background: rgba(15, 23, 42, 0.5);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
         }
 
         .code-input input:focus {
             border-color: var(--primary);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .code-input input.filled {
+            border-color: var(--success);
+            color: var(--success);
         }
 
         .btn {
             width: 100%;
-            padding: 14px;
-            background: var(--primary);
-            color: var(--white);
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 16px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn:hover {
-            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4);
         }
 
-        .resend {
-            margin-top: 16px;
-            font-size: 14px;
-            color: #777;
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
 
-        .resend a {
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
             color: var(--primary);
-            text-decoration: none;
+            box-shadow: none;
+        }
+
+        .resend-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .resend-text {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .timer {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 12px;
+        }
+
+        .timer span {
+            color: var(--primary);
             font-weight: 600;
         }
 
-        .resend a:hover {
-            text-decoration: underline;
-        }
-
         .error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             color: var(--error);
             font-size: 14px;
-            margin-bottom: 12px;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 12px;
+        }
+
+        .success {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--success);
+            font-size: 14px;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+        }
+
+        .warning {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--warning);
+            font-size: 14px;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 12px;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 32px 20px;
+            }
+
+            .code-input input {
+                width: 48px;
+                height: 56px;
+                font-size: 24px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="card">
+        <!-- Brand Icon -->
+        <div class="brand-icon">
+            <i class="bi bi-shield-lock-fill"></i>
+        </div>
+
         <h1>Verifizierungscode</h1>
-        <p>
-            Wir haben dir eine E-Mail mit einem 6-stelligen Code an
-            <strong>{{ email|default:"deine Adresse" }}</strong> gesendet.
+        
+        <p class="subtitle">
+            Wir haben dir einen 6-stelligen Code an deine E-Mail-Adresse gesendet.
         </p>
 
-        {% if error %}
-            <div class="error">{{ error }}</div>
+        <div class="email-display">
+            <i class="bi bi-envelope-fill"></i>
+            <strong>{{ email|default:"deine Adresse" }}</strong>
+        </div>
+
+        <!-- E-Mail Aktionen -->
+        <div class="email-actions">
+            <form method="post" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="resend">
+                <button type="submit" class="btn-link" id="resendBtn">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    Code erneut senden
+                </button>
+            </form>
+            
+            <a href="{% url 'change_verification_email' %}" class="btn-link">
+                <i class="bi bi-pencil-square"></i>
+                E-Mail ändern
+            </a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="{{ message.tags }}">
+                    <i class="bi bi-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% else %}info-circle{% endif %}-fill"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
         {% endif %}
 
-        <form method="post">
+        <form method="post" id="verifyForm">
             {% csrf_token %}
             <div class="code-input">
-                <!-- 6 einzelne Felder für bessere UX -->
-                <input type="text" maxlength="1" inputmode="numeric" name="code_1" required autofocus />
-                <input type="text" maxlength="1" inputmode="numeric" name="code_2" required />
-                <input type="text" maxlength="1" inputmode="numeric" name="code_3" required />
-                <input type="text" maxlength="1" inputmode="numeric" name="code_4" required />
-                <input type="text" maxlength="1" inputmode="numeric" name="code_5" required />
-                <input type="text" maxlength="1" inputmode="numeric" name="code_6" required />
+                <input type="text" maxlength="1" name="code_1" required autofocus />
+                <input type="text" maxlength="1" name="code_2" required />
+                <input type="text" maxlength="1" name="code_3" required />
+                <input type="text" maxlength="1" name="code_4" required />
+                <input type="text" maxlength="1" name="code_5" required />
+                <input type="text" maxlength="1" name="code_6" required />
             </div>
 
-            <button type="submit" class="btn">Code bestätigen</button>
+            <button type="submit" class="btn" id="submitBtn">
+                <i class="bi bi-check-lg" style="margin-right: 8px;"></i>
+                Code bestätigen
+            </button>
         </form>
 
-        <!--<div class="resend">
-            Keinen Code erhalten?
-            <a href="{% url 'home' %}">Erneut senden</a>
-        </div>-->
+        <div class="resend-section">
+            <div class="resend-text">
+                Keinen Code erhalten? Prüfe deinen Spam-Ordner oder fordere einen neuen Code an.
+            </div>
+            
+            <div class="timer" id="timer" style="display: none;">
+                Nächster Code in <span id="countdown">60</span>s
+            </div>
+        </div>
     </div>
 
     <script>
-        /* Automatisches Weiter-springen nach Eingabe */
         const inputs = document.querySelectorAll('.code-input input');
+        const form = document.getElementById('verifyForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const resendBtn = document.getElementById('resendBtn');
+
         inputs.forEach((input, idx) => {
-            input.addEventListener('input', e => {
+            // Erlaubt alphanumerische Zeichen
+            input.addEventListener('keypress', (e) => {
+                if (!/[a-zA-Z0-9]/.test(e.key)) {
+                    e.preventDefault();
+                }
+            });
+
+            input.addEventListener('input', (e) => {
+                // In Großbuchstaben umwandeln
+                e.target.value = e.target.value.toUpperCase();
+                
+                // Filled-Zustand
+                if (e.target.value) {
+                    e.target.classList.add('filled');
+                } else {
+                    e.target.classList.remove('filled');
+                }
+
+                // Automatisch weiter
                 if (e.target.value.length === 1 && idx < inputs.length - 1) {
                     inputs[idx + 1].focus();
                 }
+
+                // Auto-submit wenn alle gefüllt
+                const allFilled = Array.from(inputs).every(inp => inp.value.length === 1);
+                if (allFilled) {
+                    submitBtn.click();
+                }
             });
-            input.addEventListener('keydown', e => {
+
+            input.addEventListener('keydown', (e) => {
                 if (e.key === 'Backspace' && e.target.value === '' && idx > 0) {
                     inputs[idx - 1].focus();
                 }
             });
+
+            // Paste-Event für kompletten Code
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasteData = e.clipboardData.getData('text').replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase();
+                pasteData.split('').forEach((char, i) => {
+                    if (inputs[i]) {
+                        inputs[i].value = char;
+                        inputs[i].classList.add('filled');
+                    }
+                });
+                if (pasteData.length === 6) {
+                    submitBtn.click();
+                } else if (inputs[pasteData.length]) {
+                    inputs[pasteData.length].focus();
+                }
+            });
+        });
+
+        // Resend-Timer (Client-seitig)
+        const timerDiv = document.getElementById('timer');
+        const countdownSpan = document.getElementById('countdown');
+        let countdown = 60;
+
+        resendBtn.addEventListener('click', (e) => {
+            // Optional: Client-seitige Sperre
+            /*
+            e.preventDefault();
+            resendBtn.disabled = true;
+            timerDiv.style.display = 'block';
+            
+            const interval = setInterval(() => {
+                countdown--;
+                countdownSpan.textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    resendBtn.disabled = false;
+                    timerDiv.style.display = 'none';
+                    countdown = 60;
+                }
+            }, 1000);
+            */
         });
     </script>
 </body>

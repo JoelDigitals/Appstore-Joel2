@@ -1,64 +1,136 @@
 {% extends "base.html" %}
-{% load static %}
-{% include "store/platform_image.html" with platform=version.platform %}
-
+{% load image_tags %}
 
 {% block title %}Alle Apps - JDS Appstore{% endblock %}
 
 {% block content %}
-<h1 class="mb-4 text-white">Alle Apps</h1>
+<div class="space-y-8">
+  
+  <!-- Header -->
+  <div class="text-center space-y-4">
+    <h1 class="text-4xl md:text-5xl font-bold text-gradient">Alle Versionen des JDS AppStore</h1>
+    {% if query %}
+      <p class="text-gray-400 text-lg">
+        Suchergebnisse für <span class="text-primary font-semibold">"{{ query }}"</span>
+      </p>
+    {% else %}
+      <p class="text-gray-400">Durchstöbere unsere Sammlung</p>
+    {% endif %}
+  </div>
 
-{% if query %}
-  <p class="text-white">Suchergebnisse für "<strong>{{ query }}</strong>":</p>
-{% endif %}
-
-<style>
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;  
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: normal;
-  }
-</style>
-
-
-{% if apps %}
-  <div class="row">
+  <!-- Apps Grid -->
+  {% if apps %}
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
     {% for app in apps %}
-      <div class="col-12 col-sm-6 col-md-4 mb-3">
-        <a href="{% url 'app_detail' app.pk %}" class="text-decoration-none text-white">
-          <div class="card bg-dark text-white h-100">
-            {% with version=app.versions.first %}
-              {% if version %}
-                {% if app.platform == "windows" %}
-                  <img src="{% static 'images/platforms/windows.png' %}" class="card-img-top img-fluid" alt="Windows" />
-                {% elif app.platform == "linux" %}
-                  <img src="{% static 'images/platforms/linux.png' %}" class="card-img-top img-fluid" alt="Linux" />
-                {% elif app.platform == "android" %}
-                  <img src="{% static 'images/platforms/android.png' %}" class="card-img-top img-fluid" alt="Android" />
-                {% elif app.platform == "ios" %}
-                  <img src="{% static 'images/platforms/ios.png' %}" class="card-img-top img-fluid" alt="iOS" />
-                {% elif app.platform == "mac" %}
-                  <img src="{% static 'images/platforms/mac.png' %}" class="card-img-top img-fluid" alt="macOS" />
-                {% else %}
-                  <div class="bg-secondary text-center text-white py-4">Plattform: {{ app.platform }}</div>
-                {% endif %}
+    <a href="{% url 'app_detail' app.pk %}" class="group">
+      <div class="flex flex-col items-center text-center">
+        
+        <!-- App Icon Container -->
+        <div class="relative w-full aspect-square max-w-[140px] mb-4">
+          <!-- Background Glow -->
+          <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/10 to-secondary/10 group-hover:from-primary/20 group-hover:to-secondary/20 transition-all duration-500 blur-xl opacity-0 group-hover:opacity-100"></div>
+          
+          <!-- App Icon -->
+          <div class="relative w-full h-full rounded-3xl overflow-hidden shadow-2xl group-hover:shadow-primary/20 transition-all duration-500 bg-slate-800/50 p-2">
+            {% with icon_url=app|get_image_url:"icon" %}
+              {% if icon_url %}
+                <img src="{{ icon_url }}" alt="{{ app.name }}" 
+                     class="w-full h-full object-contain rounded-2xl group-hover:scale-110 transition-transform duration-500"
+                     loading="lazy"
+                     onerror="this.src='/static/images/default_app_icon.png'">
+              {% else %}
+                <div class="w-full h-full rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                  <span class="text-3xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
+                </div>
               {% endif %}
             {% endwith %}
-            <div class="card-body">
-              <h5 class="card-title">{{ app.name }}</h5>
-              <p><small>Plattform: {{ app.platform }}</small></p>
-              <p><small>Autor: {{ app.developer }}</small></p>
-              <p><small>{{ app.download_count }} Downloads</small></p>
-            </div>
           </div>
-        </a>
+          
+          <!-- Platform Badge -->
+          <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center shadow-lg border border-gray-700">
+            {% if app.platform == "ios" %}
+              <i class="bi bi-apple text-primary text-sm"></i>
+            {% elif app.platform == "android" %}
+              <i class="bi bi-android2 text-green-400 text-sm"></i>
+            {% elif app.platform == "windows" %}
+              <i class="bi bi-microsoft text-blue-400 text-sm"></i>
+            {% elif app.platform == "mac" or app.platform == "macos" %}
+              <i class="bi bi-apple text-gray-300 text-sm"></i>
+            {% elif app.platform == "linux" %}
+              <i class="bi bi-terminal text-yellow-400 text-sm"></i>
+            {% else %}
+              <i class="bi bi-laptop text-primary text-sm"></i>
+            {% endif %}
+          </div>
+          
+          <!-- ImgBB Indicator -->
+          {% if app.icon_url %}
+            <div class="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow border border-slate-900" title="ImgBB">
+              <i class="bi bi-cloud text-white text-[8px]"></i>
+            </div>
+          {% endif %}
+        </div>
+        
+        <!-- App Info -->
+        <h3 class="font-semibold text-gray-100 text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1 w-full px-2">
+          {{ app.name }}
+        </h3>
+        <p class="text-xs text-gray-500 line-clamp-1">{{ app.developer }}</p>
+        
+        <div class="flex items-center mt-2 text-xs text-gray-400 space-x-2">
+          <span class="flex items-center px-2 py-1 bg-slate-800/50 rounded-full">
+            <i class="bi bi-download mr-1 text-primary"></i>
+            {{ app.download_count }}
+          </span>
+          {% if app.icon_url %}
+            <span class="text-primary" title="ImgBB">
+              <i class="bi bi-cloud-check"></i>
+            </span>
+          {% endif %}
+        </div>
       </div>
+    </a>
     {% endfor %}
   </div>
-{% else %}
-  <p class="text-white mt-4">Keine Apps gefunden.</p>
-{% endif %}
+  
+  {% else %}
+  <!-- Empty State -->
+  <div class="text-center py-20">
+    <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-800 flex items-center justify-center">
+      <i class="bi bi-search text-4xl text-gray-600"></i>
+    </div>
+    <h3 class="text-xl font-semibold text-gray-300 mb-2">Keine Apps gefunden</h3>
+    <p class="text-gray-500 mb-6">Versuche eine andere Suche.</p>
+    <a href="{% url 'home' %}" class="inline-flex items-center px-6 py-3 bg-primary hover:bg-primary/80 text-white rounded-full font-medium transition-colors">
+      <i class="bi bi-arrow-left mr-2"></i>
+      Zurück zur Übersicht
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Lazy loading with fade-in
+  document.addEventListener('DOMContentLoaded', () => {
+    const images = document.querySelectorAll('img[loading="lazy"]');
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          img.style.opacity = '0';
+          img.onload = () => {
+            img.style.transition = 'opacity 0.5s ease';
+            img.style.opacity = '1';
+          };
+          observer.unobserve(img);
+        }
+      });
+    });
+
+    images.forEach(img => imageObserver.observe(img));
+  });
+</script>
 {% endblock %}

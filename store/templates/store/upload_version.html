@@ -1,14 +1,325 @@
 {% extends "base.html" %}
 
-{% block title %}Neue Version hochladen - {{ app.name }}{% endblock %}
+{% block title %}Neue Version hochladen – {{ app.name }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <h1>Neue Version für {{ app.name }} hochladen</h1>
-  <form method="post" enctype="multipart/form-data" novalidate>
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-success">Hochladen und prüfen</button>
-  </form>
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="{% url 'developer_dashboard' %}" class="hover:text-primary transition-colors">Dashboard</a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <a href="{% url 'app_detail' app.id %}" class="hover:text-primary transition-colors">{{ app.name }}</a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <span class="text-gray-300">Neue Version</span>
+  </nav>
+
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-100 flex items-center gap-3">
+      <i class="bi bi-cloud-arrow-up text-primary"></i>
+      Neue Version hochladen
+    </h1>
+    <p class="text-gray-400 mt-2">Veröffentliche ein Update für {{ app.name }}</p>
+  </div>
+
+  <!-- App Preview Card -->
+  <div class="glass rounded-3xl p-6 mb-8 border border-primary/10">
+    <div class="flex items-center gap-4">
+      <div class="relative">
+        {% if app.icon %}
+          <img src="{{ app.icon.url }}" alt="{{ app.name }}" class="w-16 h-16 object-contain rounded-2xl bg-slate-800/50 p-2">
+        {% else %}
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+            <span class="text-2xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
+          </div>
+        {% endif %}
+        <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-slate-800 rounded-full flex items-center justify-center border border-gray-700">
+          {% if app.platform == 'ios' %}
+            <i class="bi bi-apple text-primary text-xs"></i>
+          {% elif app.platform == 'android' %}
+            <i class="bi bi-android2 text-green-400 text-xs"></i>
+          {% elif app.platform == 'windows' %}
+            <i class="bi bi-microsoft text-blue-400 text-xs"></i>
+          {% elif app.platform == 'macos' %}
+            <i class="bi bi-apple text-gray-300 text-xs"></i>
+          {% elif app.platform == 'linux' %}
+            <i class="bi bi-terminal text-yellow-400 text-xs"></i>
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        <h2 class="text-lg font-semibold text-gray-100">{{ app.name }}</h2>
+        <div class="flex items-center gap-3 text-sm text-gray-400">
+          <span class="flex items-center gap-1">
+            <i class="bi bi-tag"></i>
+            Aktuell: v{{ app.current_version|default:"1.0" }}
+          </span>
+          <span>•</span>
+          <span class="flex items-center gap-1">
+            <i class="bi bi-calendar3"></i>
+            {{ app.updated_at|date:"d.m.Y"|default:"Noch nie" }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Form -->
+  <div class="glass rounded-3xl p-6 md:p-8">
+    <form method="post" enctype="multipart/form-data" class="space-y-6" id="uploadForm">
+      {% csrf_token %}
+
+      {% for field in form %}
+      <div class="space-y-2">
+        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-300">
+          {{ field.label }}
+          {% if field.field.required %}
+            <span class="text-red-400">*</span>
+          {% endif %}
+        </label>
+
+        <div class="relative">
+          {% if field.field.widget.input_type == 'file' %}
+            <!-- File Upload Area -->
+            <div class="relative group">
+              <div class="border-2 border-dashed border-gray-700 rounded-2xl p-8 text-center hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer" id="dropZone">
+                <input type="file" 
+                       name="{{ field.name }}" 
+                       id="{{ field.id_for_label }}"
+                       class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                       accept=".apk,.ipa,.exe,.dmg,.pkg,.deb,.rpm,.AppImage{% if app.platform == 'android' %},.apk{% elif app.platform == 'ios' %},.ipa{% elif app.platform == 'windows' %},.exe,.msi{% elif app.platform == 'macos' %},.dmg,.pkg{% elif app.platform == 'linux' %},.deb,.rpm,.AppImage{% endif %}"
+                       required>
+                
+                <div class="pointer-events-none">
+                  <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i class="bi bi-cloud-arrow-up text-3xl text-gray-500 group-hover:text-primary transition-colors"></i>
+                  </div>
+                  <p class="text-gray-300 font-medium mb-1">Datei hierher ziehen oder klicken</p>
+                  <p class="text-sm text-gray-500">
+                    {% if app.platform == 'android' %}
+                      APK-Datei (max. 500 MB)
+                    {% elif app.platform == 'ios' %}
+                      IPA-Datei (max. 500 MB)
+                    {% elif app.platform == 'windows' %}
+                      EXE oder MSI (max. 1 GB)
+                    {% elif app.platform == 'macos' %}
+                      DMG oder PKG (max. 1 GB)
+                    {% elif app.platform == 'linux' %}
+                      DEB, RPM oder AppImage (max. 500 MB)
+                    {% else %}
+                      Unterstützte Dateien
+                    {% endif %}
+                  </p>
+                </div>
+              </div>
+              
+              <!-- File Info (shown after selection) -->
+              <div id="fileInfo" class="hidden mt-4 p-4 bg-slate-800/50 rounded-xl border border-gray-700">
+                <div class="flex items-center gap-3">
+                  <i class="bi bi-file-earmark-binary text-2xl text-primary"></i>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-100 truncate" id="fileName">datei.apk</p>
+                    <p class="text-xs text-gray-500" id="fileSize">0 MB</p>
+                  </div>
+                  <button type="button" id="removeFile" class="text-gray-400 hover:text-red-400 transition-colors">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          {% elif field.field.widget.input_type == 'text' and 'version' in field.name %}
+            <!-- Version Input -->
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i class="bi bi-tag text-gray-500"></i>
+              </div>
+              <input type="text" 
+                     name="{{ field.name }}" 
+                     id="{{ field.id_for_label }}"
+                     value="{{ field.value|default:'' }}"
+                     placeholder="z.B. 1.2.3"
+                     class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono"
+                     required>
+            </div>
+            <p class="text-xs text-gray-500">Verwende semantische Versionierung (MAJOR.MINOR.PATCH)</p>
+
+          {% elif field.field.widget.input_type == 'textarea' %}
+            <!-- Changelog Textarea -->
+            <textarea name="{{ field.name }}" 
+                      id="{{ field.id_for_label }}"
+                      rows="4"
+                      placeholder="Beschreibe die Änderungen in dieser Version..."
+                      class="w-full bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-y min-h-[120px]">{{ field.value|default:'' }}</textarea>
+            <p class="text-xs text-gray-500">Dies wird den Nutzern im Update-Log angezeigt</p>
+
+          {% else %}
+            <!-- Default Input -->
+            <input type="{{ field.field.widget.input_type|default:'text' }}" 
+                   name="{{ field.name }}" 
+                   id="{{ field.id_for_label }}"
+                   value="{{ field.value|default:'' }}"
+                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+          {% endif %}
+        </div>
+
+        {% if field.errors %}
+          <div class="flex items-center gap-2 text-red-400 text-sm mt-1">
+            <i class="bi bi-exclamation-circle"></i>
+            {% for error in field.errors %}
+              <span>{{ error }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if field.help_text and field.field.widget.input_type != 'textarea' and 'version' not in field.name %}
+          <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      <!-- Progress Bar (hidden by default) -->
+      <div id="uploadProgress" class="hidden space-y-2">
+        <div class="flex justify-between text-sm text-gray-400">
+          <span>Hochladen...</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+          <div id="progressBar" class="bg-gradient-to-r from-primary to-secondary h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-700/50">
+        <button type="submit" 
+                id="submitBtn"
+                class="flex-1 sm:flex-none inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="bi bi-cloud-check mr-2"></i>
+          Hochladen und prüfen
+        </button>
+        
+        <a href="{% url 'developer_dashboard' %}" 
+           class="flex-1 sm:flex-none inline-flex items-center justify-center px-8 py-3 glass hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-xl transition-all">
+          <i class="bi bi-x-lg mr-2"></i>
+          Abbrechen
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Info Card -->
+  <div class="mt-8 glass rounded-3xl p-6 border border-gray-700/30">
+    <h3 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+      <i class="bi bi-info-circle text-primary"></i>
+      Wichtige Hinweise
+    </h3>
+    <ul class="space-y-3 text-sm text-gray-400">
+      <li class="flex items-start gap-3">
+        <i class="bi bi-check2-circle text-green-400 mt-0.5"></i>
+        <span>Die Datei wird auf Viren und Malware geprüft, bevor sie verfügbar wird</span>
+      </li>
+      <li class="flex items-start gap-3">
+        <i class="bi bi-check2-circle text-green-400 mt-0.5"></i>
+        <span>Nutzer erhalten automatisch eine Benachrichtigung über das Update</span>
+      </li>
+      <li class="flex items-start gap-3">
+        <i class="bi bi-check2-circle text-green-400 mt-0.5"></i>
+        <span>Alte Versionen bleiben für 30 Tage verfügbar, falls ein Rollback nötig ist</span>
+      </li>
+    </ul>
+  </div>
+
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = dropZone.querySelector('input[type="file"]');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const removeFile = document.getElementById('removeFile');
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent = document.getElementById('progressPercent');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // File selection
+    fileInput.addEventListener('change', function(e) {
+      if (this.files.length > 0) {
+        const file = this.files[0];
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        dropZone.classList.add('hidden');
+        fileInfo.classList.remove('hidden');
+      }
+    });
+
+    // Remove file
+    removeFile.addEventListener('click', function() {
+      fileInput.value = '';
+      fileInfo.classList.add('hidden');
+      dropZone.classList.remove('hidden');
+    });
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-primary', 'bg-primary/5');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-primary', 'bg-primary/5');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-primary', 'bg-primary/5');
+      
+      if (e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        const file = e.dataTransfer.files[0];
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        dropZone.classList.add('hidden');
+        fileInfo.classList.remove('hidden');
+      }
+    });
+
+    // Format file size
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Simulate upload progress (replace with actual progress tracking)
+    uploadForm.addEventListener('submit', function(e) {
+      if (fileInput.files.length === 0) {
+        e.preventDefault();
+        alert('Bitte wähle eine Datei aus.');
+        return;
+      }
+      
+      submitBtn.disabled = true;
+      uploadProgress.classList.remove('hidden');
+      
+      // Simulate progress (in real implementation, use XMLHttpRequest or Fetch with progress)
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90;
+        
+        progressBar.style.width = progress + '%';
+        progressPercent.textContent = Math.round(progress) + '%';
+        
+        if (progress >= 90) clearInterval(interval);
+      }, 500);
+    });
+  });
+</script>
 {% endblock %}

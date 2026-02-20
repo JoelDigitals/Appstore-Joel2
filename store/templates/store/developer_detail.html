@@ -1,91 +1,268 @@
 {% extends "base.html" %}
+{% load image_tags %}
+
 {% block title %}{{ developer.name }} – Entwicklerprofil{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <div class="row">
-    <div class="col-md-3">
-      {% if developer.logo %}
-        <img src="{{ developer.logo.url }}" class="img-fluid rounded" alt="{{ developer.name }}">
-      {% endif %}
-    </div>
-    <div class="col-md-9">
-      <h1>{{ developer.name }}</h1>
-      {% if developer.description %}
-        <p>{{ developer.description|linebreaks }}</p>
-      {% endif %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
 
-      <ul class="list-unstyled">
-        {% if developer.website %}
-          <li><strong>Website:</strong> <a href="{{ developer.website }}" target="_blank" rel="noopener">{{ developer.website }}</a></li>
-        {% endif %}
-        {% if developer.email %}
-          <li><strong>Email:</strong> <a href="mailto:{{ developer.email }}">{{ developer.email }}</a></li>
-        {% endif %}
-        {% if developer.twitter %}
-          <li><strong>Twitter:</strong> <a href="{{ developer.twitter }}" target="_blank" rel="noopener">{{ developer.twitter }}</a></li>
-        {% endif %}
-        {% if developer.github %}
-          <li><strong>GitHub:</strong> <a href="{{ developer.github }}" target="_blank" rel="noopener">{{ developer.github }}</a></li>
-        {% endif %}
-      </ul>
-    </div>
-  </div>
-
-  <hr class="my-4">
-
-  <h3>Apps von {{ developer.name }}</h3>
-
-  <!-- Fester Plattform-Filter -->
-  <div class="mb-3">
-    <label for="platformFilter" class="form-label text-white">Nach Plattform filtern:</label>
-    <select id="platformFilter" class="form-select w-auto bg-dark text-white" aria-label="Plattform auswählen">
-      <option value="all" selected>Alle Plattformen</option>
-      <option value="android">Android</option>
-      <option value="ios">iOS</option>
-      <option value="windows">Windows</option>
-      <option value="macos">macOS</option>
-      <option value="linux">Linux</option>
-    </select>
-  </div>
-
-  <div class="row" id="appsContainer">
-    {% for app in apps %}
-      <div class="col-6 col-md-3 mb-4 app-card" data-platform="{{ app.platform|lower }}">
-        <a href="{% url 'app_detail' app.id %}" class="text-decoration-none text-white d-block">
-          <img src="{{ app.icon.url }}" class="img-fluid rounded mb-1" alt="{{ app.name }}">
-          <p class="mb-1 fw-semibold">{{ app.name }}</p>
-          <small class="text-muted">
-            {{ app.platform|title }} • {{ app.language }}
-          </small>
-        </a>
+  <!-- Developer Header -->
+  <div class="glass rounded-3xl p-6 md:p-8">
+    <div class="flex flex-col md:flex-row gap-8 items-start">
+      
+      <!-- Logo -->
+      <div class="flex-shrink-0 mx-auto md:mx-0">
+        <div class="relative w-32 h-32 md:w-40 md:h-40">
+          <!-- Background Glow -->
+          <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 blur-xl -z-10 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+          
+          <!-- Logo Container -->
+          <div class="relative w-full h-full rounded-2xl overflow-hidden bg-slate-800/50 p-4 shadow-2xl">
+            {% with logo_url=developer|get_image_url:"logo" %}
+              {% if logo_url %}
+                <img src="{{ logo_url }}" 
+                     alt="{{ developer.name }}" 
+                     class="w-full h-full object-contain"
+                     loading="lazy"
+                     onerror="this.src='/static/images/default_dev_logo.png'">
+              {% else %}
+                <div class="w-full h-full rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                  <span class="text-5xl font-bold text-white">{{ developer.name|slice:":1"|upper }}</span>
+                </div>
+              {% endif %}
+            {% endwith %}
+          </div>
+          
+          <!-- ImgBB Indicator -->
+          {% if developer.logo_url %}
+            <div class="absolute -top-2 -right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg border border-slate-900" title="ImgBB">
+              <i class="bi bi-cloud text-white text-xs"></i>
+            </div>
+          {% endif %}
+        </div>
       </div>
-    {% empty %}
-      <p>Keine Apps veröffentlicht.</p>
-    {% endfor %}
+
+      <!-- Info -->
+      <div class="flex-1 text-center md:text-left">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-100 mb-4">{{ developer.name }}</h1>
+        
+        {% if developer.description %}
+        <p class="text-gray-400 leading-relaxed mb-6 max-w-2xl">
+          {{ developer.description|linebreaksbr }}
+        </p>
+        {% endif %}
+
+        <!-- Social Links -->
+        <div class="flex flex-wrap justify-center md:justify-start gap-3">
+          {% if developer.website %}
+          <a href="{{ developer.website }}" target="_blank" rel="noopener" 
+             class="inline-flex items-center px-4 py-2 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-xl transition-all">
+            <i class="bi bi-globe mr-2"></i>
+            Website
+          </a>
+          {% endif %}
+          
+          {% if developer.email %}
+          <a href="mailto:{{ developer.email }}" 
+             class="inline-flex items-center px-4 py-2 glass hover:bg-red-500/10 text-gray-300 hover:text-red-400 rounded-xl transition-all">
+            <i class="bi bi-envelope mr-2"></i>
+            E-Mail
+          </a>
+          {% endif %}
+          
+          {% if developer.twitter %}
+          <a href="{{ developer.twitter }}" target="_blank" rel="noopener" 
+             class="inline-flex items-center px-4 py-2 glass hover:bg-slate-600/30 text-gray-300 hover:text-white rounded-xl transition-all">
+            <i class="bi bi-twitter-x mr-2"></i>
+            X
+          </a>
+          {% endif %}
+          
+          {% if developer.github %}
+          <a href="{{ developer.github }}" target="_blank" rel="noopener" 
+             class="inline-flex items-center px-4 py-2 glass hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-xl transition-all">
+            <i class="bi bi-github mr-2"></i>
+            GitHub
+          </a>
+          {% endif %}
+          
+          {% if developer.youtube %}
+          <a href="{{ developer.youtube }}" target="_blank" rel="noopener" 
+             class="inline-flex items-center px-4 py-2 glass hover:bg-red-500/20 text-gray-300 hover:text-red-400 rounded-xl transition-all">
+            <i class="bi bi-youtube mr-2"></i>
+            YouTube
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
   </div>
 
-  <a href="{% url 'home' %}" class="btn btn-link mt-3">Zurück zum App Store</a>
+  <!-- Apps Section -->
+  <div>
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <h2 class="text-2xl font-bold text-gray-100 flex items-center">
+        <i class="bi bi-grid-3x3-gap mr-3 text-primary"></i>
+        Apps von {{ developer.name }}
+      </h2>
+      
+      <!-- Platform Filter -->
+      <div class="flex items-center gap-3">
+        <i class="bi bi-funnel text-gray-500"></i>
+        <select id="platformFilter" 
+                class="bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-2 text-gray-100 focus:outline-none focus:border-primary text-sm">
+          <option value="all">Alle Plattformen</option>
+          <option value="android">Android</option>
+          <option value="ios">iOS</option>
+          <option value="windows">Windows</option>
+          <option value="macos">macOS</option>
+          <option value="linux">Linux</option>
+        </select>
+      </div>
+    </div>
+
+    {% if apps %}
+    <!-- Apps Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6" id="appsContainer">
+      {% for app in apps %}
+      <a href="{% url 'app_detail' app.id %}" 
+         class="group app-card" 
+         data-platform="{{ app.platform|lower }}">
+        
+        <div class="flex flex-col items-center text-center">
+          <!-- Icon -->
+          <div class="relative w-full aspect-square max-w-[140px] mb-4">
+            <div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
+            
+            {% with icon_url=app|get_image_url:"icon" %}
+              {% if icon_url %}
+                <img src="{{ icon_url }}" 
+                     alt="{{ app.name }}" 
+                     class="relative w-full h-full object-contain rounded-3xl shadow-2xl group-hover:scale-110 group-hover:shadow-primary/20 transition-all duration-500 bg-slate-800/50 p-2"
+                     loading="lazy"
+                     onerror="this.src='/static/images/default_app_icon.png'">
+              {% else %}
+                <div class="relative w-full h-full rounded-3xl shadow-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-all duration-500">
+                  <span class="text-3xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
+                </div>
+              {% endif %}
+            {% endwith %}
+            
+            <!-- Platform Badge -->
+            <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center shadow-lg border border-gray-700">
+              {% if app.platform == 'ios' %}
+                <i class="bi bi-apple text-primary text-sm"></i>
+              {% elif app.platform == 'android' %}
+                <i class="bi bi-android2 text-green-400 text-sm"></i>
+              {% elif app.platform == 'windows' %}
+                <i class="bi bi-microsoft text-blue-400 text-sm"></i>
+              {% elif app.platform == 'macos' %}
+                <i class="bi bi-apple text-gray-300 text-sm"></i>
+              {% elif app.platform == 'linux' %}
+                <i class="bi bi-terminal text-yellow-400 text-sm"></i>
+              {% else %}
+                <i class="bi bi-laptop text-primary text-sm"></i>
+              {% endif %}
+            </div>
+            
+            <!-- ImgBB Indicator -->
+            {% if app.icon_url %}
+              <div class="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow border border-slate-900" title="ImgBB">
+                <i class="bi bi-cloud text-white text-[8px]"></i>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Info -->
+          <h3 class="font-semibold text-gray-100 text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1 w-full px-2">
+            {{ app.name }}
+          </h3>
+          <p class="text-xs text-gray-500">
+            {{ app.platform|title }} • {{ app.language }}
+          </p>
+          <div class="flex items-center mt-2 text-xs text-gray-400">
+            <i class="bi bi-download mr-1 text-primary"></i>
+            {{ app.download_count|default:"0" }}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    
+    {% else %}
+    <!-- Empty State -->
+    <div class="glass rounded-2xl p-12 text-center">
+      <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-slate-800 flex items-center justify-center">
+        <i class="bi bi-box text-4xl text-gray-600"></i>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-300 mb-2">Keine Apps veröffentlicht</h3>
+      <p class="text-gray-500">{{ developer.name }} hat noch keine Apps veröffentlicht.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Back Link -->
+  <div class="flex justify-center">
+    <a href="{% url 'home' %}" 
+       class="inline-flex items-center px-6 py-3 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-full font-medium transition-all">
+      <i class="bi bi-arrow-left mr-2"></i>
+      Zurück zum Store
+    </a>
+  </div>
+
 </div>
 
+{% block extra_js %}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // Platform Filter
     const filterSelect = document.getElementById('platformFilter');
     const apps = document.querySelectorAll('#appsContainer .app-card');
 
-    filterSelect.addEventListener('change', function() {
-      const selected = this.value;
+    if (filterSelect) {
+      filterSelect.addEventListener('change', function() {
+        const selected = this.value;
 
-      apps.forEach(app => {
-        const platform = app.getAttribute('data-platform');
-        if (selected === 'all' || platform === selected) {
-          app.style.display = 'block';
-        } else {
-          app.style.display = 'none';
+        apps.forEach(app => {
+          const platform = app.getAttribute('data-platform');
+          if (selected === 'all' || platform === selected) {
+            app.style.display = 'block';
+            app.style.animation = 'fadeIn 0.3s ease';
+          } else {
+            app.style.display = 'none';
+          }
+        });
+      });
+    }
+
+    // Lazy loading with fade-in
+    const images = document.querySelectorAll('img[loading="lazy"]');
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          img.style.opacity = '0';
+          img.onload = () => {
+            img.style.transition = 'opacity 0.5s ease';
+            img.style.opacity = '1';
+          };
+          if (img.complete) {
+            img.style.opacity = '1';
+          }
+          observer.unobserve(img);
         }
       });
     });
+
+    images.forEach(img => imageObserver.observe(img));
   });
 </script>
+{% endblock %}
 
+<style>
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
 {% endblock %}

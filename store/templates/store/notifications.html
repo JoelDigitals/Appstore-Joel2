@@ -1,75 +1,256 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block title %}Benachrichtigungen{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto mt-8 p-4 bg-gray-900 text-white rounded-lg shadow">
-    <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold">Benachrichtigungen ({{ count }})</h1>
-        <form method="post" action="{% url 'mark_all_notifications_read' %}">
-            {% csrf_token %}
-            <button type="submit" class="text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded">
-                Alle als gelesen markieren
-            </button>
-        </form>
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Header -->
+  <div class="glass rounded-3xl p-6 mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="relative">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/20">
+            <i class="bi bi-bell-fill text-2xl text-white"></i>
+          </div>
+          {% if unread_count > 0 %}
+          <div class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-slate-900 animate-pulse">
+            {{ unread_count }}
+          </div>
+          {% endif %}
+        </div>
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold text-gray-100">Benachrichtigungen</h1>
+          <p class="text-gray-400 text-sm">
+            {% if count > 0 %}
+              {{ count }} Benachrichtigung{% if count != 1 %}en{% endif %} insgesamt
+            {% else %}
+              Keine neuen Benachrichtigungen
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      {% if unread_count > 0 %}
+      <form method="post" action="{% url 'mark_all_notifications_read' %}" class="flex-shrink-0">
+        {% csrf_token %}
+        <button type="submit" 
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl transition-all text-sm font-medium">
+          <i class="bi bi-check-all"></i>
+          Alle als gelesen markieren
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if notifications %}
+    <!-- Filter Tabs -->
+    <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <button class="px-4 py-2 rounded-xl text-sm font-medium bg-primary/10 text-primary border border-primary/20 transition-all">
+        <i class="bi bi-inbox mr-2"></i>Alle
+      </button>
+      <button class="px-4 py-2 rounded-xl text-sm font-medium glass text-gray-400 hover:text-gray-200 transition-all">
+        <i class="bi bi-envelope-open mr-2"></i>Ungelesen
+      </button>
+      <button class="px-4 py-2 rounded-xl text-sm font-medium glass text-gray-400 hover:text-gray-200 transition-all">
+        <i class="bi bi-check2-all mr-2"></i>Gelesen
+      </button>
     </div>
 
-    {% if notifications %}
-        <div class="space-y-2">
-            {% for n in notifications %}
-                <div
-                    class="p-3 rounded-md border border-gray-700 transition group flex items-start gap-2
-                        {% if not n.read and n.user %}
-                            bg-blue-800 font-semibold
-                        {% elif n.user %}
-                            bg-gray-800
-                        {% else %}
-                            bg-gray-800 group-[.read-local]:opacity-50
-                        {% endif %}
-                    "
-                    data-id="{{ n.id }}" data-global="{{ n.user|yesno:"false,true" }}"
-                >
-                    {% if not n.read and n.user %}
-                        <div class="mt-1 w-3 h-3 bg-blue-400 rounded-full flex-shrink-0"></div>
-                    {% elif not n.user %}
-                        <div class="mt-1 w-3 h-3 bg-blue-400 rounded-full flex-shrink-0 hidden read-indicator"></div>
-                    {% else %}
-                        <div class="mt-1 w-3 h-3 invisible"></div>
-                    {% endif %}
+    <!-- Notifications List -->
+    <div class="space-y-3" id="notificationsList">
+      {% for n in notifications %}
+      <div class="group relative glass rounded-2xl p-4 transition-all duration-300 hover:bg-slate-800/50 border-l-4 
+                  {% if not n.read and n.user %}
+                    border-l-primary bg-primary/5
+                  {% elif not n.user and not n.is_read_local %}
+                    border-l-secondary bg-secondary/5
+                  {% else %}
+                    border-l-transparent
+                  {% endif %}"
+           data-id="{{ n.id }}" 
+           data-global="{{ n.user|yesno:'false,true' }}"
+           data-read="{% if not n.read and n.user %}false{% else %}true{% endif %}">
+        
+        <a href="{% url 'notification_detail' n.id %}" class="flex items-start gap-4">
+          <!-- Status Indicator -->
+          <div class="flex-shrink-0 mt-1">
+            {% if not n.read and n.user %}
+              <div class="w-3 h-3 bg-primary rounded-full animate-pulse shadow-lg shadow-primary/50"></div>
+            {% elif not n.user and not n.is_read_local %}
+              <div class="w-3 h-3 bg-secondary rounded-full shadow-lg shadow-secondary/50 read-indicator"></div>
+            {% else %}
+              <div class="w-3 h-3 bg-gray-600 rounded-full opacity-50"></div>
+            {% endif %}
+          </div>
 
-                    <a href="{% url 'notification_detail' n.id %}" class="block w-full">
-                        <div class="text-sm text-gray-400">{{ n.timestamp|date:"d.m.Y H:i" }}</div>
-                        <div class="mt-1">{{ n.message|safe }}</div>
-                    </a>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p class="text-gray-400">Keine Benachrichtigungen vorhanden.</p>
+          <!-- Content -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-xs font-medium px-2 py-0.5 rounded-full 
+                {% if n.type == 'update' %}
+                  bg-green-500/10 text-green-400 border border-green-500/20
+                {% elif n.type == 'security' %}
+                  bg-red-500/10 text-red-400 border border-red-500/20
+                {% elif n.type == 'system' %}
+                  bg-blue-500/10 text-blue-400 border border-blue-500/20
+                {% else %}
+                  bg-gray-500/10 text-gray-400 border border-gray-500/20
+                {% endif %}">
+                {% if n.type == 'update' %}
+                  <i class="bi bi-arrow-up-circle mr-1"></i>Update
+                {% elif n.type == 'security' %}
+                  <i class="bi bi-shield-exclamation mr-1"></i>Sicherheit
+                {% elif n.type == 'system' %}
+                  <i class="bi bi-gear mr-1"></i>System
+                {% else %}
+                  <i class="bi bi-bell mr-1"></i>Allgemein
+                {% endif %}
+              </span>
+              <span class="text-xs text-gray-500 flex items-center gap-1">
+                <i class="bi bi-clock"></i>
+                {{ n.timestamp|date:"d.m.Y H:i" }}
+              </span>
+            </div>
+            
+            <div class="text-gray-100 {% if not n.read and n.user %}font-semibold{% else %}font-normal{% endif %} leading-relaxed">
+              {{ n.message|safe }}
+            </div>
+
+            {% if n.app %}
+            <div class="mt-2 flex items-center gap-2 text-xs text-gray-400">
+              <i class="bi bi-box-seam text-primary"></i>
+              <span>{{ n.app.name }}</span>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Arrow -->
+          <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            <i class="bi bi-chevron-right text-gray-500"></i>
+          </div>
+        </a>
+
+        <!-- Quick Actions -->
+        {% if not n.read and n.user %}
+        <form method="post" action="{% url 'mark_notification_read' n.id %}" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+          {% csrf_token %}
+          <button type="submit" 
+                  class="p-2 hover:bg-primary/10 text-gray-400 hover:text-primary rounded-lg transition-all"
+                  title="Als gelesen markieren">
+            <i class="bi bi-check-lg"></i>
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination (if needed) -->
+    {% if notifications.has_next %}
+    <div class="flex justify-center mt-8">
+      <button class="px-6 py-3 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-xl transition-all flex items-center gap-2">
+        <i class="bi bi-chevron-down"></i>
+        Ältere anzeigen
+      </button>
+    </div>
     {% endif %}
+
+  {% else %}
+    <!-- Empty State -->
+    <div class="glass rounded-3xl p-12 text-center">
+      <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-800 flex items-center justify-center relative">
+        <i class="bi bi-bell-slash text-4xl text-gray-600"></i>
+        <div class="absolute inset-0 rounded-full bg-gradient-to-br from-primary/0 to-secondary/0 group-hover:from-primary/10 group-hover:to-secondary/10 transition-all"></div>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-300 mb-2">Keine Benachrichtigungen</h3>
+      <p class="text-gray-500 max-w-md mx-auto">
+        Du hast momentan keine Benachrichtigungen. Wir informieren dich, wenn es Updates oder wichtige Neuigkeiten gibt.
+      </p>
+      <div class="mt-6 flex justify-center gap-3">
+        <a href="{% url 'home' %}" 
+           class="inline-flex items-center px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all text-sm">
+          <i class="bi bi-grid mr-2"></i>
+          Zum Store
+        </a>
+        <a href="{% url 'developer_dashboard' %}" 
+           class="inline-flex items-center px-4 py-2 glass hover:bg-gray-700/50 text-gray-300 rounded-xl transition-all text-sm">
+          <i class="bi bi-code-square mr-2"></i>
+          Dashboard
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
 </div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-    // Markiere globale Nachrichten als gelesen im LocalStorage
-    document.querySelectorAll("div[data-global='true']").forEach(item => {
-        const id = item.getAttribute("data-id");
-        const read = localStorage.getItem("read_global_" + id);
+  // Mark global notifications as read in localStorage
+  document.querySelectorAll("div[data-global='true']").forEach(item => {
+    const id = item.getAttribute("data-id");
+    const read = localStorage.getItem("read_global_" + id);
+    const indicator = item.querySelector(".read-indicator");
 
-        if (read) {
-            item.classList.add("read-local");
-            const indicator = item.querySelector(".read-indicator");
-            if (indicator) indicator.classList.add("hidden");
-        } else {
-            const indicator = item.querySelector(".read-indicator");
-            if (indicator) indicator.classList.remove("hidden");
+    if (read) {
+      item.classList.add("read-local");
+      item.style.borderLeftColor = "transparent";
+      if (indicator) indicator.classList.add("hidden");
+    } else {
+      if (indicator) indicator.classList.remove("hidden");
 
-            item.addEventListener("click", () => {
-                localStorage.setItem("read_global_" + id, true);
-                if (indicator) indicator.classList.add("hidden");
-            });
+      item.addEventListener("click", () => {
+        localStorage.setItem("read_global_" + id, "true");
+        if (indicator) indicator.classList.add("hidden");
+        item.style.borderLeftColor = "transparent";
+        item.classList.add("read-local");
+      });
+    }
+  });
+
+  // Filter functionality
+  const filterButtons = document.querySelectorAll('.flex.gap-2 button');
+  const notifications = document.querySelectorAll('#notificationsList > div');
+
+  filterButtons.forEach((btn, index) => {
+    btn.addEventListener('click', () => {
+      // Update active state
+      filterButtons.forEach(b => {
+        b.classList.remove('bg-primary/10', 'text-primary', 'border-primary/20');
+        b.classList.add('glass', 'text-gray-400');
+      });
+      btn.classList.remove('glass', 'text-gray-400');
+      btn.classList.add('bg-primary/10', 'text-primary', 'border-primary/20');
+
+      // Filter notifications
+      notifications.forEach(n => {
+        const isRead = n.getAttribute('data-read') === 'true';
+        const isGlobal = n.getAttribute('data-global') === 'true';
+        const isLocalRead = n.classList.contains('read-local');
+        
+        if (index === 0) { // All
+          n.style.display = 'block';
+        } else if (index === 1) { // Unread
+          n.style.display = (!isRead || (isGlobal && !isLocalRead)) ? 'block' : 'none';
+        } else if (index === 2) { // Read
+          n.style.display = (isRead || isLocalRead) ? 'block' : 'none';
         }
+      });
     });
+  });
 });
 </script>
+
+<style>
+.read-local {
+  opacity: 0.7;
+  background: rgba(30, 41, 59, 0.3) !important;
+}
+
+.read-local .text-gray-100 {
+  font-weight: 400 !important;
+  color: #94a3b8 !important;
+}
+</style>
 {% endblock %}

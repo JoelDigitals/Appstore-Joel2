@@ -1,17 +1,192 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}Nachricht{% endblock %}
+{% block title %}Nachricht – {{ notification.timestamp|date:"d.m.Y" }}{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto mt-8 p-4 bg-gray-900 text-white rounded-lg shadow">
-    <h1 class="text-xl font-bold mb-2">Nachricht vom {{ notification.timestamp|date:"d.m.Y H:i" }}</h1>
-    <div class="mt-4 text-gray-100">{{ notification.message|safe }}</div>
-    <a href="{% url 'notifications_all' %}" class="mt-6 inline-block text-blue-400 hover:underline">Zurück zu den Benachrichtigungen</a>
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="{% url 'notifications_all' %}" class="hover:text-primary transition-colors flex items-center gap-1">
+      <i class="bi bi-bell"></i>
+      Benachrichtigungen
+    </a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <span class="text-gray-300">Nachricht</span>
+  </nav>
+
+  <!-- Message Card -->
+  <div class="glass rounded-3xl overflow-hidden">
+    <!-- Header -->
+    <div class="p-6 border-b border-gray-700/50 
+                {% if notification.type == 'update' %}
+                  bg-green-500/5
+                {% elif notification.type == 'security' %}
+                  bg-red-500/5
+                {% elif notification.type == 'system' %}
+                  bg-blue-500/5
+                {% else %}
+                  bg-primary/5
+                {% endif %}">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <!-- Type Icon -->
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0
+                      {% if notification.type == 'update' %}
+                        bg-green-500/10 text-green-400
+                      {% elif notification.type == 'security' %}
+                        bg-red-500/10 text-red-400
+                      {% elif notification.type == 'system' %}
+                        bg-blue-500/10 text-blue-400
+                      {% else %}
+                        bg-primary/10 text-primary
+                      {% endif %}">
+            {% if notification.type == 'update' %}
+              <i class="bi bi-arrow-up-circle text-xl"></i>
+            {% elif notification.type == 'security' %}
+              <i class="bi bi-shield-exclamation text-xl"></i>
+            {% elif notification.type == 'system' %}
+              <i class="bi bi-gear text-xl"></i>
+            {% else %}
+              <i class="bi bi-bell text-xl"></i>
+            {% endif %}
+          </div>
+          
+          <div>
+            <h1 class="text-xl font-bold text-gray-100">
+              {% if notification.type == 'update' %}
+                Update verfügbar
+              {% elif notification.type == 'security' %}
+                Sicherheitshinweis
+              {% elif notification.type == 'system' %}
+                Systemnachricht
+              {% else %}
+                Nachricht
+              {% endif %}
+            </h1>
+            <div class="flex items-center gap-3 mt-1 text-sm text-gray-400">
+              <span class="flex items-center gap-1">
+                <i class="bi bi-calendar3"></i>
+                {{ notification.timestamp|date:"d.m.Y" }}
+              </span>
+              <span class="text-gray-600">•</span>
+              <span class="flex items-center gap-1">
+                <i class="bi bi-clock"></i>
+                {{ notification.timestamp|date:"H:i" }} Uhr
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Badge -->
+        {% if notification.read or notification.is_read_local %}
+          <span class="px-3 py-1 rounded-full text-xs font-medium bg-gray-700/50 text-gray-400 border border-gray-600/30">
+            <i class="bi bi-check2-all mr-1"></i>Gelesen
+          </span>
+        {% else %}
+          <span class="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+            <i class="bi bi-envelope-fill mr-1"></i>Neu
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="p-6 md:p-8">
+      <div class="prose prose-invert max-w-none">
+        <div class="text-gray-100 leading-relaxed text-lg">
+          {{ notification.message|safe }}
+        </div>
+      </div>
+
+      <!-- Related App (if applicable) -->
+      {% if notification.app %}
+      <div class="mt-8 p-4 bg-slate-800/50 rounded-2xl border border-gray-700/50">
+        <div class="flex items-center gap-4">
+          {% if notification.app.icon %}
+            <img src="{{ notification.app.icon.url }}" alt="{{ notification.app.name }}" class="w-14 h-14 object-contain rounded-xl bg-slate-800 p-2">
+          {% else %}
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+              <span class="text-xl font-bold text-white">{{ notification.app.name|slice:":1"|upper }}</span>
+            </div>
+          {% endif %}
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-100">{{ notification.app.name }}</h3>
+            <p class="text-sm text-gray-400">{{ notification.app.platform|title }} • v{{ notification.app.current_version|default:"1.0" }}</p>
+          </div>
+          <a href="{% url 'app_detail' notification.app.id %}" 
+             class="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all text-sm font-medium">
+            <i class="bi bi-box-arrow-up-right mr-1"></i>
+            Öffnen
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Action Buttons -->
+      <div class="mt-8 flex flex-col sm:flex-row gap-3">
+        <a href="{% url 'notifications_all' %}" 
+           class="inline-flex items-center justify-center px-6 py-3 glass hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-xl transition-all">
+          <i class="bi bi-arrow-left mr-2"></i>
+          Zurück zur Übersicht
+        </a>
+        
+        {% if not notification.read and notification.user %}
+        <form method="post" action="{% url 'mark_notification_read' notification.id %}" class="flex-1 sm:flex-none">
+          {% csrf_token %}
+          <button type="submit" 
+                  class="w-full inline-flex items-center justify-center px-6 py-3 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl transition-all">
+            <i class="bi bi-check-lg mr-2"></i>
+            Als gelesen markieren
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Arrows (if previous/next exist) -->
+  {% if prev_notification or next_notification %}
+  <div class="flex justify-between mt-6">
+    {% if prev_notification %}
+    <a href="{% url 'notification_detail' prev_notification.id %}" 
+       class="flex items-center gap-2 px-4 py-3 glass hover:bg-gray-700/50 text-gray-400 hover:text-gray-200 rounded-xl transition-all text-sm">
+      <i class="bi bi-chevron-left"></i>
+      <span class="hidden sm:inline">Vorherige</span>
+    </a>
+    {% else %}
+    <div></div>
+    {% endif %}
+    
+    {% if next_notification %}
+    <a href="{% url 'notification_detail' next_notification.id %}" 
+       class="flex items-center gap-2 px-4 py-3 glass hover:bg-gray-700/50 text-gray-400 hover:text-gray-200 rounded-xl transition-all text-sm">
+      <span class="hidden sm:inline">Nächste</span>
+      <i class="bi bi-chevron-right"></i>
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
 </div>
 
 <script>
-    {% if not notification.user %}
-    localStorage.setItem("read_global_{{ notification.id }}", true);
-    {% endif %}
+  // Mark global notification as read in localStorage
+  {% if not notification.user %}
+  localStorage.setItem("read_global_{{ notification.id }}", "true");
+  {% endif %}
+
+  // Auto-mark as read after 3 seconds (optional)
+  {% if not notification.read and notification.user %}
+  setTimeout(() => {
+    fetch("{% url 'mark_notification_read' notification.id %}", {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    }).catch(() => {});
+  }, 3000);
+  {% endif %}
 </script>
 {% endblock %}

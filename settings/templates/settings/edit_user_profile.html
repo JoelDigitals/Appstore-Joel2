@@ -1,39 +1,329 @@
 {% extends "base.html" %}
+
 {% block title %}Profil bearbeiten{% endblock %}
 
 {% block content %}
-<h1>Profil bearbeiten</h1>
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    <label for="avatar">Avatar hochladen:</label><br>
-    {% if profile.avatar %}
-        <img src="{{ profile.avatar.url }}" alt="Avatar" style="max-width:150px;"><br>
-    {% endif %}
-    <input type="file" name="avatar" id="avatar"><br><br>
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="{% url 'user_profile' %}" class="hover:text-primary transition-colors flex items-center gap-1">
+      <i class="bi bi-person"></i>
+      Profil
+    </a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <span class="text-gray-300">Bearbeiten</span>
+  </nav>
 
-    <label for="bio">Bio:</label><br>
-    <textarea name="bio" id="bio" rows="4" cols="50">{{ profile.bio }}</textarea><br><br>
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-100 flex items-center gap-3">
+      <i class="bi bi-person-gear text-primary"></i>
+      Profil bearbeiten
+    </h1>
+    <p class="text-gray-400 mt-2">Verwalte deine persönlichen Informationen</p>
+  </div>
 
-    <label for="birth_date">Geburtsdatum:</label><br>
-    <input type="date" name="birth_date" id="birth_date" value="{{ profile.birth_date }}"><br><br>
+  <!-- Profile Preview Card -->
+  <div class="glass rounded-3xl p-6 mb-8 border border-primary/10">
+    <div class="flex items-center gap-6">
+      <div class="relative group">
+        <div class="w-24 h-24 rounded-2xl overflow-hidden bg-slate-800/50 border-2 border-gray-700/50 group-hover:border-primary/30 transition-all">
+          {% if profile.avatar %}
+            <img src="{{ profile.avatar.url }}" alt="Aktueller Avatar" class="w-full h-full object-cover" id="avatarPreview">
+          {% else %}
+            <div class="w-full h-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center" id="avatarPreview">
+              <span class="text-3xl font-bold text-white">{{ user.username|slice:":1"|upper }}</span>
+            </div>
+          {% endif %}
+        </div>
+        <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-2 border-slate-900 shadow-lg">
+          <i class="bi bi-check-lg text-white text-sm"></i>
+        </div>
+      </div>
+      <div>
+        <h2 class="text-xl font-semibold text-gray-100">{{ user.username }}</h2>
+        <p class="text-sm text-gray-400">Mitglied seit {{ user.date_joined|date:"F Y" }}</p>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="px-2 py-1 rounded-lg bg-primary/10 text-primary text-xs font-medium border border-primary/20">
+            <i class="bi bi-shield-check mr-1"></i>
+            {{ user.groups.first.name|default:"Benutzer" }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <label for="website">Website:</label><br>
-    <input type="url" name="website" id="website" value="{{ profile.website }}"><br><br>
+  <!-- Form Card -->
+  <div class="glass rounded-3xl p-6 md:p-8">
+    <form method="post" enctype="multipart/form-data" class="space-y-8" id="profileForm">
+      {% csrf_token %}
 
-    <label for="location">Standort:</label><br>
-    <input type="text" name="location" id="location" value="{{ profile.location }}"><br><br>
+      <!-- Avatar Section -->
+      <div class="space-y-4">
+        <label class="block text-sm font-medium text-gray-300">Profilbild</label>
+        <div class="flex flex-col sm:flex-row items-start gap-4">
+          <div class="relative">
+            <div class="w-32 h-32 rounded-2xl bg-slate-800/50 border-2 border-dashed border-gray-700 flex items-center justify-center overflow-hidden" id="dropZone">
+              {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="Avatar" class="w-full h-full object-cover" id="previewImage">
+              {% else %}
+                <div class="text-center p-4" id="placeholder">
+                  <i class="bi bi-cloud-arrow-up text-3xl text-gray-500 mb-2"></i>
+                  <p class="text-xs text-gray-500">Bild hochladen</p>
+                </div>
+              {% endif %}
+              <input type="file" 
+                     name="avatar" 
+                     id="avatar"
+                     accept="image/*"
+                     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+            </div>
+            <button type="button" 
+                    id="removeAvatar"
+                    class="absolute -top-2 -right-2 w-8 h-8 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-full flex items-center justify-center border border-red-500/20 transition-all {% if not profile.avatar %}hidden{% endif %}">
+              <i class="bi bi-trash3 text-sm"></i>
+            </button>
+          </div>
+          
+          <div class="flex-1 space-y-2">
+            <p class="text-sm text-gray-400">Ziehe ein Bild hierher oder klicke zum Auswählen</p>
+            <ul class="text-xs text-gray-500 space-y-1">
+              <li class="flex items-center gap-1"><i class="bi bi-check2 text-green-400"></i> JPG, PNG oder GIF</li>
+              <li class="flex items-center gap-1"><i class="bi bi-check2 text-green-400"></i> Max. 5 MB</li>
+              <li class="flex items-center gap-1"><i class="bi bi-check2 text-green-400"></i> Empfohlen: 400x400px</li>
+            </ul>
+          </div>
+        </div>
+      </div>
 
-    <label for="social_links">Social Links (kommagetrennt):</label><br>
-    <input type="text" name="social_links" id="social_links" value="{{ profile.social_links }}"><br><br>
+      <!-- Bio Section -->
+      <div class="space-y-2">
+        <label for="bio" class="block text-sm font-medium text-gray-300">Über mich</label>
+        <textarea name="bio" 
+                  id="bio" 
+                  rows="4"
+                  placeholder="Erzähle etwas über dich..."
+                  class="w-full bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-y min-h-[120px]">{{ profile.bio }}</textarea>
+        <div class="flex justify-between text-xs text-gray-500">
+          <span>Kurze Beschreibung für dein Profil</span>
+          <span id="bioCount">0/500</span>
+        </div>
+      </div>
 
-    <label for="email">E-Mail:</label><br>
-    <input type="email" name="email" id="email" value="{{ profile.email }}"><br><br>
+      <!-- Personal Info Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Birth Date -->
+        <div class="space-y-2">
+          <label for="birth_date" class="block text-sm font-medium text-gray-300">Geburtsdatum</label>
+          <div class="relative">
+            <i class="bi bi-calendar3 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input type="date" 
+                   name="birth_date" 
+                   id="birth_date" 
+                   value="{{ profile.birth_date|date:'Y-m-d' }}"
+                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all [color-scheme:dark]">
+          </div>
+        </div>
 
-    <label for="phone_number">Telefonnummer:</label><br>
-    <input type="tel" name="phone_number" id="phone_number" value="{{ profile.phone_number }}"><br><br>
+        <!-- Location -->
+        <div class="space-y-2">
+          <label for="location" class="block text-sm font-medium text-gray-300">Standort</label>
+          <div class="relative">
+            <i class="bi bi-geo-alt absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input type="text" 
+                   name="location" 
+                   id="location" 
+                   value="{{ profile.location }}"
+                   placeholder="z.B. Berlin, Deutschland"
+                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+          </div>
+        </div>
+      </div>
 
-    <button type="submit" class="btn btn-success">Speichern</button>
-    <a href="{% url 'user_profile' %}" class="btn btn-secondary">Abbrechen</a>
-</form>
+      <!-- Contact Info -->
+      <div class="space-y-4 pt-4 border-t border-gray-700/30">
+        <h3 class="text-sm font-semibold text-gray-300 flex items-center gap-2">
+          <i class="bi bi-envelope-at text-primary"></i>
+          Kontaktinformationen
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Email -->
+          <div class="space-y-2">
+            <label for="email" class="block text-sm font-medium text-gray-300">E-Mail</label>
+            <div class="relative">
+              <i class="bi bi-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+              <input type="email" 
+                     name="email" 
+                     id="email" 
+                     value="{{ profile.email }}"
+                     class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+            </div>
+          </div>
+
+          <!-- Phone -->
+          <div class="space-y-2">
+            <label for="phone_number" class="block text-sm font-medium text-gray-300">Telefonnummer</label>
+            <div class="relative">
+              <i class="bi bi-telephone absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+              <input type="tel" 
+                     name="phone_number" 
+                     id="phone_number" 
+                     value="{{ profile.phone_number }}"
+                     placeholder="+49 123 456789"
+                     class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+            </div>
+          </div>
+        </div>
+
+        <!-- Website -->
+        <div class="space-y-2">
+          <label for="website" class="block text-sm font-medium text-gray-300">Website</label>
+          <div class="relative">
+            <i class="bi bi-globe absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input type="url" 
+                   name="website" 
+                   id="website" 
+                   value="{{ profile.website }}"
+                   placeholder="https://deinewebsite.de"
+                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+          </div>
+        </div>
+
+        <!-- Social Links -->
+        <div class="space-y-2">
+          <label for="social_links" class="block text-sm font-medium text-gray-300">Social Media Links</label>
+          <div class="relative">
+            <i class="bi bi-share absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input type="text" 
+                   name="social_links" 
+                   id="social_links" 
+                   value="{{ profile.social_links }}"
+                   placeholder="Twitter, Instagram, LinkedIn, ... (kommagetrennt)"
+                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+          </div>
+          <p class="text-xs text-gray-500">Trenne mehrere Links mit Kommas</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-700/50">
+        <button type="submit" 
+                class="flex-1 sm:flex-none inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg shadow-primary/20">
+          <i class="bi bi-check-lg mr-2"></i>
+          Änderungen speichern
+        </button>
+        
+        <a href="{% url 'user_profile' %}" 
+           class="flex-1 sm:flex-none inline-flex items-center justify-center px-8 py-3 glass hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-xl transition-all">
+          <i class="bi bi-x-lg mr-2"></i>
+          Abbrechen
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="mt-8 glass rounded-3xl p-6 border border-red-500/20 bg-red-500/5">
+    <h3 class="text-sm font-semibold text-red-400 mb-3 flex items-center gap-2">
+      <i class="bi bi-exclamation-triangle"></i>
+      Gefahrenzone
+    </h3>
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <p class="text-gray-400 text-sm">Dein Konto und alle zugehörigen Daten dauerhaft löschen</p>
+        <p class="text-xs text-gray-500 mt-1">Diese Aktion kann nicht rückgängig gemacht werden</p>
+      </div>
+      <a href="{% url 'delete_user_profile' %}" 
+         class="inline-flex items-center px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-all text-sm font-medium border border-red-500/20">
+        <i class="bi bi-trash3 mr-2"></i>
+        Konto löschen
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const avatarInput = document.getElementById('avatar');
+    const previewImage = document.getElementById('previewImage');
+    const placeholder = document.getElementById('placeholder');
+    const dropZone = document.getElementById('dropZone');
+    const removeBtn = document.getElementById('removeAvatar');
+    const bio = document.getElementById('bio');
+    const bioCount = document.getElementById('bioCount');
+
+    // Avatar preview
+    avatarInput.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (previewImage) {
+                    previewImage.src = e.target.result;
+                } else {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'w-full h-full object-cover';
+                    img.id = 'previewImage';
+                    dropZone.innerHTML = '';
+                    dropZone.appendChild(img);
+                    dropZone.appendChild(avatarInput);
+                }
+                removeBtn.classList.remove('hidden');
+            }
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-primary', 'bg-primary/5');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-primary', 'bg-primary/5');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-primary', 'bg-primary/5');
+        
+        if (e.dataTransfer.files.length > 0) {
+            avatarInput.files = e.dataTransfer.files;
+            avatarInput.dispatchEvent(new Event('change'));
+        }
+    });
+
+    // Remove avatar
+    removeBtn.addEventListener('click', () => {
+        avatarInput.value = '';
+        dropZone.innerHTML = `
+            <div class="text-center p-4" id="placeholder">
+                <i class="bi bi-cloud-arrow-up text-3xl text-gray-500 mb-2"></i>
+                <p class="text-xs text-gray-500">Bild hochladen</p>
+            </div>
+        `;
+        dropZone.appendChild(avatarInput);
+        removeBtn.classList.add('hidden');
+    });
+
+    // Bio character count
+    bio.addEventListener('input', function() {
+        const count = this.value.length;
+        bioCount.textContent = `${count}/500`;
+        if (count > 500) {
+            bioCount.classList.add('text-red-400');
+            this.value = this.value.substring(0, 500);
+        } else {
+            bioCount.classList.remove('text-red-400');
+        }
+    });
+    
+    // Initialize count
+    bio.dispatchEvent(new Event('input'));
+});
+</script>
 {% endblock %}

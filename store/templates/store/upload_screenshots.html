@@ -1,29 +1,47 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends "base.html" %}
+
+{% block title %}Screenshots hochladen – {{ app.name }}{% endblock %}
 
 {% block content %}
-<h2>Screenshots für {{ app.name }} hochladen</h2>
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-<form method="post" enctype="multipart/form-data">
-  {% csrf_token %}
-  <label for="screenshots">Wähle 3–10 Screenshots aus:</label><br>
-  <input type="file" name="screenshots" id="screenshots" multiple accept="image/*" required><br><br>
-  
-  <button type="submit">Hochladen</button>
-</form>
+  <h1 class="text-3xl font-bold text-gray-100 mb-8">
+    <i class="bi bi-images mr-3 text-primary"></i>
+    Screenshots hochladen
+  </h1>
 
-<p>
-  <a href="{% url 'app_screenshots' app.id %}">Zurück zu den vorhandenen Screenshots</a>
-</p>
+  <form method="post" enctype="multipart/form-data" class="glass rounded-3xl p-6 md:p-8 space-y-6">
+    {% csrf_token %}
 
-<script>
-  const input = document.getElementById('screenshots');
-  input.addEventListener('change', function () {
-    const count = this.files.length;
-    if (count < 3 || count > 10) {
-      alert('Bitte wähle mindestens 3 und maximal 10 Screenshots aus.');
-      this.value = '';  // Zurücksetzen
-    }
-  });
-</script>
+    <!-- ImgBB Option -->
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-slate-800/30 border border-gray-700/50">
+      <input type="checkbox" name="use_imgbb" id="use_imgbb" checked
+             class="w-5 h-5 rounded border-gray-600 text-primary bg-slate-700 focus:ring-primary">
+      <label for="use_imgbb" class="text-sm text-gray-300 cursor-pointer select-none">
+        <span class="font-medium text-primary">Zu ImgBB hochladen</span>
+        <span class="block text-xs text-gray-500">Schnellerer Zugriff weltweit. Bei Fehler wird lokal gespeichert.</span>
+      </label>
+    </div>
+
+    <!-- Multiple File Upload -->
+    <div class="space-y-2">
+      <label class="block text-sm font-medium text-gray-300">
+        Screenshots <span class="text-red-400">*</span>
+      </label>
+      <input type="file" name="images" multiple accept="image/*"
+             class="block w-full text-sm text-gray-400
+                    file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0
+                    file:text-sm file:font-semibold file:bg-primary/10 file:text-primary
+                    hover:file:bg-primary/20">
+      <p class="text-xs text-gray-500">Mehrere Dateien möglich (PNG, JPG, WebP)</p>
+    </div>
+
+    <button type="submit" 
+            class="w-full px-8 py-4 bg-gradient-to-r from-primary to-secondary text-white rounded-xl font-semibold">
+      <i class="bi bi-cloud-upload mr-2"></i>
+      Hochladen
+    </button>
+  </form>
+
+</div>
 {% endblock %}

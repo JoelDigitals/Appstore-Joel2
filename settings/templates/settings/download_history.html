@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Download-Verlauf{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="{% url 'user_settings' %}" class="hover:text-primary transition-colors">
+      <i class="bi bi-sliders2"></i> Einstellungen
+    </a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <span class="text-gray-300">Downloads</span>
+  </nav>
+
+  <h1 class="text-3xl font-bold text-gray-100 mb-8 flex items-center gap-3">
+    <i class="bi bi-download text-primary"></i>
+    Download-Verlauf
+  </h1>
+
+  {% if downloads %}
+  <div class="space-y-4">
+    {% for download in downloads %}
+    <div class="glass rounded-2xl p-4 flex items-center gap-4">
+      {% if download.app.icon %}
+      <img src="{{ download.app.icon.url }}" alt="{{ download.app.name }}" class="w-14 h-14 rounded-xl object-contain bg-slate-800 p-2">
+      {% else %}
+      <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+        <span class="text-xl font-bold text-white">{{ download.app.name|slice:":1"|upper }}</span>
+      </div>
+      {% endif %}
+      
+      <div class="flex-1 min-w-0">
+        <h3 class="font-semibold text-gray-100 truncate">{{ download.app.name }}</h3>
+        <p class="text-sm text-gray-500">Version {{ download.version.version_number }} • {{ download.downloaded_at|date:"d.m.Y H:i" }}</p>
+      </div>
+      
+      <a href="{% url 'app_detail' download.app.id %}" class="p-2 hover:bg-primary/10 text-gray-400 hover:text-primary rounded-lg transition-all">
+        <i class="bi bi-box-arrow-up-right text-xl"></i>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="glass rounded-3xl p-12 text-center">
+    <i class="bi bi-inbox text-5xl text-gray-600 mb-4 block"></i>
+    <h3 class="text-xl font-semibold text-gray-300 mb-2">Keine Downloads</h3>
+    <p class="text-gray-500">Du hast noch keine Apps heruntergeladen.</p>
+    <a href="{% url 'home' %}" class="mt-4 inline-flex items-center px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all">
+      <i class="bi bi-shop mr-2"></i>Zum Store
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

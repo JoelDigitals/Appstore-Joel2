@@ -94,6 +94,23 @@ DATABASES = {
     'default': env.db(),  # Liest die DATABASE_URL aus der .env Datei
 }
 
+# ImgBB Konfiguration
+IMGBB_API_KEY = os.environ.get('IMGBB_API_KEY', '')  # Dein ImgBB API Key
+IMGBB_ENABLED = bool(IMGBB_API_KEY)
+
+SITE_URL = 'https://jds-appstore.de'
+
+# Maximale Bildgröße für ImgBB (in Bytes)
+IMGBB_MAX_FILE_SIZE = 32 * 1024 * 1024  # 32MB
+
+# Erlaubte Bildformate
+IMGBB_ALLOWED_FORMATS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']
+
+SSO_PROVIDER_URL = "https://joel-digitals.de"  # Oder http://127.0.0.1:8001 für lokal
+SSO_CLIENT_ID = "UPvOEkSIvIKRbJJCtWDmwRqqFrHFDpvG"
+SSO_CLIENT_SECRET = "mEBYKqPlkOSCthqkYhGWVqOLWPAmLIquWTwfakTrqkduBvYB"
+SSO_CALLBACK_URL = "https://jds-appstore.de/accounts/register/callback/" 
+
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 

@@ -1,151 +1,319 @@
 {% extends "base.html" %}
-{% load static %}
+{% load image_tags %}
+
+{% block title %}Meine Apps | JDS Appstore{% endblock %}
 
 {% block content %}
-<style>
-  .nav-tabs .nav-link.active {
-    background-color: #fff;
-    color: #000 !important;
-    border-color: #dee2e6 #dee2e6 #fff;
-    font-weight: bold;
-  }
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-  .modal-content {
-    background-color: #fff;
-    color: #000;
-  }
-
-  .bg-warning-subtle {
-    background-color: #fff3cd;
-  }
-
-  .card-img-top {
-    border-bottom: 1px solid #dee2e6;
-    object-fit: cover;
-    aspect-ratio: 1 / 1;
-  }
-
-  .card-link {
-    text-decoration: none;
-    color: inherit;
-  }
-
-  .text-dark {
-    color: #000 !important;
-  }
-</style>
-
-<div class="container my-4">
-  <h2 class="mb-4">Meine installierten Apps</h2>
-
-  <ul class="nav nav-tabs mb-3" id="installedAppsTab" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="apps-tab" data-bs-toggle="tab" data-bs-target="#apps" type="button" role="tab">Meine Apps</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="updates-tab" data-bs-toggle="tab" data-bs-target="#updates" type="button" role="tab">
-        Aktualisierungen{% if updates %} ({{ updates|length }}){% endif %}
-      </button>
-    </li>
-
-  </ul>
-
-  <div class="tab-content" id="installedAppsTabContent">
-    <!-- Meine Apps -->
-    <div class="tab-pane fade show active" id="apps" role="tabpanel" aria-labelledby="apps-tab">
-      {% if installed_apps %}
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-          {% for item in installed_apps %}
-            {% with latest=item.version.app.latest_version %}
-            <div class="col">
-              <a href="{% url 'app_detail' item.version.app.id %}" class="card-link">
-                <div class="card h-100 shadow-sm {% if latest and latest.version_number != item.version.version_number %}border-warning{% endif %}">
-                  {% if item.version.app.icon %}
-                    <img src="{{ item.version.app.icon.url }}" class="card-img-top" alt="{{ item.version.app.name }}">
-                  {% else %}
-                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center">
-                      <span class="text-muted">Kein Bild</span>
-                    </div>
-                  {% endif %}
-
-                  <div class="card-body {% if latest and latest.version_number != item.version.version_number %}bg-warning-subtle text-dark{% endif %}">
-                    <h5 class="card-title">{{ item.version.app.name }}</h5>
-                    <p class="card-text">Installierte Version: {{ item.version.version_number }}</p>
-                    <p class="card-text">Von: {{ item.version.app.developer }}</p>
-                  </div>
-                </div>
-              </a>
-            </div>
-            {% endwith %}
-          {% endfor %}
-        </div>
-      {% else %}
-        <p>Du hast noch keine Apps installiert.</p>
-      {% endif %}
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-3xl md:text-4xl font-bold text-gradient">Meine Apps</h1>
+      <p class="text-gray-400 mt-2">Verwalte deine installierten Apps und Updates</p>
     </div>
+    
+    <a href="{% url 'jds_apps' %}" 
+       class="inline-flex items-center px-6 py-3 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-xl font-medium transition-all">
+      <i class="bi bi-shop mr-2"></i>
+      Store durchsuchen
+    </a>
+  </div>
 
-    <!-- Aktualisierungen -->
-    <div class="tab-pane fade" id="updates" role="tabpanel" aria-labelledby="updates-tab">
-      {% if updates %}
-        <ul class="list-group">
-          {% for u in updates %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <strong>{{ u.download.version.app.name }}</strong><br>
-                Installiert: {{ u.download.version.version_number }}<br>
-                Neu: {{ u.latest_version.version_number }}<br>
-                {% if u.missing_versions > 1 %}
-                  <span class="text-danger fw-bold">Mehrere Versionen verfügbar</span>
-                {% else %}
-                  <span class="text-warning fw-bold">Update verfügbar</span>
-                {% endif %}
-              </div>
-              <div>
-                <button type="button"
-                        class="btn btn-sm btn-outline-dark me-2"
-                        data-bs-toggle="modal"
-                        data-bs-target="#releaseNotesModal"
-                        data-app="{{ u.download.version.app.name }}"
-                        data-notes="{{ u.release_notes|linebreaksbr|escapejs }}">
-                  Release Notes
-                </button>
-                <a href="{% url 'app_detail' u.download.version.app.id %}" class="btn btn-sm btn-primary">Jetzt aktualisieren</a>
-              </div>
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p>Alle deine Apps sind auf dem neuesten Stand!</p>
-      {% endif %}
+  <!-- Tabs -->
+  <div class="glass rounded-2xl p-2">
+    <div class="flex gap-2">
+      <button id="tab-apps" onclick="switchTab('apps')" 
+              class="flex-1 py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 bg-primary/20 text-primary">
+        <i class="bi bi-grid"></i>
+        <span>Meine Apps</span>
+        <span class="px-2 py-0.5 bg-slate-800 rounded-full text-xs">{{ installed_apps|length }}</span>
+      </button>
+      <button id="tab-updates" onclick="switchTab('updates')" 
+              class="flex-1 py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-gray-400 hover:text-gray-200">
+        <i class="bi bi-arrow-up-circle"></i>
+        <span>Updates</span>
+        {% if updates %}
+        <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full text-xs animate-pulse">{{ updates|length }}</span>
+        {% endif %}
+      </button>
     </div>
   </div>
+
+  <!-- Content: Meine Apps -->
+  <div id="content-apps" class="space-y-6">
+    {% if installed_apps %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+      {% for item in installed_apps %}
+      {% with latest=item.version.app.latest_version %}
+      <a href="{% url 'app_detail' item.version.app.id %}" class="group">
+        <div class="relative flex flex-col items-center text-center">
+          
+          <!-- Update Badge -->
+          {% if latest and latest.version_number != item.version.version_number %}
+          <div class="absolute -top-2 -right-2 z-10">
+            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-yellow-500 text-white text-xs font-bold animate-bounce" title="Update verfügbar">
+              <i class="bi bi-arrow-up"></i>
+            </span>
+          </div>
+          {% endif %}
+          
+          <!-- Icon -->
+          <div class="relative w-full aspect-square max-w-[140px] mb-4">
+            <div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
+            
+            {% with icon_url=item.version.app|get_image_url:"icon" %}
+              {% if icon_url %}
+                <img src="{{ icon_url }}" 
+                     alt="{{ item.version.app.name }}" 
+                     class="relative w-full h-full object-contain rounded-3xl shadow-2xl group-hover:scale-110 transition-all duration-500 bg-slate-800/50 p-2
+                            {% if latest and latest.version_number != item.version.version_number %}ring-2 ring-yellow-500/50{% endif %}"
+                     loading="lazy"
+                     onerror="this.src='/static/images/default_app_icon.png'">
+              {% else %}
+                <div class="relative w-full h-full rounded-3xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-all duration-500">
+                  <span class="text-3xl font-bold text-white">{{ item.version.app.name|slice:":1"|upper }}</span>
+                </div>
+              {% endif %}
+            {% endwith %}
+            
+            <!-- ImgBB Indicator -->
+            {% if item.version.app.icon_url %}
+              <div class="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow border border-slate-900" title="ImgBB">
+                <i class="bi bi-cloud text-white text-[8px]"></i>
+              </div>
+            {% endif %}
+            
+            <!-- Platform Badge -->
+            <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center shadow-lg border border-gray-700">
+              {% if item.version.app.platform == 'ios' %}
+                <i class="bi bi-apple text-primary text-sm"></i>
+              {% elif item.version.app.platform == 'android' %}
+                <i class="bi bi-android2 text-green-400 text-sm"></i>
+              {% elif item.version.app.platform == 'windows' %}
+                <i class="bi bi-microsoft text-blue-400 text-sm"></i>
+              {% elif item.version.app.platform == 'macos' %}
+                <i class="bi bi-apple text-gray-300 text-sm"></i>
+              {% elif item.version.app.platform == 'linux' %}
+                <i class="bi bi-terminal text-yellow-400 text-sm"></i>
+              {% else %}
+                <i class="bi bi-laptop text-primary text-sm"></i>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Info -->
+          <h3 class="font-semibold text-gray-100 text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1 w-full px-2">
+            {{ item.version.app.name }}
+          </h3>
+          <p class="text-xs text-gray-500">v{{ item.version.version_number }}</p>
+          
+          {% if latest and latest.version_number != item.version.version_number %}
+          <p class="text-xs text-yellow-400 mt-1 flex items-center gap-1">
+            <i class="bi bi-arrow-up-circle"></i>
+            v{{ latest.version_number }} verfügbar
+          </p>
+          {% endif %}
+        </div>
+      </a>
+      {% endwith %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="glass rounded-3xl p-12 text-center">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-slate-800 flex items-center justify-center">
+        <i class="bi bi-download text-4xl text-gray-600"></i>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-300 mb-2">Noch keine Apps</h3>
+      <p class="text-gray-500 mb-6">Du hast noch keine Apps aus dem Store installiert.</p>
+      <a href="{% url 'jds_apps' %}" 
+         class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/30 text-white rounded-xl font-medium transition-all hover:scale-105">
+        <i class="bi bi-shop mr-2"></i>
+        Apps entdecken
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Content: Updates -->
+  <div id="content-updates" class="hidden space-y-6">
+    {% if updates %}
+    <div class="space-y-4">
+      {% for u in updates %}
+      <div class="glass rounded-2xl p-6 hover:border-yellow-500/30 transition-all">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          
+          <!-- App Info -->
+          <div class="flex items-center gap-4">
+            <div class="relative w-16 h-16 flex-shrink-0">
+              {% with icon_url=u.download.version.app|get_image_url:"icon" %}
+                {% if icon_url %}
+                  <img src="{{ icon_url }}" 
+                       alt="{{ u.download.version.app.name }}" 
+                       class="w-full h-full object-contain rounded-xl bg-slate-800/50 p-1"
+                       loading="lazy"
+                       onerror="this.src='/static/images/default_app_icon.png'">
+                {% else %}
+                  <div class="w-full h-full rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                    <span class="text-xl font-bold text-white">{{ u.download.version.app.name|slice:":1"|upper }}</span>
+                  </div>
+                {% endif %}
+              {% endwith %}
+              
+              {% if u.download.version.app.icon_url %}
+                <div class="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center shadow" title="ImgBB">
+                  <i class="bi bi-cloud text-white text-[6px]"></i>
+                </div>
+              {% endif %}
+              
+              <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                <i class="bi bi-arrow-up text-white text-xs"></i>
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="font-semibold text-gray-100 text-lg">{{ u.download.version.app.name }}</h3>
+              <div class="flex items-center gap-3 text-sm text-gray-500 mt-1">
+                <span class="line-through">v{{ u.download.version.version_number }}</span>
+                <i class="bi bi-arrow-right text-yellow-500"></i>
+                <span class="text-yellow-400 font-medium">v{{ u.latest_version.version_number }}</span>
+              </div>
+              {% if u.missing_versions > 1 %}
+              <p class="text-xs text-yellow-500/80 mt-1">
+                <i class="bi bi-exclamation-triangle mr-1"></i>
+                {{ u.missing_versions }} Versionen übersprungen
+              </p>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center gap-3">
+            <button onclick="showReleaseNotes('{{ u.download.version.app.name|escapejs }}', '{{ u.release_notes|default:"Keine Release Notes"|escapejs }}')"
+                    class="px-4 py-2 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-lg text-sm font-medium transition-all">
+              <i class="bi bi-file-text mr-2"></i>
+              Änderungen
+            </button>
+            <a href="{% url 'app_detail' u.download.version.app.id %}" 
+               class="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:shadow-lg hover:shadow-yellow-500/30 text-white rounded-xl font-medium transition-all hover:scale-105 flex items-center">
+              <i class="bi bi-arrow-up-circle mr-2"></i>
+              Aktualisieren
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="glass rounded-3xl p-12 text-center">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
+        <i class="bi bi-check-circle text-4xl text-green-400"></i>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-300 mb-2">Alles aktuell!</h3>
+      <p class="text-gray-500">Alle deine Apps sind auf dem neuesten Stand.</p>
+    </div>
+    {% endif %}
+  </div>
+
 </div>
 
 <!-- Release Notes Modal -->
-<div class="modal fade" id="releaseNotesModal" tabindex="-1" aria-labelledby="releaseNotesModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="releaseNotesModalLabel">Release Notes</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
-      </div>
-      <div class="modal-body" id="releaseNotesContent">
-        <!-- Dynamischer Inhalt -->
-      </div>
+<div id="releaseNotesModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onclick="closeReleaseNotes()">
+  <div class="relative w-full max-w-2xl glass rounded-3xl p-6 transform scale-95 opacity-0 transition-all duration-300" id="releaseNotesContent" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-gray-100 flex items-center">
+        <i class="bi bi-file-text mr-3 text-primary"></i>
+        <span id="modalAppName">Release Notes</span>
+      </h3>
+      <button onclick="closeReleaseNotes()" class="text-gray-400 hover:text-white transition">
+        <i class="bi bi-x-lg text-2xl"></i>
+      </button>
+    </div>
+    <div class="max-h-[60vh] overflow-y-auto prose prose-invert">
+      <pre id="modalNotes" class="whitespace-pre-wrap text-gray-300 font-sans"></pre>
     </div>
   </div>
 </div>
 
+{% block extra_js %}
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const modal = document.getElementById('releaseNotesModal');
-    modal.addEventListener('show.bs.modal', function (event) {
-      const button = event.relatedTarget;
-      const notes = button.getAttribute('data-notes');
-      const appName = button.getAttribute('data-app');
-      document.getElementById('releaseNotesModalLabel').textContent = "Release Notes für " + appName;
-      document.getElementById('releaseNotesContent').innerHTML = notes || "<em>Keine Release Notes verfügbar.</em>";
+function switchTab(tab) {
+  // Update buttons
+  const btnApps = document.getElementById('tab-apps');
+  const btnUpdates = document.getElementById('tab-updates');
+  const contentApps = document.getElementById('content-apps');
+  const contentUpdates = document.getElementById('content-updates');
+  
+  if (tab === 'apps') {
+    btnApps.className = 'flex-1 py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 bg-primary/20 text-primary';
+    btnUpdates.className = 'flex-1 py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-gray-400 hover:text-gray-200';
+    contentApps.classList.remove('hidden');
+    contentUpdates.classList.add('hidden');
+  } else {
+    btnUpdates.className = 'flex-1 py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 bg-yellow-500/20 text-yellow-400';
+    btnApps.className = 'flex-1 py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-gray-400 hover:text-gray-200';
+    contentApps.classList.add('hidden');
+    contentUpdates.classList.remove('hidden');
+  }
+}
+
+function showReleaseNotes(appName, notes) {
+  const modal = document.getElementById('releaseNotesModal');
+  const content = document.getElementById('releaseNotesContent');
+  
+  document.getElementById('modalAppName').textContent = appName;
+  document.getElementById('modalNotes').textContent = notes;
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  
+  setTimeout(() => {
+    content.classList.remove('scale-95', 'opacity-0');
+    content.classList.add('scale-100', 'opacity-100');
+  }, 10);
+}
+
+function closeReleaseNotes() {
+  const modal = document.getElementById('releaseNotesModal');
+  const content = document.getElementById('releaseNotesContent');
+  
+  content.classList.remove('scale-100', 'opacity-100');
+  content.classList.add('scale-95', 'opacity-0');
+  
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }, 300);
+}
+
+// Close on escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeReleaseNotes();
+});
+
+// Lazy loading with fade-in
+document.addEventListener('DOMContentLoaded', () => {
+  const images = document.querySelectorAll('img[loading="lazy"]');
+  const imageObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const img = entry.target;
+        img.style.opacity = '0';
+        img.onload = () => {
+          img.style.transition = 'opacity 0.5s ease';
+          img.style.opacity = '1';
+        };
+        if (img.complete) {
+          img.style.opacity = '1';
+        }
+        observer.unobserve(img);
+      }
     });
   });
+
+  images.forEach(img => imageObserver.observe(img));
+});
 </script>
 {% endblock %}

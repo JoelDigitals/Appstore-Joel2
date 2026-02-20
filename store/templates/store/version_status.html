@@ -1,95 +1,400 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block title %}App-Prüfung – {{ version.app.name }}{% endblock %}
+
 {% block content %}
-<div class="container my-5 text-white text-center">
-  <h1 class="mb-4">🔍 Status der App-Prüfung</h1>
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-  <!-- Start Button -->
-  <button id="startCheckBtn" class="btn btn-success mb-4">
-    🔄 Überprüfung starten
-  </button>
-
-  <!-- Fortschrittsanzeige -->
-  <div id="progressSteps">
-    <div class="step" data-step="1" id="step-1">📁 Dateiüberprüfung...</div>
-    <div class="step" data-step="2" id="step-2">🧩 Strukturprüfung...</div>
-    <div class="step" data-step="3" id="step-3">🔒 Sicherheitsprüfung...</div>
-    <div class="step" data-step="4" id="step-4">🧪 Qualitätsprüfung...</div>
-    <div class="step" data-step="5" id="step-5">🚀 Veröffentlichung...</div>
+  <!-- Header -->
+  <div class="text-center space-y-4">
+    <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/20 relative">
+      <i class="bi bi-shield-check text-4xl text-white"></i>
+      <div class="absolute inset-0 rounded-full border-2 border-white/20 animate-pulse"></div>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gradient">App-Prüfung</h1>
+    <p class="text-gray-400">{{ version.app.name }} v{{ version.version_number }}</p>
   </div>
 
-  <div class="mt-4">
-    <p id="currentStatus">⏳ Warten auf Start...</p>
+  <!-- Progress Card -->
+  <div class="glass rounded-3xl p-6 md:p-8">
+    
+    <!-- Start Button -->
+    <div class="text-center mb-8" id="startSection">
+      <button id="startCheckBtn" 
+              class="group px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:shadow-lg hover:shadow-green-500/30 text-white rounded-xl font-semibold flex items-center justify-center mx-auto transition-all hover:scale-105">
+        <i class="bi bi-play-circle mr-2 text-2xl group-hover:animate-pulse"></i>
+        Überprüfung starten
+      </button>
+      <p class="text-gray-500 text-sm mt-4">Die Prüfung dauert ca. 2-5 Minuten</p>
+    </div>
+
+    <!-- Progress Steps -->
+    <div id="progressSteps" class="hidden space-y-4">
+      
+      <!-- Step 1: Datei -->
+      <div class="step relative" data-step="1" id="step-1">
+        <div class="flex items-center gap-4 p-4 rounded-xl bg-slate-800/30 border border-gray-700/50 transition-all duration-500">
+          <div class="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center flex-shrink-0 step-icon transition-all duration-500">
+            <i class="bi bi-file-earmark-check text-xl text-gray-400"></i>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-200">Dateiüberprüfung</h3>
+            <p class="text-sm text-gray-500">Format, Größe und Integrität</p>
+          </div>
+          <div class="step-status">
+            <i class="bi bi-hourglass text-yellow-400 animate-pulse"></i>
+          </div>
+        </div>
+        <div class="absolute left-6 top-full w-0.5 h-4 bg-gray-700 step-line"></div>
+      </div>
+
+      <!-- Step 2: Struktur -->
+      <div class="step relative" data-step="2" id="step-2">
+        <div class="flex items-center gap-4 p-4 rounded-xl bg-slate-800/30 border border-gray-700/50 transition-all duration-500">
+          <div class="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center flex-shrink-0 step-icon transition-all duration-500">
+            <i class="bi bi-diagram-3 text-xl text-gray-400"></i>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-200">Strukturprüfung</h3>
+            <p class="text-sm text-gray-500">Manifest und Ressourcen</p>
+          </div>
+          <div class="step-status">
+            <i class="bi bi-hourglass text-gray-600"></i>
+          </div>
+        </div>
+        <div class="absolute left-6 top-full w-0.5 h-4 bg-gray-700 step-line"></div>
+      </div>
+
+      <!-- Step 3: Sicherheit -->
+      <div class="step relative" data-step="3" id="step-3">
+        <div class="flex items-center gap-4 p-4 rounded-xl bg-slate-800/30 border border-gray-700/50 transition-all duration-500">
+          <div class="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center flex-shrink-0 step-icon transition-all duration-500">
+            <i class="bi bi-shield-lock text-xl text-gray-400"></i>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-200">Sicherheitsprüfung</h3>
+            <p class="text-sm text-gray-500">Malware und Schwachstellen</p>
+          </div>
+          <div class="step-status">
+            <i class="bi bi-hourglass text-gray-600"></i>
+          </div>
+        </div>
+        <div class="absolute left-6 top-full w-0.5 h-4 bg-gray-700 step-line"></div>
+      </div>
+
+      <!-- Step 4: Qualität -->
+      <div class="step relative" data-step="4" id="step-4">
+        <div class="flex items-center gap-4 p-4 rounded-xl bg-slate-800/30 border border-gray-700/50 transition-all duration-500">
+          <div class="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center flex-shrink-0 step-icon transition-all duration-500">
+            <i class="bi bi-clipboard-check text-xl text-gray-400"></i>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-200">Qualitätsprüfung</h3>
+            <p class="text-sm text-gray-500">Performance und Stabilität</p>
+          </div>
+          <div class="step-status">
+            <i class="bi bi-hourglass text-gray-600"></i>
+          </div>
+        </div>
+        <div class="absolute left-6 top-full w-0.5 h-4 bg-gray-700 step-line"></div>
+      </div>
+
+      <!-- Step 5: Veröffentlichung -->
+      <div class="step" data-step="5" id="step-5">
+        <div class="flex items-center gap-4 p-4 rounded-xl bg-slate-800/30 border border-gray-700/50 transition-all duration-500">
+          <div class="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center flex-shrink-0 step-icon transition-all duration-500">
+            <i class="bi bi-rocket-takeoff text-xl text-gray-400"></i>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-200">Veröffentlichung</h3>
+            <p class="text-sm text-gray-500">Im Store verfügbar machen</p>
+          </div>
+          <div class="step-status">
+            <i class="bi bi-hourglass text-gray-600"></i>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Status Text -->
+    <div class="mt-8 text-center">
+      <div id="currentStatus" class="inline-flex items-center gap-2 px-6 py-3 glass rounded-full text-gray-300">
+        <i class="bi bi-hourglass-split text-yellow-400 animate-pulse"></i>
+        <span>Warten auf Start...</span>
+      </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="resultMessage" class="hidden mt-6 text-center">
+      <!-- Wird via JavaScript gefüllt -->
+    </div>
+
   </div>
 
-  <!-- Optional: kleine Spiele während Wartezeit -->
-  <div class="games-link text-center">
-    <p class="mt-4">Du wartest? Zeit für eine Runde!</p>
-    <div class="d-flex flex-wrap justify-content-center gap-2">
-      <a href="{% static 'games/tetris.html' %}" target="_blank" class="btn btn-outline-light">🎮 Tetris</a>
-      <a href="{% static 'games/pong.html' %}" target="_blank" class="btn btn-outline-light">🏓 Pong</a>
-      <a href="{% static 'games/flappy.html' %}" target="_blank" class="btn btn-outline-light">🐤 Flappy Bird</a>
-      <a href="{% static 'games/2048.html' %}" target="_blank" class="btn btn-outline-light">2048</a>
-      <a href="{% static 'games/blockblast.html' %}" target="_blank" class="btn btn-outline-light">🎨 Blocky Blast Puzzle</a>
-      <a href="{% static 'games/snake.html' %}" target="_blank" class="btn btn-outline-light">🐍 Snake</a>
+  <!-- Mini Games -->
+  <div class="glass rounded-2xl p-6">
+    <div class="flex items-center gap-3 mb-6">
+      <i class="bi bi-controller text-2xl text-primary"></i>
+      <h2 class="text-xl font-bold text-gray-100">Wartezeit vertreiben</h2>
+    </div>
+    <p class="text-gray-400 text-sm mb-4">Die Prüfung dauert ein paar Minuten. Spiel doch zwischendurch ein Mini-Game!</p>
+    
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <a href="{% static 'games/tetris.html' %}" target="_blank" 
+         class="group p-4 glass rounded-xl hover:bg-primary/10 transition-all text-center">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-lg bg-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <i class="bi bi-grid-3x3 text-cyan-400 text-xl"></i>
+        </div>
+        <span class="text-sm font-medium text-gray-300 group-hover:text-primary">Tetris</span>
+      </a>
+      
+      <a href="{% static 'games/pong.html' %}" target="_blank" 
+         class="group p-4 glass rounded-xl hover:bg-primary/10 transition-all text-center">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-lg bg-orange-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <i class="bi bi-circle text-orange-400 text-xl"></i>
+        </div>
+        <span class="text-sm font-medium text-gray-300 group-hover:text-primary">Pong</span>
+      </a>
+      
+      <a href="{% static 'games/flappy.html' %}" target="_blank" 
+         class="group p-4 glass rounded-xl hover:bg-primary/10 transition-all text-center">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-lg bg-yellow-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <i class="bi bi-twitter text-yellow-400 text-xl"></i>
+        </div>
+        <span class="text-sm font-medium text-gray-300 group-hover:text-primary">Flappy</span>
+      </a>
+      
+      <a href="{% static 'games/2048.html' %}" target="_blank" 
+         class="group p-4 glass rounded-xl hover:bg-primary/10 transition-all text-center">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-lg bg-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <span class="text-amber-400 font-bold text-lg">2048</span>
+        </div>
+        <span class="text-sm font-medium text-gray-300 group-hover:text-primary">2048</span>
+      </a>
+      
+      <a href="{% static 'games/blockblast.html' %}" target="_blank" 
+         class="group p-4 glass rounded-xl hover:bg-primary/10 transition-all text-center">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-lg bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <i class="bi bi-square-fill text-purple-400 text-xl"></i>
+        </div>
+        <span class="text-sm font-medium text-gray-300 group-hover:text-primary">Block Blast</span>
+      </a>
+      
+      <a href="{% static 'games/snake.html' %}" target="_blank" 
+         class="group p-4 glass rounded-xl hover:bg-primary/10 transition-all text-center">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-lg bg-green-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+          <i class="bi bi-lightning-charge text-green-400 text-xl"></i>
+        </div>
+        <span class="text-sm font-medium text-gray-300 group-hover:text-primary">Snake</span>
+      </a>
     </div>
   </div>
+
+  <!-- Back Link -->
+  <div class="text-center">
+    <a href="{% url 'developer_dashboard' %}" 
+       class="inline-flex items-center px-6 py-3 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-full font-medium transition-all">
+      <i class="bi bi-arrow-left mr-2"></i>
+      Zum Dashboard
+    </a>
+  </div>
+
 </div>
+
+<style>
+/* Step Animations */
+.step {
+  opacity: 0.5;
+  transform: translateX(-10px);
+  transition: all 0.5s ease;
+}
+
+.step.active {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.step.completed {
+  opacity: 1;
+}
+
+.step.completed .step-icon {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+.step.completed .step-icon i {
+  color: white;
+}
+
+.step.completed .step-status i {
+  color: #10b981;
+}
+
+.step.active .step-icon {
+  background: linear-gradient(135deg, #0d6efd, #0066ff);
+  box-shadow: 0 0 20px rgba(13, 110, 253, 0.3);
+  animation: pulse 2s infinite;
+}
+
+.step.active .step-icon i {
+  color: white;
+}
+
+.step-line {
+  transition: all 0.5s ease;
+}
+
+.step.completed + .step .step-line,
+.step.active + .step .step-line {
+  background: linear-gradient(to bottom, #10b981, #0d6efd);
+}
+
+/* Pulse Animation for active step */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Hide line on last step */
+.step:last-child .step-line {
+  display: none;
+}
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const startBtn = document.getElementById('startCheckBtn');
+  const startSection = document.getElementById('startSection');
+  const progressSteps = document.getElementById('progressSteps');
   const statusText = document.getElementById('currentStatus');
+  const resultMessage = document.getElementById('resultMessage');
 
-  // Starte manuell
+  // Start Check
   startBtn.addEventListener('click', () => {
     startBtn.disabled = true;
-    statusText.textContent = "🔄 Prüfung wird gestartet...";
+    startBtn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin mr-2"></i>Starte...';
+    
     fetch("{% url 'start_version_check_api' version.id %}", {
       method: "POST",
-      headers: { "X-CSRFToken": getCookie("csrftoken") }
+      headers: { 
+        "X-CSRFToken": getCookie("csrftoken"),
+        "Content-Type": "application/json"
+      }
     })
     .then(r => r.json())
     .then(d => {
-      if (d.status === "running") {
-        statusText.textContent = "✅ Prüfung läuft!";
+      if (d.status === "running" || d.status === "started") {
+        startSection.classList.add('hidden');
+        progressSteps.classList.remove('hidden');
+        updateStatus('running', 0);
         checkStatus();
       } else {
-        statusText.textContent = d.message;
+        showError(d.message || "Fehler beim Starten");
       }
+    })
+    .catch(err => {
+      showError("Verbindungsfehler: " + err.message);
+      startBtn.disabled = false;
+      startBtn.innerHTML = '<i class="bi bi-play-circle mr-2"></i>Erneut versuchen';
     });
   });
 
-  // Regelmäßige Status-Abfrage
+  // Check Status
   function checkStatus() {
     fetch("{% url 'version_status_data' version.id %}")
       .then(r => r.json())
       .then(data => {
-        updateSteps(data.progress);
-        statusText.textContent = `Status: ${data.status}`;
+        updateSteps(data.progress || 0);
+        updateStatus(data.status, data.progress || 0);
 
         if (data.status === "running") {
-          setTimeout(checkStatus, 5000);
-        } else if (data.status === "passed") {
-          statusText.textContent = "🎉 App wurde erfolgreich geprüft und veröffentlicht!";
-          updateSteps(5);
-        } else if (data.status === "failed") {
-          statusText.textContent = "❌ Prüfung fehlgeschlagen.";
+          setTimeout(checkStatus, 3000);
+        } else if (data.status === "passed" || data.status === "approved") {
+          showSuccess();
+        } else if (data.status === "failed" || data.status === "rejected") {
+          showFailure(data.message || "Prüfung fehlgeschlagen");
         }
+      })
+      .catch(err => {
+        showError("Status konnte nicht abgerufen werden");
       });
   }
 
-  // Steps visuell markieren
+  // Update Steps Visual
   function updateSteps(progress) {
     document.querySelectorAll(".step").forEach(el => {
       const stepNum = parseInt(el.getAttribute("data-step"));
-      if (stepNum <= progress) {
-        el.classList.add("completed");
-      } else {
-        el.classList.remove("completed");
+      el.classList.remove('active', 'completed');
+      
+      if (stepNum < progress) {
+        el.classList.add('completed');
+      } else if (stepNum === progress) {
+        el.classList.add('active');
       }
     });
+  }
+
+  // Update Status Text
+  function updateStatus(status, progress) {
+    const statusMap = {
+      'running': { icon: 'bi-arrow-repeat animate-spin text-primary', text: 'Prüfung läuft...' },
+      'checking_file': { icon: 'bi-file-earmark-check text-cyan-400', text: 'Datei wird analysiert...' },
+      'checking_structure': { icon: 'bi-diagram-3 text-blue-400', text: 'Struktur wird geprüft...' },
+      'checking_security': { icon: 'bi-shield-lock text-purple-400', text: 'Sicherheitsanalyse...' },
+      'checking_quality': { icon: 'bi-clipboard-check text-yellow-400', text: 'Qualitätsprüfung...' },
+      'publishing': { icon: 'bi-rocket-takeoff text-green-400', text: 'Wird veröffentlicht...' },
+      'waiting': { icon: 'bi-hourglass-split text-yellow-400 animate-pulse', text: 'Warteschlange...' }
+    };
+
+    const config = statusMap[status] || statusMap['running'];
+    statusText.innerHTML = `<i class="bi ${config.icon} mr-2"></i><span>${config.text}</span>`;
+  }
+
+  // Show Success
+  function showSuccess() {
+    updateSteps(5);
+    statusText.innerHTML = '<i class="bi bi-check-circle-fill text-green-400 mr-2"></i><span class="text-green-400 font-semibold">Prüfung bestanden!</span>';
+    statusText.classList.add('bg-green-500/10', 'border', 'border-green-500/30');
+    
+    resultMessage.innerHTML = `
+      <div class="p-6 rounded-2xl bg-green-500/10 border border-green-500/30">
+        <i class="bi bi-trophy text-4xl text-green-400 mb-3"></i>
+        <h3 class="text-xl font-bold text-gray-100 mb-2">App veröffentlicht!</h3>
+        <p class="text-gray-400 mb-4">Deine App ist nun im JDS Appstore verfügbar.</p>
+        <a href="{% url 'app_detail' version.app.id %}" class="inline-flex items-center px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-all">
+          <i class="bi bi-box-arrow-up-right mr-2"></i>
+          App ansehen
+        </a>
+      </div>
+    `;
+    resultMessage.classList.remove('hidden');
+  }
+
+  // Show Failure
+  function showFailure(message) {
+    statusText.innerHTML = '<i class="bi bi-x-circle-fill text-red-400 mr-2"></i><span class="text-red-400 font-semibold">Prüfung fehlgeschlagen</span>';
+    statusText.classList.add('bg-red-500/10', 'border', 'border-red-500/30');
+    
+    resultMessage.innerHTML = `
+      <div class="p-6 rounded-2xl bg-red-500/10 border border-red-500/30">
+        <i class="bi bi-exclamation-triangle text-4xl text-red-400 mb-3"></i>
+        <h3 class="text-xl font-bold text-gray-100 mb-2">App abgelehnt</h3>
+        <p class="text-gray-400 mb-4">${message}</p>
+        <a href="{% url 'app_detail_dev' version.app.id %}" class="inline-flex items-center px-6 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl font-medium transition-all">
+          <i class="bi bi-arrow-left mr-2"></i>
+          Zurück zur App
+        </a>
+      </div>
+    `;
+    resultMessage.classList.remove('hidden');
+  }
+
+  // Show Error
+  function showError(message) {
+    statusText.innerHTML = `<i class="bi bi-exclamation-circle text-red-400 mr-2"></i><span class="text-red-400">${message}</span>`;
   }
 
   // CSRF Helper
@@ -108,31 +413,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return cookieValue;
   }
 
-  // Direkt beim Laden Status prüfen (falls schon läuft)
+  // Auto-check on load if already running
   checkStatus();
 });
 </script>
-
-<style>
-.step {
-  margin: 15px auto;
-  max-width: 600px;
-  padding: 15px;
-  background: #1f1f1f;
-  border-left: 6px solid #555;
-  border-radius: 6px;
-  text-align: left;
-  transition: all 0.3s ease;
-}
-.step.completed {
-  background: #1b3;
-  border-left-color: #3f6;
-  color: #fff;
-  font-weight: bold;
-}
-#currentStatus {
-  font-size: 1.2rem;
-  font-weight: 500;
-}
-</style>
 {% endblock %}

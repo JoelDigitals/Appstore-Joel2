@@ -2,106 +2,409 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Registrierung</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrierung – Joel Appstore</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #74ebd5, #acb6e5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .register-box {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        html {
+            height: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Changed from center to allow scrolling */
+            padding: 1.5rem;
+            position: relative;
+            overflow-x: hidden;
+            overflow-y: auto; /* Enable vertical scrolling */
+        }
+
+        /* Animated background elements */
+        body::before {
+            content: '';
+            position: fixed; /* Changed to fixed to stay in place while scrolling */
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+            animation: pulse 15s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .register-container {
+            position: relative;
+            z-index: 1;
             width: 100%;
-            max-width: 400px;
+            max-width: 440px;
+            margin: auto 0; /* Center vertically when space allows */
+            padding: 2rem 0; /* Add padding for scroll space */
+        }
+
+        /* Glass Card */
+        .register-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Logo/Header */
+        .brand-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .brand-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1rem;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+        }
+
+        .brand-icon i {
+            font-size: 2rem;
+            color: white;
         }
 
         h2 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #333;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 0.5rem;
         }
 
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.9375rem;
+        }
+
+        /* SSO Image Container - Fixed width constraint */
+        .sso-image-container {
+            display: block;
+            width: 100%;
+            margin-bottom: 1.5rem;
+            text-decoration: none;
+        }
+
+        .sso-image-container img {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 12px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .sso-image-container:hover img {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Form Styling */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 1.25rem;
         }
 
         label {
             display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            color: #444;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #cbd5e1;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 1.125rem;
+            transition: color 0.3s;
         }
 
         input[type="text"],
         input[type="email"],
         input[type="password"] {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 16px;
+            padding: 0.875rem 1rem 0.875rem 2.75rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 0.9375rem;
+            color: #f1f5f9;
+            transition: all 0.3s;
         }
 
+        input::placeholder {
+            color: #64748b;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        input:focus + .input-icon,
+        .input-wrapper:focus-within .input-icon {
+            color: #6366f1;
+        }
+
+        /* Password strength indicator */
+        .password-strength {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+            display: none;
+        }
+
+        .password-strength.show {
+            display: block;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            width: 0;
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+
+        .strength-weak { background: #ef4444; width: 33%; }
+        .strength-medium { background: #f59e0b; width: 66%; }
+        .strength-strong { background: #10b981; width: 100%; }
+
+        /* Error Styling */
         .errorlist {
-            color: red;
-            font-size: 14px;
-            margin-top: 4px;
+            margin-top: 0.5rem;
+            padding: 0;
             list-style: none;
-            padding-left: 0;
         }
 
-        button {
+        .errorlist li {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            color: #f87171;
+        }
+
+        .errorlist li::before {
+            content: '\F333';
+            font-family: 'bootstrap-icons';
+            font-size: 0.875rem;
+        }
+
+        input.error {
+            border-color: #ef4444;
+        }
+
+        input.error:focus {
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        /* Submit Button */
+        .submit-btn {
             width: 100%;
-            padding: 14px;
-            background-color: #007bff;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
-            font-size: 16px;
+            font-size: 1rem;
+            font-weight: 600;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
         }
 
-        button:hover {
-            background-color: #0056b3;
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
         }
 
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn i {
+            margin-right: 0.5rem;
+        }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 1.5rem 0;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .divider span {
+            padding: 0 1rem;
+        }
+
+        /* Footer */
         .form-footer {
-            margin-top: 20px;
             text-align: center;
-            font-size: 14px;
-            color: #666;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            font-size: 0.9375rem;
         }
 
         .form-footer a {
-            color: #007bff;
+            color: #818cf8;
             text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
         }
 
         .form-footer a:hover {
-            text-decoration: underline;
+            color: #a5b4fc;
+        }
+
+        /* Terms */
+        .terms {
+            margin-top: 1rem;
+            font-size: 0.8125rem;
+            color: #64748b;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .terms a {
+            color: #818cf8;
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem;
+            }
+
+            .register-container {
+                padding: 1rem 0;
+            }
+
+            .register-card {
+                padding: 1.5rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="register-box">
-    <h2>Registrieren</h2>
-    <form method="post">
-        {% csrf_token %}
+<div class="register-container">
+    <div class="register-card">
+        <!-- Brand Header -->
+        <div class="brand-header">
+            <div class="brand-icon">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <h2>Konto erstellen</h2>
+            <p class="subtitle">Werde Teil der Joel Appstore Community</p>
+        </div>
 
-        {% for field in form %}
+        <!-- SSO Login with constrained image -->
+        <a href="{% url 'sso_connect' %}" class="sso-image-container">
+            <img src="https://joel-digitals.de/static/button.png" alt="Mit Joel Digitals anmelden">
+        </a>
+
+        <div class="divider">
+            <span>oder mit E-Mail</span>
+        </div>
+
+        <form method="post" id="registerForm">
+            {% csrf_token %}
+
+            {% for field in form %}
             <div class="form-group">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
+                <div class="input-wrapper">
+                    <i class="bi 
+                        {% if 'username' in field.name %}bi-person
+                        {% elif 'email' in field.name %}bi-envelope
+                        {% elif 'password' in field.name %}bi-lock
+                        {% else %}bi-person-circle{% endif %} 
+                        input-icon"></i>
+                    
+                    {{ field }}
+                    
+                    {% if 'password' in field.name and 'password2' not in field.name %}
+                    <button type="button" class="toggle-password" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; cursor: pointer;">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    {% endif %}
+                </div>
+                
+                {% if 'password' in field.name and 'password2' not in field.name %}
+                <div class="password-strength" id="passwordStrength">
+                    <div class="password-strength-bar" id="strengthBar"></div>
+                </div>
+                {% endif %}
+
                 {% if field.errors %}
                     <ul class="errorlist">
                         {% for error in field.errors %}
@@ -110,15 +413,85 @@
                     </ul>
                 {% endif %}
             </div>
-        {% endfor %}
+            {% endfor %}
 
-        <button type="submit">Konto erstellen</button>
-    </form>
+            <button type="submit" class="submit-btn">
+                <i class="bi bi-person-plus"></i>
+                Konto erstellen
+            </button>
+        </form>
 
-    <div class="form-footer">
-        Bereits registriert? <a href="{% url 'login' %}">Anmelden</a>
+        <p class="terms">
+            Mit der Registrierung stimmst du unseren 
+            <a href="/nutzungsbedingungen/">Nutzungsbedingungen</a> und der 
+            <a href="/datenschutz/">Datenschutzerklärung</a> zu.
+        </p>
+
+        <div class="form-footer">
+            Bereits registriert? 
+            <a href="{% url 'login' %}">Jetzt anmelden</a>
+        </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Password strength indicator
+        const passwordInput = document.querySelector('input[type="password"]');
+        const strengthBar = document.getElementById('strengthBar');
+        const strengthContainer = document.getElementById('passwordStrength');
+        
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function() {
+                const value = this.value;
+                if (value.length > 0) {
+                    strengthContainer.classList.add('show');
+                    
+                    let strength = 0;
+                    if (value.length >= 8) strength++;
+                    if (/[a-z]/.test(value) && /[A-Z]/.test(value)) strength++;
+                    if (/[0-9]/.test(value)) strength++;
+                    if (/[^a-zA-Z0-9]/.test(value)) strength++;
+
+                    strengthBar.className = 'password-strength-bar';
+                    if (strength <= 2) {
+                        strengthBar.classList.add('strength-weak');
+                    } else if (strength === 3) {
+                        strengthBar.classList.add('strength-medium');
+                    } else {
+                        strengthBar.classList.add('strength-strong');
+                    }
+                } else {
+                    strengthContainer.classList.remove('show');
+                }
+            });
+        }
+
+        // Toggle password visibility
+        const toggleBtn = document.querySelector('.toggle-password');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function() {
+                const input = this.parentElement.querySelector('input');
+                const icon = this.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                }
+            });
+        }
+
+        // Add error class to inputs with errors
+        document.querySelectorAll('.errorlist').forEach(errorList => {
+            const input = errorList.previousElementSibling.querySelector('input');
+            if (input) input.classList.add('error');
+        });
+    });
+</script>
 
 </body>
 </html>

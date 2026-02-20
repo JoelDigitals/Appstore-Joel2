@@ -1,32 +1,331 @@
 {% extends "base.html" %}
+{% load image_tags %}
 
 {% block title %}Dashboard – {{ developer.name }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <h2 class="mb-4">Willkommen, {{ developer.name }}</h2>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-  <p>Verwalte deine Apps, lade neue Versionen hoch oder bearbeite bestehende Apps.</p>
-  <a href="{% url 'create_app' %}" class="btn btn-primary mb-4">Neue App erstellen</a>
-  <a href="{% url 'edit_developer' developer.id %}" class="btn btn-warning mb-4">Profil bearbeiten</a>
-  <a href="{% url 'delete_developer' developer.id %}" class="btn btn-danger mb-4">Profil löschen</a>
-
-  <h4>Deine Apps</h4>
-  {% if apps_with_latest %}
-    <ul class="list-group">
-    {% for entry in apps_with_latest %}
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        <div>
-          <strong>{{ entry.app.name }}</strong><br />
-          <small>Plattform: {{ entry.app.platform }}</small><br />
-          <small>{{ entry.app.description|truncatewords:20|linebreaks }}</small>
+  <!-- Welcome Section -->
+  <div class="glass rounded-3xl p-6 md:p-8 relative overflow-hidden">
+    <!-- Background Decoration -->
+    <div class="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+    
+    <div class="relative z-10">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="flex items-start gap-4">
+          <!-- Developer Logo mit ImgBB/Local Priorisierung -->
+          <div class="relative w-16 h-16 flex-shrink-0">
+            {% with logo_url=developer|get_image_url:"logo" %}
+              {% if logo_url %}
+                <img src="{{ logo_url }}" alt="{{ developer.name }}" 
+                     class="w-full h-full object-contain rounded-xl bg-slate-800/50 p-1"
+                     onerror="this.src='/static/images/default_dev_logo.png'">
+              {% else %}
+                <div class="w-full h-full rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                  <span class="text-xl font-bold text-white">{{ developer.name|slice:":1"|upper }}</span>
+                </div>
+              {% endif %}
+            {% endwith %}
+            
+            <!-- Storage Indicator -->
+            {% if developer.logo_url %}
+              <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow border border-slate-900" title="ImgBB">
+                <i class="bi bi-cloud text-white text-[10px]"></i>
+              </div>
+            {% endif %}
+          </div>
+          
+          <div>
+            <p class="text-primary font-medium mb-1 flex items-center">
+              <i class="bi bi-stars mr-2"></i>
+              Developer Dashboard
+            </p>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-100 mb-2">
+              Willkommen, {{ developer.name }}
+            </h1>
+            <p class="text-gray-400 max-w-xl">
+              Verwalte deine Apps, lade neue Versionen hoch und verfolge deine Downloads.
+            </p>
+          </div>
         </div>
-        <a href="{% url 'app_detail_dev' entry.app.id %}" class="btn btn-sm btn-outline-primary">Details</a>
-      </li>
-    {% endfor %}
-    </ul>
-  {% else %}
-    <p>Du hast noch keine Apps.</p>
-  {% endif %}
+        
+        <!-- Quick Stats -->
+        <div class="flex gap-4">
+          <div class="text-center px-6 py-4 glass rounded-2xl">
+            <div class="text-2xl font-bold text-primary">{{ apps_with_latest|length }}</div>
+            <div class="text-xs text-gray-500 uppercase tracking-wider">Apps</div>
+          </div>
+          <div class="text-center px-6 py-4 glass rounded-2xl">
+            <div class="text-2xl font-bold text-green-400">
+              {% with total_downloads=0 %}
+                {% for entry in apps_with_latest %}
+                  {% with total_downloads=total_downloads|add:entry.app.download_count %}{% endwith %}
+                {% endfor %}
+                {{ total_downloads|default:"0" }}
+              {% endwith %}
+            </div>
+            <div class="text-xs text-gray-500 uppercase tracking-wider">Downloads</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap gap-3 mt-8">
+        <a href="{% url 'create_app' %}" 
+           class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/30 text-white rounded-xl font-medium transition-all hover:scale-105">
+          <i class="bi bi-plus-lg mr-2"></i>
+          Neue App erstellen
+        </a>
+        
+        <a href="{% url 'edit_developer' developer.id %}" 
+           class="inline-flex items-center px-6 py-3 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-xl font-medium transition-all">
+          <i class="bi bi-pencil-square mr-2"></i>
+          Profil bearbeiten
+        </a>
+        
+        <button onclick="confirmDeleteProfile()" 
+                class="inline-flex items-center px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl font-medium transition-all ml-auto">
+          <i class="bi bi-trash mr-2"></i>
+          Profil löschen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Apps Section -->
+  <div>
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-gray-100 flex items-center">
+        <i class="bi bi-grid-3x3-gap mr-3 text-primary"></i>
+        Deine Apps
+      </h2>
+      {% if apps_with_latest %}
+      <span class="px-3 py-1 bg-primary/20 text-primary text-sm rounded-full">
+        {{ apps_with_latest|length }} App{{ apps_with_latest|length|pluralize:"s" }}
+      </span>
+      {% endif %}
+    </div>
+
+    {% if apps_with_latest %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for entry in apps_with_latest %}
+      <div class="group glass rounded-2xl p-5 hover:border-primary/30 transition-all duration-300 hover:-translate-y-1">
+        <div class="flex items-start gap-4">
+          <!-- App Icon mit ImgBB/Local Priorisierung -->
+          <div class="relative w-16 h-16 flex-shrink-0">
+            {% with icon_url=entry.app|get_image_url:"icon" %}
+              {% if icon_url %}
+                <img src="{{ icon_url }}" alt="{{ entry.app.name }}" 
+                     class="w-full h-full object-contain rounded-xl bg-slate-800/50 p-1"
+                     onerror="this.src='/static/images/default_app_icon.png'">
+              {% else %}
+                <div class="w-full h-full rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                  <span class="text-lg font-bold text-white">{{ entry.app.name|slice:":1"|upper }}</span>
+                </div>
+              {% endif %}
+            {% endwith %}
+            
+            <!-- Platform Badge -->
+            <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-slate-800 rounded-full flex items-center justify-center shadow border border-gray-700">
+              {% if entry.app.platform == 'ios' %}
+                <i class="bi bi-apple text-primary text-xs"></i>
+              {% elif entry.app.platform == 'android' %}
+                <i class="bi bi-android2 text-green-400 text-xs"></i>
+              {% elif entry.app.platform == 'windows' %}
+                <i class="bi bi-microsoft text-blue-400 text-xs"></i>
+              {% elif entry.app.platform == 'macos' %}
+                <i class="bi bi-apple text-gray-300 text-xs"></i>
+              {% elif entry.app.platform == 'linux' %}
+                <i class="bi bi-terminal text-yellow-400 text-xs"></i>
+              {% else %}
+                <i class="bi bi-laptop text-primary text-xs"></i>
+              {% endif %}
+            </div>
+            
+            <!-- ImgBB Indicator -->
+            {% if entry.app.icon_url %}
+              <div class="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center shadow" title="ImgBB">
+                <i class="bi bi-cloud text-white text-[8px]"></i>
+              </div>
+            {% endif %}
+          </div>
+          
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-gray-100 text-lg mb-1 group-hover:text-primary transition-colors truncate">
+              {{ entry.app.name }}
+            </h3>
+            <p class="text-sm text-gray-500 line-clamp-2 mb-3">
+              {{ entry.app.description|default:"Keine Beschreibung" }}
+            </p>
+            
+            <!-- Storage Info -->
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
+              {% if entry.app.icon_url %}
+                <span class="flex items-center text-primary">
+                  <i class="bi bi-cloud-check mr-1"></i>ImgBB
+                </span>
+              {% else %}
+                <span class="flex items-center">
+                  <i class="bi bi-hdd mr-1"></i>Lokal
+                </span>
+              {% endif %}
+            </div>
+            
+            <!-- Stats -->
+            <div class="flex items-center gap-4 text-xs text-gray-400 mb-4">
+              <span class="flex items-center">
+                <i class="bi bi-download mr-1 text-primary"></i>
+                {{ entry.app.download_count|default:"0" }}
+              </span>
+              <span class="flex items-center">
+                <i class="bi bi-box-seam mr-1"></i>
+                {{ entry.app.versions.count }} Versionen
+              </span>
+            </div>
+            
+            <!-- Latest Version -->
+            {% if entry.latest_version %}
+            <div class="flex items-center gap-2 text-xs mb-4">
+              {% if entry.latest_version.checking_status == 'approved' %}
+                <span class="px-2 py-1 bg-green-500/20 text-green-400 rounded-full">
+                  v{{ entry.latest_version.version_number }} freigegeben
+                </span>
+              {% elif entry.latest_version.checking_status == 'pending' %}
+                <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full animate-pulse">
+                  v{{ entry.latest_version.version_number }} in Prüfung
+                </span>
+              {% else %}
+                <span class="px-2 py-1 bg-red-500/20 text-red-400 rounded-full">
+                  v{{ entry.latest_version.version_number }} abgelehnt
+                </span>
+              {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- Actions -->
+            <div class="flex gap-2">
+              <a href="{% url 'app_detail_dev' entry.app.id %}" 
+                 class="flex-1 text-center px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm font-medium transition-colors">
+                Verwalten
+              </a>
+              <a href="{% url 'upload_version' entry.app.id %}" 
+                 class="px-4 py-2 glass hover:bg-green-500/10 text-green-400 rounded-lg text-sm font-medium transition-colors"
+                 title="Neue Version hochladen">
+                <i class="bi bi-cloud-upload"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    
+    {% else %}
+    <!-- Empty State -->
+    <div class="glass rounded-3xl p-12 text-center">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-slate-800 flex items-center justify-center">
+        <i class="bi bi-box text-4xl text-gray-600"></i>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-300 mb-2">Noch keine Apps</h3>
+      <p class="text-gray-500 mb-6 max-w-md mx-auto">
+        Starte jetzt und veröffentliche deine erste App im JDS Appstore.
+      </p>
+      <a href="{% url 'create_app' %}" 
+         class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/30 text-white rounded-xl font-medium transition-all hover:scale-105">
+        <i class="bi bi-plus-lg mr-2"></i>
+        Erste App erstellen
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Tips Section -->
+  <div class="glass rounded-2xl p-6">
+    <h3 class="text-lg font-semibold text-gray-200 mb-4 flex items-center">
+      <i class="bi bi-lightbulb mr-2 text-yellow-400"></i>
+      Tipps für Entwickler
+    </h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="p-4 rounded-xl bg-slate-800/30 border border-gray-700/30">
+        <i class="bi bi-images text-2xl text-primary mb-3"></i>
+        <h4 class="font-medium text-gray-200 mb-1">Screenshots hinzufügen</h4>
+        <p class="text-sm text-gray-500">Apps mit Screenshots werden 3x häufiger heruntergeladen.</p>
+      </div>
+      <div class="p-4 rounded-xl bg-slate-800/30 border border-gray-700/30">
+        <i class="bi bi-file-text text-2xl text-green-400 mb-3"></i>
+        <h4 class="font-medium text-gray-200 mb-1">Beschreibung optimieren</h4>
+        <p class="text-sm text-gray-500">Eine gute Beschreibung hilft Nutzern, deine App zu finden.</p>
+      </div>
+      <div class="p-4 rounded-xl bg-slate-800/30 border border-gray-700/30">
+        <i class="bi bi-arrow-repeat text-2xl text-yellow-400 mb-3"></i>
+        <h4 class="font-medium text-gray-200 mb-1">Regelmäßig aktualisieren</h4>
+        <p class="text-sm text-gray-500">Updates zeigen, dass deine App gepflegt wird.</p>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<!-- Delete Profile Modal -->
+<div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+  <div class="relative w-full max-w-md glass rounded-3xl p-6 transform scale-95 opacity-0 transition-all duration-300" id="deleteModalContent">
+    <div class="text-center">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+        <i class="bi bi-exclamation-triangle text-red-400 text-2xl"></i>
+      </div>
+      <h3 class="text-xl font-bold text-gray-100 mb-2">Profil löschen?</h3>
+      <p class="text-gray-400 mb-6">
+        Bist du sicher, dass du dein Entwicklerprofil löschen möchtest? 
+        Alle deine Apps und Daten werden unwiderruflich gelöscht.
+      </p>
+      <div class="flex gap-3 justify-center">
+        <button onclick="closeDeleteModal()" 
+                class="px-6 py-3 glass hover:bg-primary/10 text-gray-300 rounded-xl font-medium transition-all">
+          Abbrechen
+        </button>
+        <a href="{% url 'delete_developer' developer.id %}" 
+           class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-all">
+          Ja, löschen
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmDeleteProfile() {
+  const modal = document.getElementById('deleteModal');
+  const content = document.getElementById('deleteModalContent');
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  
+  setTimeout(() => {
+    content.classList.remove('scale-95', 'opacity-0');
+    content.classList.add('scale-100', 'opacity-100');
+  }, 10);
+}
+
+function closeDeleteModal() {
+  const modal = document.getElementById('deleteModal');
+  const content = document.getElementById('deleteModalContent');
+  
+  content.classList.remove('scale-100', 'opacity-100');
+  content.classList.add('scale-95', 'opacity-0');
+  
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }, 300);
+}
+
+// Close on click outside
+document.getElementById('deleteModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    closeDeleteModal();
+  }
+});
+</script>
 {% endblock %}

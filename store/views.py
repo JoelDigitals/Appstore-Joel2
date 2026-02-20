@@ -40,6 +40,31 @@ app_celery = Celery()
 
 from django.http import JsonResponse
 
+from django.http import JsonResponse
+
+def assetlinks(request):
+    """
+    Android Digital Asset Links JSON für Deep Links
+    JDS AppStore - Android App: co.median.android.ljrnrp
+    """
+    data = [
+      {
+        "relation": [
+          "delegate_permission/common.handle_all_urls"
+        ],
+        "target": {
+          "namespace": "android_app",
+          "package_name": "co.median.android.ljrnrp",
+          "sha256_cert_fingerprints": [
+            "99:29:5E:21:AA:AE:3C:4F:BF:4D:C4:B1:5A:89:81:91:CF:21:14:F4:D8:4E:52:B5:F0:7E:1A:40:BA:22:C3:84"
+          ]
+        }
+      }
+    ]
+    
+    response = JsonResponse(data, safe=False)
+    response['Content-Type'] = 'application/json'
+    return response
 
 def password_reset_request(request):
     if request.method == "POST":
@@ -167,55 +192,72 @@ def download_all_media(request):
     return response
 
 
-def register_view(request):
-    if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            user.is_active = False  # Deaktivieren, bis E-Mail bestätigt
-            user.save()
 
-            # Code generieren und speichern
-            code = secrets.token_hex(3).upper()  # 6-stelliger Code
-            EmailVerificationCode.objects.create(user=user, code=code)
+import secrets
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, get_user_model
+from django.contrib import messages
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
+from django.contrib.auth.forms import AuthenticationForm
+from django.utils import timezone
+from .models import EmailVerificationCode
+from settings.models import UserSecurity
 
-            # E-Mail senden
-            send_mail(
-                'Bestätige deine E-Mail-Adresse',
-                f'Dein Bestätigungscode lautet: {code}',
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email]
-            )
+User = get_user_model()
 
-            request.session['pending_user_id'] = user.id  # Speichere User-ID für Verifizierung
-            return redirect('verify_email')
+
+def send_verification_email(user, code, request=None):
+    """
+    Sendet eine HTML-Verifizierungs-E-Mail an den Benutzer
+    """
+    subject = 'Reaktiviere deinen Account - JDS Appstore'
+    
+    # Context für das Template
+    context = {
+        'username': user.username,
+        'code': code,
+        'timestamp': timezone.now().strftime('%d.%m.%Y %H:%M Uhr'),
+        'user_agent': request.META.get('HTTP_USER_AGENT', 'Unbekannt') if request else 'Unbekannt',
+        'ip_address': get_client_ip(request) if request else 'Unbekannt',
+    }
+    
+    # HTML-Content rendern
+    html_content = render_to_string('emails/verification_email.html', context)
+    text_content = strip_tags(html_content)  # Plain-Text Version
+    
+    # E-Mail erstellen
+    email = EmailMultiAlternatives(
+        subject=subject,
+        body=text_content,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[user.email],
+        reply_to=[settings.SUPPORT_EMAIL] if hasattr(settings, 'SUPPORT_EMAIL') else None
+    )
+    
+    # HTML-Version hinzufügen
+    email.attach_alternative(html_content, "text/html")
+    
+    # Optional: Logo als CID-Attachment (für bessere Kompatibilität)
+    # email.mixed_subtype = 'related'
+    
+    email.send(fail_silently=False)
+    
+    return True
+
+
+def get_client_ip(request):
+    """
+    Ermittelt die IP-Adresse des Clients
+    """
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
     else:
-        form = CustomUserCreationForm()
-    return render(request, 'store/register.html', {'form': form})
-
-def verify_email_view(request):
-    if request.method == 'POST':
-        code = ''.join([request.POST.get(f'code_{i}', '') for i in range(1, 7)])
-        user_id = request.session.get('pending_user_id')
-        
-        try:
-            user = User.objects.get(id=user_id)
-            verification = EmailVerificationCode.objects.get(user=user, code=code)
-            verification.delete()  # Code löschen nach Verifizierung
-            
-            securitysettings, _ = UserSecurity.objects.get_or_create(user=user)
-            if securitysettings:
-                securitysettings.is_deactivated = False
-                securitysettings.save()
-
-            user.is_active = True
-            user.save()
-            login(request, user)
-            messages.success(request, 'E-Mail verifiziert! Du bist nun eingeloggt.')
-            return redirect('home')
-        except EmailVerificationCode.DoesNotExist:
-            messages.error(request, 'Ungültiger Code!')
-    return render(request, 'store/verify_email.html')
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
 
 
 def login_view(request):
@@ -227,27 +269,35 @@ def login_view(request):
             user = User.objects.get(username=username)
             if user.check_password(password):
                 if not user.is_active:
-                    code = secrets.token_hex(3).upper()
+                    # Alte Codes löschen
+                    EmailVerificationCode.objects.filter(user=user).delete()
+                    
+                    # Neuen Code generieren
+                    code = secrets.token_hex(3).upper()  # 6-stellig alphanumerisch
+                    
+                    # Code in Datenbank speichern
                     EmailVerificationCode.objects.create(user=user, code=code)
-
-                    send_mail(
-                        'Reaktiviere deinen Account mit deiner E-Mail Adresse',
-                        f'Dein Bestätigungscode lautet: {code}',
-                        settings.DEFAULT_FROM_EMAIL,
-                        [user.email]
-                    )
-
+                    
+                    # HTML-E-Mail senden
+                    send_verification_email(user, code, request)
+                    
+                    # Session setzen
                     request.session['pending_user_id'] = user.id
+                    request.session['verification_email'] = user.email
+                    
+                    messages.info(request, 'Ein Verifizierungscode wurde an deine E-Mail gesendet.')
                     return redirect('verify_email')
-
+                
+                # User ist aktiv -> normaler Login
                 login(request, user)
+                messages.success(request, f'Willkommen zurück, {user.username}!')
                 return redirect('home')
             else:
                 form_error = True
         except User.DoesNotExist:
             form_error = True
 
-        # Falls Passwort falsch oder User nicht existiert
+        # Fehlerbehandlung
         form = AuthenticationForm(request, data=request.POST)
         form.add_error(None, "Ungültiger Benutzername oder Passwort.")
         
@@ -255,6 +305,153 @@ def login_view(request):
         form = AuthenticationForm()
 
     return render(request, 'store/login.html', {'form': form})
+
+
+def verify_email_view(request):
+    user_id = request.session.get('pending_user_id')
+    email = request.session.get('verification_email', 'deine E-Mail-Adresse')
+    
+    if not user_id:
+        messages.error(request, 'Sitzung abgelaufen. Bitte melde dich erneut an.')
+        return redirect('login')
+    
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, 'Benutzer nicht gefunden.')
+        return redirect('login')
+    
+    # Neue E-Mail senden (wenn angefordert)
+    if request.method == 'POST' and request.POST.get('action') == 'resend':
+        # Rate-Limiting prüfen (z.B. max. alle 60 Sekunden)
+        last_sent = request.session.get('last_code_sent')
+        if last_sent:
+            from datetime import datetime, timedelta
+            last_time = datetime.fromisoformat(last_sent)
+            if datetime.now() - last_time < timedelta(seconds=60):
+                messages.warning(request, 'Bitte warte einen Moment, bevor du einen neuen Code anforderst.')
+                return redirect('verify_email')
+        
+        # Alten Code löschen und neuen generieren
+        EmailVerificationCode.objects.filter(user=user).delete()
+        code = secrets.token_hex(3).upper()
+        EmailVerificationCode.objects.create(user=user, code=code)
+        
+        # Neue E-Mail senden
+        send_verification_email(user, code, request)
+        
+        # Zeitstempel speichern
+        request.session['last_code_sent'] = datetime.now().isoformat()
+        request.session['verification_email'] = user.email
+        
+        messages.success(request, 'Ein neuer Code wurde an deine E-Mail gesendet.')
+        return redirect('verify_email')
+    
+    # Code-Verifizierung
+    if request.method == 'POST' and request.POST.get('action') != 'resend':
+        code = ''.join([request.POST.get(f'code_{i}', '').upper() for i in range(1, 7)])
+        
+        try:
+            verification = EmailVerificationCode.objects.get(user=user, code=code)
+            verification.delete()  # Code löschen nach Verifizierung
+            
+            # Security-Einstellungen aktualisieren
+            securitysettings, _ = UserSecurity.objects.get_or_create(user=user)
+            securitysettings.is_deactivated = False
+            securitysettings.save()
+
+            user.is_active = True
+            user.save()
+            
+            # Session aufräumen
+            del request.session['pending_user_id']
+            del request.session['verification_email']
+            if 'last_code_sent' in request.session:
+                del request.session['last_code_sent']
+            
+            login(request, user)
+            messages.success(request, 'E-Mail verifiziert! Dein Account wurde reaktiviert.')
+            return redirect('home')
+            
+        except EmailVerificationCode.DoesNotExist:
+            messages.error(request, 'Ungültiger oder abgelaufener Code!')
+    
+    return render(request, 'store/verify_email.html', {
+        'email': email,
+        'user': user
+    })
+
+
+def change_verification_email(request):
+    """
+    Erlaubt dem User, eine andere E-Mail für die Verifizierung zu verwenden
+    """
+    user_id = request.session.get('pending_user_id')
+    
+    if not user_id:
+        return redirect('login')
+    
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return redirect('login')
+    
+    if request.method == 'POST':
+        new_email = request.POST.get('new_email', '').strip().lower()
+        
+        # Validierung
+        if not new_email or '@' not in new_email:
+            messages.error(request, 'Bitte gib eine gültige E-Mail-Adresse ein.')
+            return render(request, 'store/change_email.html')
+        
+        # Prüfen ob E-Mail bereits vergeben
+        if User.objects.filter(email=new_email).exclude(id=user.id).exists():
+            messages.error(request, 'Diese E-Mail-Adresse wird bereits verwendet.')
+            return render(request, 'store/change_email.html')
+        
+        # E-Mail aktualisieren
+        user.email = new_email
+        user.save()
+        
+        # Neuen Code senden
+        EmailVerificationCode.objects.filter(user=user).delete()
+        code = secrets.token_hex(3).upper()
+        EmailVerificationCode.objects.create(user=user, code=code)
+        send_verification_email(user, code, request)
+        
+        request.session['verification_email'] = new_email
+        messages.success(request, f'Verifizierungscode wurde an {new_email} gesendet.')
+        return redirect('verify_email')
+    
+    return render(request, 'store/change_email.html', {'current_email': user.email})
+
+def register_view(request):
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.is_active = False  # Deaktivieren, bis E-Mail bestätigt
+            user.save()
+
+            # Alte Codes löschen (falls vorhanden)
+            EmailVerificationCode.objects.filter(user=user).delete()
+            
+            # Neuen Code generieren und speichern
+            code = secrets.token_hex(3).upper()  # 6-stelliger alphanumerischer Code
+            EmailVerificationCode.objects.create(user=user, code=code)
+
+            # HTML-E-Mail senden
+            send_verification_email(user, code, request)
+
+            # Session setzen
+            request.session['pending_user_id'] = user.id
+            request.session['verification_email'] = user.email
+            
+            messages.success(request, 'Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse.')
+            return redirect('verify_email')
+    else:
+        form = CustomUserCreationForm()
+    return render(request, 'store/register.html', {'form': form})
 
 def logout_view(request):
     logout(request)
@@ -492,7 +689,7 @@ def home(request):
         all_apps = all_apps.filter(name__icontains=query)
 
     # Top Downloads
-    top_downloads = all_apps.order_by('-download_count')[:10]
+    top_downloads = all_apps.order_by('-download_count')[:9]
 
     # Trending Apps (letzte 7 Tage)
     seven_days_ago = timezone.now() - timedelta(days=7)
@@ -584,7 +781,7 @@ def notification_detail(request, pk):
 def mark_all_notifications_read(request):
     if request.method == 'POST':
         Notification.objects.filter(user=request.user, read=False).update(read=True)
-    return redirect('notifications')
+    return redirect('notifications_all')  # KORRIGIERT: notifications_all statt notifications
 
 @login_required
 def subscribe_notifications(request):
@@ -956,3 +1153,289 @@ def info_page(request):
         'roadmap': roadmap,
         'all_done': not RoadmapItem.objects.exclude(status='abgeschlossen').exists(),
     })
+
+# views.py
+from django.http import JsonResponse
+
+def api_all_apps(request):
+    apps = App.objects.all().select_related('developer')[:50]
+    return JsonResponse([{
+        'id': app.id,
+        'name': app.name,
+        'icon': app.icon.url,
+        'developer': app.developer.name,
+        'platform': app.platform,
+    } for app in apps], safe=False)
+
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from .models import VersionDownload, Version
+
+@require_POST
+@login_required
+def track_download(request, version_id):
+    try:
+        version = Version.objects.get(id=version_id)
+        # Verhindere doppelte Einträge durch unique_together Constraint
+        VersionDownload.objects.get_or_create(
+            user=request.user,
+            version=version
+        )
+        # Erhöhe den Download-Counter der App
+        version.app.download_count += 1
+        version.app.save()
+        return JsonResponse({'success': True})
+    except Version.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Version nicht gefunden'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+import secrets
+from django.shortcuts import redirect
+from django.conf import settings
+import requests
+
+def sso_connect(request):
+    """Startet SSO-Connect zu Joel Digitals"""
+    print("\n" + "🟢" * 40)
+    print("FUNCTION: sso_connect - AUFTRAGNETZ")
+    print("🟢" * 40)
+    
+    # State generieren
+    state = secrets.token_urlsafe(32)
+    
+    print(f"📝 State generiert: {state}")
+    print(f"🌐 Session Key vorher: {request.session.session_key}")
+    print(f"🌐 Session Keys vorher: {list(request.session.keys())}")
+    
+    # !!! WICHTIG: Session muss existieren BEVOR wir speichern !!!
+    if not request.session.session_key:
+        # Force Django to create a session
+        request.session.create()
+        print(f"✨ Neue Session erstellt: {request.session.session_key}")
+    
+    # State speichern
+    request.session['sso_state'] = state
+    request.session.modified = True
+    request.session.save()
+    
+    print(f"💾 Session Key nachher: {request.session.session_key}")
+    print(f"💾 State gespeichert: {request.session.get('sso_state')}")
+    print(f"💾 Alle Session Keys: {list(request.session.keys())}")
+    
+    # Redirect URL
+    sso_url = (
+        f"{settings.SSO_PROVIDER_URL}/auth/sso/connect/"
+        f"?client_id={settings.SSO_CLIENT_ID}"
+        f"&redirect_uri={settings.SSO_CALLBACK_URL}"
+        f"&state={state}"
+    )
+    
+    print(f"↗️  Redirect zu: {sso_url}")
+    print("🟢" * 40 + "\n")
+    
+    response = redirect(sso_url)
+    
+    # !!! WICHTIG: Session-Cookie muss gesetzt werden !!!
+    response.set_cookie(
+        key=settings.SESSION_COOKIE_NAME,
+        value=request.session.session_key,
+        max_age=settings.SESSION_COOKIE_AGE,
+        httponly=True,
+        samesite='Lax',
+    )
+    
+    return response
+
+def sso_callback(request):
+    """Empfängt SSO Token und erstellt/logged User ein"""
+    print("\n" + "=" * 80)
+    print("🔙 SSO CALLBACK - START")
+    print("=" * 80)
+    
+    token = request.GET.get('token')
+    state = request.GET.get('state')
+    
+    # State-Validierung
+    stored_state = request.session.get('sso_state')
+    
+    if not stored_state and state:
+        print("⚠️  WARNING: Session-State fehlt - akzeptiere State aus URL (DEV ONLY!)")
+        request.session['sso_state'] = state
+        stored_state = state
+    
+    if state != stored_state:
+        print("❌ FEHLER: State Mismatch!")
+        return redirect('/accounts/register/?error=invalid_state')
+    
+    print("✅ State validiert!")
+    
+    if not token:
+        print("❌ FEHLER: Kein Token")
+        return redirect('/accounts/register/?error=no_token')
+    
+    # Token validieren
+    print(f"\n🔍 Validiere Token bei SSO Provider...")
+    try:
+        response = requests.post(
+            f"{settings.SSO_PROVIDER_URL}/api/sso/validate/",
+            data={
+                'token': token,
+                'client_id': settings.SSO_CLIENT_ID,
+                'client_secret': settings.SSO_CLIENT_SECRET,
+            },
+            timeout=10,
+        )
+        
+        print(f"   Response Status: {response.status_code}")
+        
+        if response.status_code != 200:
+            print(f"❌ Token Validation fehlgeschlagen: {response.text}")
+            return redirect('/accounts/register/?error=validation_failed')
+        
+        user_data = response.json()
+        print(f"✅ Token validiert, User-Daten erhalten:")
+        print(f"   Email: {user_data.get('email')}")
+        print(f"   Username: {user_data.get('username')}")
+        print(f"   First Name: {user_data.get('first_name')}")
+        print(f"   Last Name: {user_data.get('last_name')}")
+        
+        # Zuerst: Prüfe ob User mit dieser EMAIL bereits existiert
+        try:
+            user = User.objects.get(email=user_data['email'])
+            print(f"✅ Bestehender User gefunden (via Email): {user.email}")
+            
+            # Update User-Daten falls sich was geändert hat
+            user.first_name = user_data.get('first_name', user.first_name)
+            user.last_name = user_data.get('last_name', user.last_name)
+            user.is_active = True
+            user.email_confirmed = True
+            user.save()
+            print(f"📝 User-Daten aktualisiert")
+            
+        except User.DoesNotExist:
+            # User existiert noch nicht → Erstellen
+            print(f"📝 Erstelle neuen User...")
+            
+            # Generiere eindeutigen Username falls nötig
+            base_username = user_data.get('username', user_data['email'].split('@')[0])
+            username = base_username
+            counter = 1
+            
+            # Prüfe ob Username bereits existiert
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}_{counter}"
+                counter += 1
+                print(f"   Username '{base_username}' existiert bereits, versuche '{username}'")
+            
+            user = User.objects.create(
+                email=user_data['email'],
+                username=username,
+                first_name=user_data.get('first_name', ''),
+                last_name=user_data.get('last_name', ''),
+                is_active=True,
+                email_confirmed=True,
+            )
+            
+            # Setze unbrauchbares Passwort (SSO-User)
+            user.set_unusable_password()
+            user.save()
+            
+            print(f"✨ Neuer SSO-User erstellt: {user.email} (Username: {user.username})")
+
+            print(f"\n🔓 Logge User ein...")
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            print(f"✅ User eingeloggt: {user.email}")
+
+            # Session cleanup
+            if 'sso_state' in request.session:
+                del request.session['sso_state']
+            if 'sso_user_data' in request.session:
+                del request.session['sso_user_data']
+
+            print("\n" + "=" * 80)
+            print("✅ SSO LOGIN - KOMPLETT ERFOLGREICH")
+            print("=" * 80 + "\n")
+
+            return redirect('/accounts/register/step1/')  # Zur Startseite oder Dashboard
+        
+        # User einloggen
+        print(f"\n🔓 Logge User ein...")
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        print(f"✅ User eingeloggt: {user.email}")
+        
+        # Session cleanup
+        if 'sso_state' in request.session:
+            del request.session['sso_state']
+        if 'sso_user_data' in request.session:
+            del request.session['sso_user_data']
+        
+        print("\n" + "=" * 80)
+        print("✅ SSO LOGIN - KOMPLETT ERFOLGREICH")
+        print("=" * 80 + "\n")
+        
+        return redirect('/')  # Zur Startseite oder Dashboard
+        
+    except requests.RequestException as e:
+        print(f"❌ SSO Request Error: {e}")
+        print("=" * 80 + "\n")
+        return redirect('/accounts/register/?error=connection_failed')
+
+
+def sso_login(request):
+    """Startet SSO Login Flow"""
+    print("\n" + "=" * 80)
+    print("🚀 SSO LOGIN FLOW - START")
+    print("=" * 80)
+    
+    # Zeige Request-Info
+    print(f"\n🌐 Request Info:")
+    print(f"   Path: {request.path}")
+    print(f"   Method: {request.method}")
+    print(f"   User: {request.user}")
+    print(f"   Session Key (vorher): {request.session.session_key}")
+    
+    # State generieren
+    state = secrets.token_urlsafe(32)
+    
+    print(f"\n📝 State generiert: {state}")
+    
+    # Session-Status VORHER
+    print(f"\n💾 Session VORHER:")
+    print(f"   Session Key: {request.session.session_key}")
+    print(f"   Session Keys: {list(request.session.keys())}")
+    print(f"   Session ist leer: {request.session.is_empty()}")
+    
+    # State speichern
+    request.session['sso_state'] = state
+    request.session.modified = True
+    request.session.save()
+    
+    # Session-Status NACHHER
+    print(f"\n💾 Session NACHHER:")
+    print(f"   Session Key: {request.session.session_key}")
+    print(f"   sso_state: {request.session.get('sso_state')}")
+    print(f"   Alle Keys: {list(request.session.keys())}")
+    print(f"   Session wurde gespeichert: {request.session.get('sso_state') == state}")
+    
+    # Redirect URL
+    sso_url = (
+        f"{settings.SSO_PROVIDER_URL}/auth/sso/connect/"
+        f"?client_id={settings.SSO_CLIENT_ID}"
+        f"&redirect_uri={settings.SSO_CALLBACK_URL}"
+        f"&state={state}"
+    )
+    
+    print(f"\n↗️  Redirect zu: {sso_url}")
+    print("=" * 80 + "\n")
+    
+    return redirect(sso_url)
+
+def terms_of_service_view(request):
+    """Nutzungsbedingungen anzeigen"""
+    return render(request, 'store/terms_of_service.html')
+
+def privacy_policy_view(request):
+    """Datenschutzerklärung anzeigen"""
+    return render(request, 'store/privacy_policy.html')

@@ -1,31 +1,196 @@
 {% extends "base.html" %}
-{% block title %}{{ platform|title }} Apps - Joel Appstore{% endblock %}
+
+{% block title %}{{ platform|title }} Apps – Joel Appstore{% endblock %}
+
 {% block content %}
-<h1>{{ platform|title }} Apps</h1>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-{% if query %}
-  <p>Suchergebnisse für "{{ query }}" auf {{ platform|title }}:</p>
-{% endif %}
+  <!-- Header Section -->
+  <div class="mb-8">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-100 flex items-center gap-3">
+          {% if platform == 'android' %}
+            <i class="bi bi-android2 text-green-400"></i>
+          {% elif platform == 'ios' %}
+            <i class="bi bi-apple text-gray-300"></i>
+          {% elif platform == 'windows' %}
+            <i class="bi bi-microsoft text-blue-400"></i>
+          {% elif platform == 'macos' %}
+            <i class="bi bi-apple text-gray-400"></i>
+          {% elif platform == 'linux' %}
+            <i class="bi bi-terminal text-yellow-400"></i>
+          {% else %}
+            <i class="bi bi-grid-3x3-gap text-primary"></i>
+          {% endif %}
+          {{ platform|title }} Apps
+        </h1>
+        <p class="text-gray-400 mt-2">Entdecke die besten Apps für {{ platform|title }}</p>
+      </div>
 
-{% if apps %}
-  <div class="row">
-  {% for app in apps %}
-    <div class="col-md-4 mb-3">
-      <a href="{% url 'app_detail' app.pk %}" class="text-decoration-none text-white">
-        <div class="card bg-dark text-white h-100">
-          <img src="{{ app.icon.url }}" class="card-img-top" alt="{{ app.name }} Icon" />
-          <div class="card-body">
-            <h5 class="card-title">{{ app.name }}</h5>
-            <p class="card-text">{{ app.description|truncatewords:20 }}</p>
-            <p><small>Plattform: {{ app.platform|title }}</small></p>
-            <p><small>Autor: {{ app.developer }}</small></p>
+      <!-- Platform Switcher -->
+      <div class="flex flex-wrap gap-2">
+        <a href="{% url 'platform' 'android' %}" 
+           class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if platform == 'android' %}bg-green-500/20 text-green-400 border border-green-500/30{% else %}glass text-gray-400 hover:text-green-400 hover:bg-green-500/10{% endif %}">
+          <i class="bi bi-android2 mr-1"></i> Android
+        </a>
+        <a href="{% url 'platform' 'ios' %}" 
+           class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if platform == 'ios' %}bg-gray-500/20 text-gray-300 border border-gray-500/30{% else %}glass text-gray-400 hover:text-gray-300 hover:bg-gray-500/10{% endif %}">
+          <i class="bi bi-apple mr-1"></i> iOS
+        </a>
+        <a href="{% url 'platform' 'windows' %}" 
+           class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if platform == 'windows' %}bg-blue-500/20 text-blue-400 border border-blue-500/30{% else %}glass text-gray-400 hover:text-blue-400 hover:bg-blue-500/10{% endif %}">
+          <i class="bi bi-microsoft mr-1"></i> Windows
+        </a>
+        <a href="{% url 'platform' 'macos' %}" 
+           class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if platform == 'macos' %}bg-gray-400/20 text-gray-300 border border-gray-400/30{% else %}glass text-gray-400 hover:text-gray-300 hover:bg-gray-400/10{% endif %}">
+          <i class="bi bi-apple mr-1"></i> macOS
+        </a>
+        <a href="{% url 'platform' 'linux' %}" 
+           class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if platform == 'linux' %}bg-yellow-500/20 text-yellow-400 border border-yellow-500/30{% else %}glass text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10{% endif %}">
+          <i class="bi bi-terminal mr-1"></i> Linux
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Results Info -->
+  {% if query %}
+    <div class="glass rounded-2xl p-4 mb-8 border border-primary/20 bg-primary/5">
+      <div class="flex items-center gap-3 text-gray-300">
+        <i class="bi bi-search text-primary"></i>
+        <span>Suchergebnisse für <strong class="text-white">"{{ query }}"</strong> auf {{ platform|title }}</span>
+        <span class="ml-auto text-sm text-gray-500">{{ apps|length }} Ergebnis{% if apps|length != 1 %}se{% endif %}</span>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if apps %}
+    <!-- Apps Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6" id="appsGrid">
+      {% for app in apps %}
+      <a href="{% url 'app_detail' app.pk %}" 
+         class="group app-card animate-fade-in"
+         style="animation-delay: {{ forloop.counter0|divisibleby:6 }}00ms">
+        
+        <div class="flex flex-col items-center text-center">
+          <!-- Icon Container -->
+          <div class="relative w-full aspect-square max-w-[140px] mb-4">
+            <!-- Glow Effect -->
+            <div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
+            
+            <!-- Icon -->
+            <div class="relative w-full h-full rounded-3xl bg-slate-800/50 p-3 border border-gray-700/50 group-hover:border-primary/30 transition-all duration-300">
+              {% if app.icon %}
+                <img src="{{ app.icon.url }}" 
+                     alt="{{ app.name }}" 
+                     class="w-full h-full object-contain rounded-2xl group-hover:scale-110 transition-transform duration-500">
+              {% else %}
+                <div class="w-full h-full rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                  <span class="text-3xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Platform Badge -->
+            <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center shadow-lg border border-gray-700">
+              {% if app.platform == 'ios' %}
+                <i class="bi bi-apple text-primary text-sm"></i>
+              {% elif app.platform == 'android' %}
+                <i class="bi bi-android2 text-green-400 text-sm"></i>
+              {% elif app.platform == 'windows' %}
+                <i class="bi bi-microsoft text-blue-400 text-sm"></i>
+              {% elif app.platform == 'macos' %}
+                <i class="bi bi-apple text-gray-300 text-sm"></i>
+              {% elif app.platform == 'linux' %}
+                <i class="bi bi-terminal text-yellow-400 text-sm"></i>
+              {% else %}
+                <i class="bi bi-laptop text-primary text-sm"></i>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- App Info -->
+          <h3 class="font-semibold text-gray-100 text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1 w-full px-2">
+            {{ app.name }}
+          </h3>
+          
+          <p class="text-xs text-gray-500 line-clamp-1 px-2 mb-2">
+            {{ app.description|truncatewords:8 }}
+          </p>
+
+          <div class="flex items-center gap-3 text-xs text-gray-400">
+            <span class="flex items-center gap-1">
+              <i class="bi bi-person text-gray-500"></i>
+              {{ app.developer.name|truncatechars:12 }}
+            </span>
+            <span class="flex items-center gap-1">
+              <i class="bi bi-download text-primary"></i>
+              {{ app.download_count|default:"0" }}
+            </span>
           </div>
         </div>
       </a>
+      {% endfor %}
     </div>
-  {% endfor %}
-  </div>
-{% else %}
-  <p>Keine Apps für {{ platform|title }} gefunden.</p>
-{% endif %}
+
+    <!-- Load More (if paginated) -->
+    {% if apps.has_next %}
+    <div class="flex justify-center mt-12">
+      <button class="px-6 py-3 glass hover:bg-primary/10 text-gray-300 hover:text-primary rounded-xl transition-all flex items-center gap-2">
+        <i class="bi bi-chevron-down"></i>
+        Mehr laden
+      </button>
+    </div>
+    {% endif %}
+
+  {% else %}
+    <!-- Empty State -->
+    <div class="glass rounded-3xl p-12 text-center border border-gray-700/30">
+      <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-800 flex items-center justify-center">
+        <i class="bi bi-inbox text-5xl text-gray-600"></i>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-300 mb-2">Keine Apps gefunden</h3>
+      <p class="text-gray-500 max-w-md mx-auto mb-6">
+        {% if query %}
+          Für deine Suche nach "{{ query }}" gibt es keine Ergebnisse auf {{ platform|title }}.
+        {% else %}
+          Derzeit sind keine Apps für {{ platform|title }} verfügbar.
+        {% endif %}
+      </p>
+      <a href="{% url 'home' %}" 
+         class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white font-medium rounded-xl hover:opacity-90 transition-all">
+        <i class="bi bi-arrow-left mr-2"></i>
+        Zurück zur Startseite
+      </a>
+    </div>
+  {% endif %}
+
+</div>
+
+<style>
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
+  opacity: 0;
+}
+
+/* Staggered animation for grid items */
+.app-card:nth-child(1) { animation-delay: 0ms; }
+.app-card:nth-child(2) { animation-delay: 50ms; }
+.app-card:nth-child(3) { animation-delay: 100ms; }
+.app-card:nth-child(4) { animation-delay: 150ms; }
+.app-card:nth-child(5) { animation-delay: 200ms; }
+.app-card:nth-child(6) { animation-delay: 250ms; }
+</style>
 {% endblock %}

@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+
+{% block title %}Nutzungsbedingungen – JDS Appstore{% endblock %}
+
+{% block content %}
+<style>
+    .legal-page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem;
+    }
+
+    .legal-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .legal-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: 0.5rem;
+    }
+
+    .legal-header .last-updated {
+        color: #94a3b8;
+        font-size: 0.875rem;
+    }
+
+    .legal-section {
+        margin-bottom: 2.5rem;
+    }
+
+    .legal-section h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #f1f5f9;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .legal-section h2 i {
+        color: #6366f1;
+        font-size: 1.25rem;
+    }
+
+    .legal-section h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #e2e8f0;
+        margin: 1.5rem 0 0.75rem;
+    }
+
+    .legal-section p {
+        color: #cbd5e1;
+        line-height: 1.8;
+        margin-bottom: 1rem;
+    }
+
+    .legal-section ul {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+    }
+
+    .legal-section ul li {
+        color: #cbd5e1;
+        line-height: 1.8;
+        padding-left: 1.5rem;
+        position: relative;
+        margin-bottom: 0.5rem;
+    }
+
+    .legal-section ul li::before {
+        content: '•';
+        color: #6366f1;
+        position: absolute;
+        left: 0;
+        font-weight: bold;
+    }
+
+    .highlight-box {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+    }
+
+    .highlight-box p {
+        margin: 0;
+        color: #e2e8f0;
+    }
+
+    .contact-info {
+        background: rgba(30, 41, 59, 0.5);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .contact-info p {
+        margin: 0.5rem 0;
+        color: #94a3b8;
+    }
+
+    .contact-info strong {
+        color: #f1f5f9;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #818cf8;
+        text-decoration: none;
+        font-weight: 500;
+        margin-bottom: 2rem;
+        transition: color 0.3s;
+    }
+
+    .back-link:hover {
+        color: #a5b4fc;
+    }
+
+    @media (max-width: 768px) {
+        .legal-page {
+            padding: 2rem 1rem;
+        }
+
+        .legal-header h1 {
+            font-size: 1.875rem;
+        }
+
+        .legal-section h2 {
+            font-size: 1.25rem;
+        }
+    }
+</style>
+
+<div class="legal-page">
+    <a href="{% url 'home' %}" class="back-link">
+        <i class="bi bi-arrow-left"></i>
+        Zurück zur Startseite
+    </a>
+
+    <div class="legal-header">
+        <h1>Nutzungsbedingungen</h1>
+        <p class="last-updated">Zuletzt aktualisiert: {% now "d. F Y" %}</p>
+    </div>
+
+    <div class="highlight-box">
+        <p><strong>Wichtiger Hinweis:</strong> Mit der Nutzung des JDS Appstore erklärst du dich mit diesen Bedingungen einverstanden. Bitte lies sie sorgfältig durch.</p>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-check-circle"></i> 1. Geltungsbereich</h2>
+        <p>Diese Nutzungsbedingungen gelten für die Nutzung des JDS Appstore und aller damit verbundenen Dienste. Der JDS Appstore wird betrieben von JDS Digitals.</p>
+        <p>Durch die Registrierung und Nutzung unserer Plattform akzeptierst du diese Bedingungen vollständig. Falls du mit Teilen nicht einverstanden bist, darfst du den Dienst nicht nutzen.</p>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-person-badge"></i> 2. Account-Registrierung</h2>
+        <h3>2.1 Account pro Gerät</h3>
+        <p>Aus Sicherheits- und Verwaltungsgründen ist für jedes Gerät ein separater Account erforderlich. Die Nutzung desselben Accounts auf mehreren Geräten ist nicht gestattet.</p>
+        
+        <h3>2.2 Richtigkeit der Angaben</h3>
+        <p>Bei der Registrierung musst du wahrheitsgemäße und vollständige Angaben machen. Falsche Informationen können zur Kündigung des Accounts führen.</p>
+        
+        <h3>2.3 Account-Sicherheit</h3>
+        <p>Du bist verantwortlich für die Sicherheit deines Accounts, einschließlich:</p>
+        <ul>
+            <li>Geheimhaltung deines Passworts</li>
+            <li>Regelmäßige Aktualisierung deiner Zugangsdaten</li>
+            <li>Sofortige Meldung bei unbefugtem Zugriff</li>
+        </ul>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-download"></i> 3. App-Downloads und Lizenzen</h2>
+        <p>Alle Apps im JDS Appstore unterliegen ihren jeweiligen Lizenzbedingungen. Beim Download akzeptierst du die Lizenzbedingungen des jeweiligen Entwicklers.</p>
+        <p>Joel Digitals übernimmt keine Haftung für:</p>
+        <ul>
+            <li>Funktionalität oder Qualität der Apps</li>
+            <li>Schäden durch Nutzung der Apps</li>
+            <li>Verlust von Daten durch App-Nutzung</li>
+        </ul>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-shield-check"></i> 4. Verbotene Aktivitäten</h2>
+        <p>Es ist strengstens untersagt:</p>
+        <ul>
+            <li>Apps zu dekompilieren, reverse-engineeren oder zu modifizieren</li>
+            <li>Lizenzen oder Accounts weiterzuverkaufen</li>
+            <li>Die Plattform für illegale Zwecke zu nutzen</li>
+            <li>Sicherheitsmechanismen zu umgehen</li>
+            <li>Automatisierte Zugriffe (Bots, Crawler) ohne Genehmigung</li>
+            <li>Andere Nutzer zu belästigen oder zu betrügen</li>
+        </ul>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-currency-euro"></i> 5. Zahlungen und Rückerstattungen</h2>
+        <p>Alle Preise sind Endpreise inklusive der gesetzlichen Mehrwertsteuer. Zahlungen werden über unsere Partner-Systeme abgewickelt.</p>
+        <p>Rückerstattungen sind möglich innerhalb von 14 Tagen, sofern die App nicht genutzt oder heruntergeladen wurde. Digitale Güter sind vom Widerrufsrecht ausgeschlossen, sobald der Download beginnt.</p>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-exclamation-triangle"></i> 6. Haftungsausschluss</h2>
+        <p>Joel Digitals haftet nur für vorsätzliches oder grob fahrlässiges Verhalten. Für leichte Fahrlässigkeit haften wir nur bei Verletzung wesentlicher Vertragspflichten.</p>
+        <p>Die Haftung für indirekte Schäden, entgangenen Gewinn oder Datenverlust ist ausgeschlossen, soweit gesetzlich zulässig.</p>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-pencil-square"></i> 7. Änderungen der Bedingungen</h2>
+        <p>Wir behalten uns vor, diese Nutzungsbedingungen jederzeit zu ändern. Änderungen werden mindestens 30 Tage vor Inkrafttreten angekündigt. Die weitere Nutzung gilt als Zustimmung zu den neuen Bedingungen.</p>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-x-circle"></i> 8. Kündigung</h2>
+        <p>Beide Parteien können den Vertrag jederzeit ohne Angabe von Gründen kündigen. Bei Verstoß gegen diese Bedingungen behalten wir uns das Recht vor, Accounts sofort zu sperren.</p>
+        <p>Bei Kündigung verlierst du den Zugriff auf gekaufte Apps und deinen Account-Verlauf.</p>
+    </div>
+
+    <div class="legal-section">
+        <h2><i class="bi bi-envelope"></i> 9. Kontakt</h2>
+        <p>Bei Fragen zu diesen Nutzungsbedingungen kontaktiere uns:</p>
+        <div class="contact-info">
+            <p><strong>Joel Digitals</strong></p>
+            <p>E-Mail: support@joel-digitals.de</p>
+            <p>Website: https://joel-digitals.de</p>
+        </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top: 3rem;">
+        <p>Mit der Nutzung des JDS Appstore bestätigst du, dass du diese Nutzungsbedingungen gelesen, verstanden und akzeptiert hast.</p>
+    </div>
+</div>
+{% endblock %}

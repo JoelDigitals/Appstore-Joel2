@@ -1,6 +1,220 @@
 from django import forms
-from .models import App, AppWarning, Version, Developer, CATEGORY_CHOICES, SUB_CATEGORY_CHOICES, WARNING_TYPES
-from django.utils import timezone
+from .models import App, Version, Developer, AppScreenshot, ImgBBUploader
+from django.conf import settings
+
+class AppWithVersionForm(forms.ModelForm):
+    version_number = forms.CharField(max_length=50, label="Versionsnummer")
+    file = forms.FileField(label="App-Datei")
+    release_notes = forms.CharField(widget=forms.Textarea, required=False, label="Release Notes")
+    
+    # ImgBB Upload Option
+    use_imgbb = forms.BooleanField(
+        required=False, 
+        initial=True,
+        label="Bild zu ImgBB hochladen",
+        help_text="Wenn aktiviert, wird das Icon zu ImgBB hochgeladen (schnellerer Zugriff). Bei Fehler wird lokal gespeichert."
+    )
+    
+    class Meta:
+        model = App
+        fields = ['name', 'description', 'language', 'platform', 'age_rating', 
+                  'category', 'subcategory', 'icon']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['icon'].required = False
+        self.fields['use_imgbb'].widget = forms.CheckboxInput(attrs={
+            'class': 'w-5 h-5 rounded border-gray-600 text-primary bg-slate-700 focus:ring-primary'
+        })
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        icon = cleaned_data.get('icon')
+        
+        if not icon:
+            raise forms.ValidationError("Bitte lade ein Icon hoch.")
+        
+        return cleaned_data
+    
+    def save(self, developer, commit=True):
+        app = super().save(commit=False)
+        app.developer = developer
+        
+        icon = self.cleaned_data.get('icon')
+        use_imgbb = self.cleaned_data.get('use_imgbb', True)
+        
+        # Versuche ImgBB Upload wenn aktiviert und API Key vorhanden
+        if use_imgbb and settings.IMGBB_API_KEY and icon:
+            result = ImgBBUploader.upload_image(icon)
+            if result['success']:
+                app.icon_url = result['url']
+                app.icon = None  # Nicht lokal speichern
+            else:
+                # Fallback zu lokalem Speichern
+                app.icon = icon
+                app.icon_url = ''
+        elif icon:
+            # Lokales Speichern
+            app.icon = icon
+            app.icon_url = ''
+        
+        if commit:
+            app.save()
+        
+        # Version erstellen
+        version = Version.objects.create(
+            app=app,
+            version_number=self.cleaned_data['version_number'],
+            file=self.cleaned_data['file'],
+            release_notes=self.cleaned_data['release_notes']
+        )
+        
+        return app
+
+
+class AppEditForm(forms.ModelForm):
+    use_imgbb = forms.BooleanField(
+        required=False, 
+        initial=True,
+        label="Neues Bild zu ImgBB hochladen (falls geändert)",
+    )
+    
+    class Meta:
+        model = App
+        fields = ['name', 'description', 'language', 'platform', 'age_rating',
+                  'category', 'subcategory', 'icon']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['icon'].required = False
+    
+    def save(self, commit=True):
+        app = super().save(commit=False)
+        
+        icon = self.cleaned_data.get('icon')
+        use_imgbb = self.cleaned_data.get('use_imgbb', True)
+        
+        # Nur wenn neues Icon hochgeladen wurde
+        if icon:
+            if use_imgbb and settings.IMGBB_API_KEY:
+                result = ImgBBUploader.upload_image(icon)
+                if result['success']:
+                    # Lösche altes lokales Icon wenn vorhanden
+                    if app.icon:
+                        app.icon.delete(save=False)
+                    app.icon_url = result['url']
+                    app.icon = None
+                else:
+                    app.icon = icon
+                    app.icon_url = ''
+            else:
+                app.icon = icon
+                app.icon_url = ''
+        
+        if commit:
+            app.save()
+        return app
+
+
+class ScreenshotForm(forms.ModelForm):
+    use_imgbb = forms.BooleanField(
+        required=False, 
+        initial=True,
+        label="Zu ImgBB hochladen",
+    )
+    
+    class Meta:
+        model = AppScreenshot
+        fields = ['image']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['image'].required = False
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        image = cleaned_data.get('image')
+        
+        if not image:
+            raise forms.ValidationError("Bitte lade ein Bild hoch.")
+        
+        return cleaned_data
+    
+    def save(self, app=None, commit=True):
+        screenshot = super().save(commit=False)
+        
+        if app:
+            screenshot.app = app
+        
+        image = self.cleaned_data.get('image')
+        use_imgbb = self.cleaned_data.get('use_imgbb', True)
+        
+        if image:
+            if use_imgbb and settings.IMGBB_API_KEY:
+                result = ImgBBUploader.upload_image(image)
+                if result['success']:
+                    screenshot.image_url = result['url']
+                    screenshot.image = None
+                else:
+                    screenshot.image = image
+                    screenshot.image_url = ''
+            else:
+                screenshot.image = image
+                screenshot.image_url = ''
+        
+        if commit:
+            screenshot.save()
+        return screenshot
+
+
+class DeveloperForm(forms.ModelForm):
+    use_imgbb = forms.BooleanField(
+        required=False, 
+        initial=True,
+        label="Logo zu ImgBB hochladen",
+    )
+    
+    class Meta:
+        model = Developer
+        fields = ['name', 'description', 'website', 'email', 'logo', 
+                  'youtube', 'twitter', 'github']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['logo'].required = False
+    
+    def save(self, commit=True):
+        developer = super().save(commit=False)
+        
+        logo = self.cleaned_data.get('logo')
+        use_imgbb = self.cleaned_data.get('use_imgbb', True)
+        
+        if logo:
+            if use_imgbb and settings.IMGBB_API_KEY:
+                result = ImgBBUploader.upload_image(logo)
+                if result['success']:
+                    # Lösche altes lokales Logo wenn vorhanden
+                    if developer.logo:
+                        developer.logo.delete(save=False)
+                    developer.logo_url = result['url']
+                    developer.logo = None
+                else:
+                    developer.logo = logo
+                    developer.logo_url = ''
+            else:
+                developer.logo = logo
+                developer.logo_url = ''
+        
+        if commit:
+            developer.save()
+        return developer
+
+
+class VersionForm(forms.ModelForm):
+    class Meta:
+        model = Version
+        fields = ['version_number', 'file', 'release_notes']
+
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 
@@ -22,152 +236,3 @@ class CustomUserCreationForm(UserCreationForm):
         self.fields['password1'].widget.attrs['placeholder'] = 'Passwort'
         self.fields['password2'].widget.attrs['placeholder'] = 'Passwort bestätigen'
     
-
-class AppEditForm(forms.ModelForm):
-    # Optional: Du kannst hier Widgets oder Labels anpassen, z. B. für die Kategorien
-    category = forms.ChoiceField(choices=CATEGORY_CHOICES, label="Kategorie")
-    subcategory = forms.ChoiceField(choices=SUB_CATEGORY_CHOICES, label="Unterkategorie", required=False)
-
-    warning_types = forms.MultipleChoiceField(
-        choices=WARNING_TYPES,
-        widget=forms.CheckboxSelectMultiple,
-        label="Warnung(en)",
-        required=False
-    )
-
-    class Meta:
-        model = App
-        fields = ['name', 'description', 'language', 'platform', 'age_rating', 'icon', 'category', 'subcategory']
-
-    def __init__(self, *args, **kwargs):
-        instance = kwargs.get('instance')
-        if instance:
-            initial = kwargs.setdefault('initial', {})
-            initial['warning_types'] = [w.warning_type for w in instance.warnings.all()]
-        super().__init__(*args, **kwargs)
-
-    def save(self, commit=True):
-        app = super().save(commit=False)
-        if commit:
-            app.save()
-            # Vorhandene Warnungen löschen
-            AppWarning.objects.filter(app=app).delete()
-            # Neue Warnungen speichern
-            selected_warnings = self.cleaned_data.get('warning_types', [])
-            for wt in selected_warnings:
-                AppWarning.objects.create(app=app, warning_type=wt)
-        return app
-
-class WarningForm(forms.ModelForm):
-    class Meta:
-        model = AppWarning
-        fields = ['warning_type', 'description']
-
-class VersionForm(forms.ModelForm):
-    class Meta:
-        model = Version
-        fields = ['version_number', 'file', 'release_notes']
-
-class DeveloperForm(forms.ModelForm):
-    class Meta:
-        model = Developer
-        fields = [
-            'name',
-            'description',
-            'website',
-            'email',
-            'logo',
-            'youtube',
-            'twitter',
-            'github',
-        ]
-        widgets = {
-            'name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Name des Entwicklers'
-            }),
-            'description': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Kurzbeschreibung'
-            }),
-            'website': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://example.com'
-            }),
-            'email': forms.EmailInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'support@example.com'
-            }),
-            'logo': forms.ClearableFileInput(attrs={
-                'class': 'form-control'
-            }),
-            'youtube': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://youtube.com/channel/...'
-            }),
-            'twitter': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://twitter.com/username'
-            }),
-            'github': forms.URLInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'https://github.com/username'
-            }),
-        }
-
-class AppWithVersionForm(forms.ModelForm):
-    version_number = forms.CharField(max_length=50)
-    file = forms.FileField()
-    release_notes = forms.CharField(widget=forms.Textarea, required=False)
-    published_at = forms.DateTimeField(
-        required=False,
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-        label="Geplante Veröffentlichungszeit (optional)"
-    )
-
-    # NEU: Kategorien
-    category = forms.ChoiceField(choices=CATEGORY_CHOICES, label="Kategorie")
-    subcategory = forms.ChoiceField(choices=SUB_CATEGORY_CHOICES, label="Unterkategorie", required=False)
-
-    # NEU: Mehrfachauswahl für Warnungen
-    warning_types = forms.MultipleChoiceField(
-        choices=WARNING_TYPES,
-        widget=forms.CheckboxSelectMultiple,
-        label="Warnung(en)",
-        required=False
-    )
-
-    class Meta:
-        model = App
-        fields = ['name', 'description', 'language', 'platform', 'age_rating', 'icon', 'category', 'subcategory']
-
-    def save(self, commit=True, developer=None):
-        app = super().save(commit=False)
-        if developer:
-            app.developer = developer
-
-        published_at = self.cleaned_data.get('published_at')
-        app.published_at = published_at or timezone.now()
-
-        if commit:
-            app.save()
-
-            # AppWarnings speichern
-            selected_warnings = self.cleaned_data.get('warning_types', [])
-            for wt in selected_warnings:
-                AppWarning.objects.create(app=app, warning_type=wt)
-
-        return app
-
-    def save_version(self, app):
-        version = Version(
-            app=app,
-            version_number=self.cleaned_data['version_number'],
-            file=self.cleaned_data['file'],
-            release_notes=self.cleaned_data['release_notes'],
-            checking_status='pending',
-            approved=False
-        )
-        version.save()
-        return version

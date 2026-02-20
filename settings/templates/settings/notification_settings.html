@@ -1,89 +1,232 @@
 {% extends "base.html" %}
+
 {% block title %}Benachrichtigungseinstellungen{% endblock %}
 
 {% block content %}
-<h1>Benachrichtigungseinstellungen</h1>
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-<style>
-    .switch {
-        position: relative;
-        display: inline-block;
-        width: 50px;
-        height: 28px;
-        margin-right: 12px;
-    }
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="{% url 'user_settings' %}" class="hover:text-primary transition-colors flex items-center gap-1">
+      <i class="bi bi-sliders2"></i>
+      Einstellungen
+    </a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <span class="text-gray-300">Benachrichtigungen</span>
+  </nav>
 
-    .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-100 flex items-center gap-3">
+      <i class="bi bi-bell-gear text-primary"></i>
+      Benachrichtigungen
+    </h1>
+    <p class="text-gray-400 mt-2">Verwalte, wie und wann du informiert werden möchtest</p>
+  </div>
 
-    .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        transition: 0.4s;
-        border-radius: 28px;
-    }
+  <!-- Settings Card -->
+  <div class="glass rounded-3xl p-6 md:p-8">
+    <form method="post" class="space-y-6" id="notificationForm">
+      {% csrf_token %}
 
-    .slider:before {
-        position: absolute;
-        content: "";
-        height: 20px;
-        width: 20px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        transition: 0.4s;
-        border-radius: 50%;
-    }
+      <!-- Email Notifications -->
+      <div class="group p-4 rounded-2xl bg-slate-800/30 border border-gray-700/30 hover:border-primary/20 transition-all">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-500/20 transition-all">
+              <i class="bi bi-envelope-fill text-2xl text-blue-400"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-100">E-Mail-Benachrichtigungen</h3>
+              <p class="text-sm text-gray-500">Erhalte Updates und News per E-Mail</p>
+            </div>
+          </div>
+          
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" 
+                   name="email_notifications" 
+                   class="sr-only peer"
+                   {% if settings.email_notifications %}checked{% endif %}>
+            <div class="w-14 h-7 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+        
+        <!-- Email Options (shown when enabled)
+        <div class="mt-4 ml-16 space-y-3 {% if not settings.email_notifications %}hidden{% endif %}" id="emailOptions">
+          <label class="flex items-center gap-3 text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+            <input type="checkbox" name="email_updates" {% if settings.email_updates %}checked{% endif %} class="w-4 h-4 rounded border-gray-600 bg-slate-800 text-primary focus:ring-primary focus:ring-offset-slate-900">
+            App-Updates und neue Features
+          </label>
+          <label class="flex items-center gap-3 text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+            <input type="checkbox" name="email_security" {% if settings.email_security %}checked{% endif %} class="w-4 h-4 rounded border-gray-600 bg-slate-800 text-primary focus:ring-primary focus:ring-offset-slate-900">
+            Sicherheitswarnungen
+          </label>
+          <label class="flex items-center gap-3 text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+            <input type="checkbox" name="email_marketing" {% if settings.email_marketing %}checked{% endif %} class="w-4 h-4 rounded border-gray-600 bg-slate-800 text-primary focus:ring-primary focus:ring-offset-slate-900">
+            Newsletter und Werbung
+          </label>
+        </div>-->
+      </div>
 
-    input:checked + .slider {
-        background-color: #4caf50;
-    }
+      <!-- Push Notifications -->
+      <div class="group p-4 rounded-2xl bg-slate-800/30 border border-gray-700/30 hover:border-secondary/20 transition-all">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-green-500/20 transition-all">
+              <i class="bi bi-phone-vibrate-fill text-2xl text-green-400"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-100">Push-Benachrichtigungen</h3>
+              <p class="text-sm text-gray-500">Sofortige Benachrichtigungen auf deinem Gerät</p>
+            </div>
+          </div>
+          
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" 
+                   name="push_notifications" 
+                   class="sr-only peer"
+                   {% if settings.push_notifications %}checked{% endif %}>
+            <div class="w-14 h-7 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-secondary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-secondary"></div>
+          </label>
+        </div>
 
-    input:checked + .slider:before {
-        transform: translateX(22px);
-    }
+        <!-- Push Options (shown when enabled) 
+        <div class="mt-4 ml-16 space-y-3 {% if not settings.push_notifications %}hidden{% endif %}" id="pushOptions">
+          <label class="flex items-center gap-3 text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+            <input type="checkbox" name="push_downloads" {% if settings.push_downloads %}checked{% endif %} class="w-4 h-4 rounded border-gray-600 bg-slate-800 text-secondary focus:ring-secondary focus:ring-offset-slate-900">
+            Download abgeschlossen
+          </label>
+          <label class="flex items-center gap-3 text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+            <input type="checkbox" name="push_updates" {% if settings.push_updates %}checked{% endif %} class="w-4 h-4 rounded border-gray-600 bg-slate-800 text-secondary focus:ring-secondary focus:ring-offset-slate-900">
+            Neue App-Versionen
+          </label>
+          <label class="flex items-center gap-3 text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+            <input type="checkbox" name="push_messages" {% if settings.push_messages %}checked{% endif %} class="w-4 h-4 rounded border-gray-600 bg-slate-800 text-secondary focus:ring-secondary focus:ring-offset-slate-900">
+            Direktnachrichten
+          </label>
+        </div>-->
+      </div>
 
-    .setting-row {
-        display: flex;
-        align-items: center;
-        margin-bottom: 16px;
-        font-size: 16px;
-    }
+      <!-- SMS Notifications 
+      <div class="group p-4 rounded-2xl bg-slate-800/30 border border-gray-700/30 hover:border-yellow-500/20 transition-all">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-yellow-500/20 transition-all">
+              <i class="bi bi-chat-dots-fill text-2xl text-yellow-400"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-100">SMS-Benachrichtigungen</h3>
+              <p class="text-sm text-gray-500">Wichtige Meldungen per SMS</p>
+            </div>
+          </div>
+          
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" 
+                   name="sms_notifications" 
+                   class="sr-only peer"
+                   {% if settings.sms_notifications %}checked{% endif %}>
+            <div class="w-14 h-7 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-500/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-yellow-500"></div>
+          </label>
+        </div>
+      </div>
 
-    .btn {
-        margin-right: 10px;
-        margin-top: 10px;
-    }
-</style>
+      <!-- Quiet Hours 
+      <div class="p-4 rounded-2xl bg-slate-800/30 border border-gray-700/30">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+            <i class="bi bi-moon-fill text-2xl text-purple-400"></i>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-100">Ruhezeiten</h3>
+            <p class="text-sm text-gray-500">Keine Benachrichtigungen in dieser Zeit</p>
+          </div>
+        </div>
+        
+        <div class="ml-16 grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Von</label>
+            <input type="time" 
+                   name="quiet_start" 
+                   value="{{ settings.quiet_start|default:'22:00' }}"
+                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl px-3 py-2 text-gray-100 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark]">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Bis</label>
+            <input type="time" 
+                   name="quiet_end" 
+                   value="{{ settings.quiet_end|default:'08:00' }}"
+                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl px-3 py-2 text-gray-100 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark]">
+          </div>
+        </div>-->
+      </div>
 
-<form method="post">
-    {% csrf_token %}
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-700/50">
+        <button type="submit" 
+                class="flex-1 sm:flex-none inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg shadow-primary/20">
+          <i class="bi bi-check-lg mr-2"></i>
+          Einstellungen speichern
+        </button>
+        
+        <a href="{% url 'user_settings' %}" 
+           class="flex-1 sm:flex-none inline-flex items-center justify-center px-8 py-3 glass hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-xl transition-all">
+          <i class="bi bi-arrow-left mr-2"></i>
+          Zurück
+        </a>
+      </div>
+    </form>
+  </div>
 
-    <div class="setting-row">
-        <label class="switch">
-            <input type="checkbox" name="email_notifications" {% if settings.email_notifications %}checked{% endif %}>
-            <span class="slider"></span>
-        </label>
-        E-Mail-Benachrichtigungen erhalten
+  <!-- Info Card -->
+  <div class="mt-6 glass rounded-2xl p-4 border border-gray-700/30">
+    <div class="flex items-start gap-3">
+      <i class="bi bi-info-circle text-primary text-xl mt-0.5"></i>
+      <div>
+        <h4 class="text-sm font-semibold text-gray-300 mb-1">Hinweis</h4>
+        <p class="text-sm text-gray-400">Sicherheitswarnungen werden immer gesendet, unabhängig von deinen Einstellungen. Du kannst sie nicht deaktivieren.</p>
+      </div>
     </div>
+  </div>
 
-    <div class="setting-row">
-        <label class="switch">
-            <input type="checkbox" name="push_notifications" {% if settings.push_notifications %}checked{% endif %}>
-            <span class="slider"></span>
-        </label>
-        Push-Benachrichtigungen erhalten
-    </div>
+</div>
 
-    <button type="submit" class="btn btn-success">Speichern</button>
-    <a href="{% url 'user_settings' %}" class="btn btn-secondary">Zurück</a>
-</form>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle email options
+    const emailToggle = document.querySelector('input[name="email_notifications"]');
+    const emailOptions = document.getElementById('emailOptions');
+    
+    emailToggle.addEventListener('change', function() {
+        if (this.checked) {
+            emailOptions.classList.remove('hidden');
+            emailOptions.style.animation = 'slideDown 0.3s ease';
+        } else {
+            emailOptions.classList.add('hidden');
+        }
+    });
+
+    // Toggle push options
+    const pushToggle = document.querySelector('input[name="push_notifications"]');
+    const pushOptions = document.getElementById('pushOptions');
+    
+    pushToggle.addEventListener('change', function() {
+        if (this.checked) {
+            pushOptions.classList.remove('hidden');
+            pushOptions.style.animation = 'slideDown 0.3s ease';
+        } else {
+            pushOptions.classList.add('hidden');
+        }
+    });
+});
+
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+`;
+document.head.appendChild(style);
+</script>
 {% endblock %}

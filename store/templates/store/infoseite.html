@@ -2,177 +2,247 @@
 
 {% block title %}Info & Roadmap{% endblock %}
 
-{% block extrahead %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+
+  <!-- Header -->
+  <div class="text-center space-y-4">
+    <h1 class="text-4xl md:text-5xl font-bold text-gradient">Info & Roadmap</h1>
+    <p class="text-gray-400 max-w-2xl mx-auto">
+      Bleib auf dem Laufenden über die neuesten Entwicklungen und zukünftige Pläne des JDS Appstores.
+    </p>
+  </div>
+
+  <!-- Aktuelle Neuerungen -->
+  <section>
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-2xl font-bold text-gray-100 flex items-center">
+        <i class="bi bi-stars mr-3 text-yellow-400"></i>
+        Aktuelle Neuerungen
+      </h2>
+      <span class="px-3 py-1 bg-primary/20 text-primary text-sm rounded-full">
+        {{ updates|length }} Update{{ updates|length|pluralize:"s" }}
+      </span>
+    </div>
+
+    {% if updates %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for update in updates %}
+      <div class="group glass rounded-2xl p-6 border-l-4 
+                  {% if update.update_type == 'kritisch' %}border-red-500 bg-red-500/5
+                  {% elif update.update_type == 'warnung' %}border-yellow-500 bg-yellow-500/5
+                  {% else %}border-primary bg-primary/5{% endif %}
+                  hover:-translate-y-1 transition-all duration-300">
+        
+        <!-- Icon based on type -->
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center
+                      {% if update.update_type == 'kritisch' %}bg-red-500/20 text-red-400
+                      {% elif update.update_type == 'warnung' %}bg-yellow-500/20 text-yellow-400
+                      {% else %}bg-primary/20 text-primary{% endif %}">
+            {% if update.update_type == 'kritisch' %}
+              <i class="bi bi-exclamation-triangle-fill"></i>
+            {% elif update.update_type == 'warnung' %}
+              <i class="bi bi-exclamation-circle-fill"></i>
+            {% else %}
+              <i class="bi bi-sparkles"></i>
+            {% endif %}
+          </div>
+          <span class="text-xs font-medium uppercase tracking-wider 
+                       {% if update.update_type == 'kritisch' %}text-red-400
+                       {% elif update.update_type == 'warnung' %}text-yellow-400
+                       {% else %}text-primary{% endif %}">
+            {{ update.get_update_type_display|default:"Neu" }}
+          </span>
+        </div>
+
+        <h3 class="text-lg font-semibold text-gray-100 mb-2 group-hover:text-white transition-colors">
+          {{ update.title }}
+        </h3>
+        
+        <p class="text-sm text-gray-400 mb-4 line-clamp-3">
+          {{ update.message|linebreaksbr }}
+        </p>
+        
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500 flex items-center">
+            <i class="bi bi-calendar3 mr-1"></i>
+            {{ update.date|date:"d.m.Y" }}
+          </span>
+          
+          {% if update.link %}
+          <a href="{{ update.link }}" target="_blank" rel="noopener" 
+             class="text-sm font-medium text-primary hover:text-primary/80 flex items-center transition-colors">
+            Mehr erfahren
+            <i class="bi bi-arrow-up-right ml-1"></i>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="glass rounded-2xl p-12 text-center">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800 flex items-center justify-center">
+        <i class="bi bi-inbox text-3xl text-gray-600"></i>
+      </div>
+      <p class="text-gray-500">Keine Neuerungen vorhanden.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- Roadmap -->
+  <section>
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-2xl font-bold text-gray-100 flex items-center">
+        <i class="bi bi-map mr-3 text-green-400"></i>
+        Roadmap
+      </h2>
+      {% if all_done %}
+      <span class="px-3 py-1 bg-green-500/20 text-green-400 text-sm rounded-full flex items-center">
+        <i class="bi bi-check-circle mr-2"></i>
+        Alle Ziele erreicht!
+      </span>
+      {% endif %}
+    </div>
+
+    {% if roadmap %}
+    <div class="relative">
+      <!-- Timeline Line -->
+      <div class="absolute left-6 md:left-8 top-0 bottom-0 w-1 
+                  {% if all_done %}bg-gradient-to-b from-primary via-green-400 to-green-500
+                  {% else %}bg-gradient-to-b from-primary to-gray-700{% endif %}
+                  rounded-full"></div>
+
+      <div class="space-y-8">
+        {% for item in roadmap %}
+        <div class="relative pl-16 md:pl-20 roadmap-entry opacity-0" style="animation: fadeInUp 0.6s ease-out {{ forloop.counter|add:0.1 }}s forwards;">
+          
+          <!-- Timeline Dot -->
+          <div class="absolute left-2 md:left-4 top-2 w-9 h-9 rounded-full border-4 border-slate-900 flex items-center justify-center z-10
+                      {% if item.status == 'abgeschlossen' %}bg-green-500 shadow-lg shadow-green-500/30
+                      {% elif item.status == 'in_arbeit' %}bg-primary animate-pulse shadow-lg shadow-primary/30
+                      {% else %}bg-gray-600{% endif %}">
+            {% if item.status == 'abgeschlossen' %}
+              <i class="bi bi-check-lg text-white text-sm"></i>
+            {% elif item.status == 'in_arbeit' %}
+              <i class="bi bi-arrow-repeat text-white text-sm animate-spin"></i>
+            {% else %}
+              <i class="bi bi-clock text-white text-xs"></i>
+            {% endif %}
+          </div>
+
+          <!-- Content Card -->
+          <div class="glass rounded-2xl p-6 
+                      {% if item.status == 'abgeschlossen' %}border-green-500/30 bg-green-500/5
+                      {% elif item.status == 'in_arbeit' %}border-primary/30 bg-primary/5
+                      {% else %}border-gray-700/50{% endif %}
+                      hover:border-opacity-50 transition-all duration-300">
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+              <div>
+                <h3 class="text-xl font-semibold text-gray-100 mb-1 
+                           {% if item.status == 'abgeschlossen' %}text-green-400
+                           {% elif item.status == 'in_arbeit' %}text-primary{% endif %}">
+                  {{ item.title }}
+                </h3>
+                <div class="flex items-center gap-3 text-sm">
+                  <span class="flex items-center text-gray-500">
+                    <i class="bi bi-calendar3 mr-1"></i>
+                    {{ item.date|date:"d.m.Y" }}
+                  </span>
+                  <span class="px-2 py-1 rounded-full text-xs font-medium
+                               {% if item.status == 'abgeschlossen' %}bg-green-500/20 text-green-400
+                               {% elif item.status == 'in_arbeit' %}bg-primary/20 text-primary
+                               {% else %}bg-gray-700 text-gray-400{% endif %}">
+                    {{ item.get_status_display }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Progress Indicator -->
+              <div class="flex items-center gap-2">
+                {% if item.status == 'abgeschlossen' %}
+                  <div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <i class="bi bi-trophy text-green-400 text-xl"></i>
+                  </div>
+                {% elif item.status == 'in_arbeit' %}
+                  <div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                    <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                {% else %}
+                  <div class="w-12 h-12 rounded-full bg-gray-700/50 flex items-center justify-center">
+                    <i class="bi bi-hourglass text-gray-500 text-xl"></i>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <p class="text-gray-400 leading-relaxed">
+              {{ item.description|linebreaksbr }}
+            </p>
+
+            {% if item.status == 'in_arbeit' %}
+            <div class="mt-4 pt-4 border-t border-primary/10">
+              <div class="flex items-center gap-2 text-sm text-primary">
+                <i class="bi bi-info-circle"></i>
+                <span>In aktiver Entwicklung – Stay tuned!</span>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="glass rounded-2xl p-12 text-center">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800 flex items-center justify-center">
+        <i class="bi bi-map text-3xl text-gray-600"></i>
+      </div>
+      <p class="text-gray-500">Keine Roadmap-Einträge vorhanden.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- Newsletter/Feedback CTA -->
+  <div class="glass rounded-2xl p-8 text-center">
+    <div class="max-w-2xl mx-auto">
+      <i class="bi bi-envelope-paper text-4xl text-primary mb-4"></i>
+      <h3 class="text-2xl font-bold text-gray-100 mb-2">Feedback oder Ideen?</h3>
+      <p class="text-gray-400 mb-6">
+        Wir freuen uns über dein Feedback! Hast du Wünsche für neue Features oder Verbesserungsvorschläge?
+      </p>
+      <a href="mailto:feedback@jds-appstore.com" 
+         class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/30 text-white rounded-xl font-semibold transition-all hover:scale-105">
+        <i class="bi bi-send mr-2"></i>
+        Feedback senden
+      </a>
+    </div>
+  </div>
+
+</div>
+
 <style>
-  /* ---------- KACHELN ---------- */
-  .updates {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-    margin-bottom: 40px;
-  }
-
-  .update-card {
-    background: #fff;
-    padding: 18px;
-    border-left: 6px solid #2196f3;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  }
-
-  .update-card.warnung {
-    border-color: #ff9800;
-    background-color: #fffaf0;
-  }
-
-  .update-card.kritisch {
-    border-color: #f44336;
-    background-color: #fff5f5;
-  }
-
-  .update-card h3 {
-    margin: 0 0 6px 0;
-    font-size: 1.1rem;
-    color: #000000
-  }
-
-  .update-card small {
-    color: #555;
-    font-size: 0.85rem;
-  }
-
-  .update-card p {
-    margin: 8px 0;
-    color: #000000
-    font-size: 0.95rem;
-  }
-
-  .update-card a {
-    font-size: 0.9rem;
-    color: #1976d2;
-  }
-
-  /* ---------- ROADMAP-ZEITLINIE ---------- */
-  /* --------------------------------------------------
-   ROADMAP-ZEITLINIE
--------------------------------------------------- */
-.roadmap {
-  position: relative;
-  margin-left: 30px;
-  padding-left: 20px;
-  /* Standard-Linienfarbe */
-  border-left: 4px solid #ccc;
-  overflow: hidden;            /* verhindert Überlauf der Animationen */
-}
-
-/* Grüne Linie, wenn alles erledigt ist */
-.roadmap.finished {
-  border-left-color: #4caf50;
-}
-
-/* Einzelner Eintrag */
-.roadmap-entry {
-  position: relative;
-  margin-bottom: 30px;
-  padding-left: 10px;
-
-  /* sanftes Einblenden */
-  opacity: 0;
-  transform: translateY(20px);
-  animation: fadeInUp 0.6s ease-out forwards;
-}
-
-/* Staggered-Delays für fließendes Erscheinen */
-.roadmap-entry:nth-child(1) { animation-delay: 0.1s; }
-.roadmap-entry:nth-child(2) { animation-delay: 0.2s; }
-.roadmap-entry:nth-child(3) { animation-delay: 0.3s; }
-.roadmap-entry:nth-child(4) { animation-delay: 0.4s; }
-.roadmap-entry:nth-child(5) { animation-delay: 0.5s; }
-.roadmap-entry:nth-child(6) { animation-delay: 0.6s; }
-
 @keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* --- Kreis (bleibt immer ganz) --- */
-.roadmap-entry::before {
-  content: "";
-  position: absolute;
-  left: -34px;          /* zentriert auf der Linie */
-  top: 4px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 4px solid #fff;
-  box-shadow: 0 0 0 2px currentColor; /* nimmt Farbe des Status an */
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* Farben der Kreise nach Status */
-.roadmap-entry.geplant   { --dot-color: #9e9e9e; }
-.roadmap-entry.in_arbeit { --dot-color: #2196f3; }
-.roadmap-entry.abgeschlossen { --dot-color: #4caf50; }
-
-.roadmap-entry::before {
-  background-color: var(--dot-color);
-  color: var(--dot-color);   /* wird für die Box-Shadow-Linie verwendet */
-}
-
-/* --------------------------------------------------
-   Optional: Überschriften & Text
--------------------------------------------------- */
-.roadmap-entry h4 {
-  margin: 0 0 4px 0;
-  font-size: 1.1rem;
-}
-
-.roadmap-entry small {
-  color: #dcd4d4ff;
-  font-size: 0.85rem;
-}
-
-.roadmap-entry p {
-  margin: 6px 0 0 0;
-  color: #ffffffff;
+/* Line clamp for update cards */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>
-{% endblock %}
-
-{% block content %}
-<div class="container py-4">
-
-  <h2>Aktuelle Neuerungen</h2>
-  <div class="updates">
-    {% for update in updates %}
-      <div class="update-card {{ update.update_type }}">
-        <h3>{{ update.title }}</h3>
-        <small>{{ update.date|date:"d.m.Y" }}</small>
-        <p>{{ update.message|linebreaksbr }}</p>
-        {% if update.link %}
-          <a href="{{ update.link }}" target="_blank" rel="noopener">Mehr erfahren ↗</a>
-        {% endif %}
-      </div>
-    {% empty %}
-      <p>Keine Neuerungen vorhanden.</p>
-    {% endfor %}
-  </div>
-
-  <h2>Roadmap</h2>
-
-  <div class="roadmap {% if all_done %}finished{% endif %}">
-    {% for item in roadmap %}
-      <div class="roadmap-entry {{ item.status }}">
-        <h4>{{ item.title }}</h4>
-        <small>{{ item.date|date:"d.m.Y" }} – {{ item.get_status_display }}</small>
-        <p>{{ item.description|linebreaksbr }}</p>
-      </div>
-    {% empty %}
-      <p>Keine Roadmap-Einträge vorhanden.</p>
-    {% endfor %}
-  </div>
-
-</div>
 {% endblock %}

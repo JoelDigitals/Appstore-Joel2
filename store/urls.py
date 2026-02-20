@@ -2,9 +2,12 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('.well-known/assetlinks.json', views.assetlinks, name='assetlinks'),
+
     path('register/', views.register_view, name='register'),
-    path('verify-email/', views.verify_email_view, name='verify_email'),
     path('login/', views.login_view, name='login'),
+    path('verify-email/', views.verify_email_view, name='verify_email'),
+    path('change-verification-email/', views.change_verification_email, name='change_verification_email'),
     path('logout/', views.logout_view, name='logout'),
 
     path('password_reset/', views.password_reset_request, name='password_reset'),
@@ -29,12 +32,14 @@ urlpatterns = [
     path('developer/app/<int:app_id>/upload-version/', views.upload_version, name='upload_version'),
 
 
-     path('version/<int:version_id>/status/data/', views.version_status_data, name='version_status_data'),
+    path('version/<int:version_id>/status/data/', views.version_status_data, name='version_status_data'),
     path('version/<int:version_id>/status/start/', views.start_version_check_api, name='start_version_check_api'),
     
 
     path('download/media/', views.download_all_media, name='download_media'),
 
+    path('api/apps/', views.api_all_apps, name='api_all_apps'),
+    path('track-download/<int:version_id>/', views.track_download, name='track_download'),
 
     path('app/create/', views.create_app_view, name='create_app'),
     path('', views.home, name='home'),
@@ -65,7 +70,10 @@ urlpatterns = [
     path('notifications/<int:pk>/', views.notification_detail, name='notification_detail'),
     path('notifications/mark-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
 
-    path('accounts/login/', views.login_view, name='login'),
+    path('accounts/login/', views.login_view, name='login'),    
+    path('accounts/register/sso/', views.sso_connect, name='sso_connect'),
+    path('accounts/register/callback/', views.sso_callback, name='sso_callback'),
+    path('auth/sso/login/', views.sso_login, name='sso_login'),
 
     path("status/api/<int:version_id>/", views.version_status_api, name="version_status_api"),
 
@@ -73,4 +81,7 @@ urlpatterns = [
 
     path('media/', views.media_view, name='admin_media'),
 
+
+    path('nutzungsbedingungen/', views.terms_of_service_view, name='terms_of_service'),
+    path('datenschutz/', views.privacy_policy_view, name='privacy_policy'),
 ]

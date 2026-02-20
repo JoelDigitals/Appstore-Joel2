@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Sprache{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="{% url 'user_settings' %}" class="hover:text-primary transition-colors">
+      <i class="bi bi-sliders2"></i> Einstellungen
+    </a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <span class="text-gray-300">Sprache</span>
+  </nav>
+
+  <h1 class="text-3xl font-bold text-gray-100 mb-8 flex items-center gap-3">
+    <i class="bi bi-globe2 text-primary"></i>
+    Sprache & Region
+  </h1>
+
+  <div class="glass rounded-3xl p-6 md:p-8">
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+
+      <div class="space-y-2">
+        <label class="text-sm font-medium text-gray-300">Sprache</label>
+        <div class="relative">
+          <i class="bi bi-translate absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+          <select name="language" class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 appearance-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+            {% for code, name in languages %}
+            <option value="{{ code }}" {% if profile.language == code %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+          </select>
+          <i class="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <label class="text-sm font-medium text-gray-300">Zeitzone</label>
+        <div class="relative">
+          <i class="bi bi-clock absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+          <select name="timezone" class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 appearance-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+            {% for tz, label in timezones %}
+            <option value="{{ tz }}" {% if profile.timezone == tz %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <i class="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <label class="text-sm font-medium text-gray-300">Datumsformat</label>
+        <div class="grid grid-cols-3 gap-3">
+          <label class="cursor-pointer">
+            <input type="radio" name="date_format" value="DMY" {% if profile.date_format == 'DMY' %}checked{% endif %} class="sr-only peer">
+            <div class="p-3 rounded-xl bg-slate-800/50 border border-gray-700 text-center peer-checked:border-primary peer-checked:bg-primary/10 transition-all">
+              <span class="text-sm text-gray-300 peer-checked:text-primary">31.12.2024</span>
+            </div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="date_format" value="MDY" {% if profile.date_format == 'MDY' %}checked{% endif %} class="sr-only peer">
+            <div class="p-3 rounded-xl bg-slate-800/50 border border-gray-700 text-center peer-checked:border-primary peer-checked:bg-primary/10 transition-all">
+              <span class="text-sm text-gray-300 peer-checked:text-primary">12/31/2024</span>
+            </div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="date_format" value="YMD" {% if profile.date_format == 'YMD' %}checked{% endif %} class="sr-only peer">
+            <div class="p-3 rounded-xl bg-slate-800/50 border border-gray-700 text-center peer-checked:border-primary peer-checked:bg-primary/10 transition-all">
+              <span class="text-sm text-gray-300 peer-checked:text-primary">2024-12-31</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex gap-4 pt-4">
+        <button type="submit" class="flex-1 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl hover:opacity-90 transition-all">
+          <i class="bi bi-check-lg mr-2"></i>Speichern
+        </button>
+        <a href="{% url 'user_settings' %}" class="px-6 py-3 glass hover:bg-gray-700/50 text-gray-300 rounded-xl transition-all">
+          Abbrechen
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

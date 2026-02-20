@@ -1,15 +1,128 @@
 {% extends "base.html" %}
+{% load image_tags %}
 
 {% block title %}App bearbeiten – {{ app.name }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <h2>App bearbeiten</h2>
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-success">Speichern</button>
-    <a href="{% url 'developer_dashboard' %}" class="btn btn-secondary">Abbrechen</a>
-  </form>
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Header -->
+  <div class="mb-8">
+    <h2 class="text-3xl md:text-4xl font-bold text-gray-100 flex items-center">
+      <i class="bi bi-pencil-square mr-3 text-primary"></i>
+      App bearbeiten
+    </h2>
+    <p class="text-gray-400 mt-2">{{ app.name }}</p>
+  </div>
+
+  <!-- Current Icon Preview -->
+  <div class="glass rounded-2xl p-6 mb-8 border border-primary/20">
+    <div class="flex items-center gap-4">
+      <div class="relative">
+        {% with icon_url=app|get_image_url:"icon" %}
+          {% if icon_url %}
+            <img src="{{ icon_url }}" alt="Aktuelles Icon" class="w-20 h-20 object-contain rounded-2xl bg-slate-800/50 p-2">
+          {% else %}
+            <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+              <span class="text-2xl font-bold text-white">{{ app.name|slice:":1"|upper }}</span>
+            </div>
+          {% endif %}
+        {% endwith %}
+        <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-slate-900 flex items-center justify-center">
+          <i class="bi bi-check text-white text-xs"></i>
+        </div>
+      </div>
+      <div>
+        <h3 class="text-lg font-semibold text-gray-100">Aktuelles Icon</h3>
+        <p class="text-sm text-gray-400">
+          {% if app.icon_url %}
+            <i class="bi bi-cloud-check mr-1 text-primary"></i> Bei ImgBB gespeichert
+          {% elif app.icon %}
+            <i class="bi bi-hdd mr-1 text-gray-500"></i> Lokal gespeichert
+          {% else %}
+            Kein Icon vorhanden
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="glass rounded-3xl p-6 md:p-8">
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+      {% csrf_token %}
+      
+      <!-- ImgBB Option -->
+      <div class="flex items-center gap-3 p-4 rounded-xl bg-slate-800/30 border border-gray-700/50 mb-6">
+        <input type="checkbox" name="use_imgbb" id="use_imgbb" 
+               {% if form.use_imgbb.value %}checked{% endif %}
+               class="w-5 h-5 rounded border-gray-600 text-primary bg-slate-700 focus:ring-primary">
+        <label for="use_imgbb" class="text-sm text-gray-300 cursor-pointer select-none">
+          <span class="font-medium text-primary">Neues Icon zu ImgBB hochladen</span>
+          <span class="block text-xs text-gray-500">Wenn deaktiviert, wird das Icon nur lokal gespeichert.</span>
+        </label>
+      </div>
+
+      {% for field in form %}
+        {% if field.name != 'use_imgbb' %}
+        <div class="space-y-2">
+          <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-300">
+            {{ field.label }}
+            {% if field.field.required %}
+              <span class="text-red-400">*</span>
+            {% endif %}
+          </label>
+          
+          {% if field.field.widget.input_type == 'file' %}
+            <div class="relative">
+              <input type="file" name="{{ field.name }}" id="{{ field.id_for_label }}"
+                     class="block w-full text-sm text-gray-400
+                            file:mr-4 file:py-3 file:px-4
+                            file:rounded-xl file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-primary/10 file:text-primary
+                            hover:file:bg-primary/20
+                            file:transition-all cursor-pointer">
+            </div>
+          {% elif field.field.widget.input_type == 'select' %}
+            <select name="{{ field.name }}" id="{{ field.id_for_label }}"
+                    class="w-full bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100">
+              {% for choice in field.field.choices %}
+                <option value="{{ choice.0 }}" {% if field.value == choice.0 %}selected{% endif %}>
+                  {{ choice.1 }}
+                </option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <input type="{{ field.field.widget.input_type|default:'text' }}" 
+                   name="{{ field.name }}" id="{{ field.id_for_label }}"
+                   value="{{ field.value|default:'' }}"
+                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100">
+          {% endif %}
+          
+          {% if field.errors %}
+            <p class="text-red-400 text-sm">{{ field.errors.0 }}</p>
+          {% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-700/50">
+        <button type="submit" 
+                class="flex-1 sm:flex-none inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl">
+          <i class="bi bi-check-lg mr-2"></i>
+          Speichern
+        </button>
+        
+        <a href="{% url 'developer_dashboard' %}" 
+           class="flex-1 sm:flex-none inline-flex items-center justify-center px-6 py-3 glass text-gray-300 rounded-xl">
+          <i class="bi bi-x-lg mr-2"></i>
+          Abbrechen
+        </a>
+      </div>
+    </form>
+  </div>
+
 </div>
 {% endblock %}
