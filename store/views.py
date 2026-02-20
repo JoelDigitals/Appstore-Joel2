@@ -1359,7 +1359,7 @@ def sso_callback(request):
             print("✅ SSO LOGIN - KOMPLETT ERFOLGREICH")
             print("=" * 80 + "\n")
 
-            return redirect('/accounts/register/step1/')  # Zur Startseite oder Dashboard
+            return redirect('/')  # Zur Startseite oder Dashboard
         
         # User einloggen
         print(f"\n🔓 Logge User ein...")

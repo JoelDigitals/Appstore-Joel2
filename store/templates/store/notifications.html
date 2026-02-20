@@ -132,17 +132,6 @@
           </div>
         </a>
 
-        <!-- Quick Actions -->
-        {% if not n.read and n.user %}
-        <form method="post" action="{% url 'mark_notification_read' n.id %}" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-          {% csrf_token %}
-          <button type="submit" 
-                  class="p-2 hover:bg-primary/10 text-gray-400 hover:text-primary rounded-lg transition-all"
-                  title="Als gelesen markieren">
-            <i class="bi bi-check-lg"></i>
-          </button>
-        </form>
-        {% endif %}
       </div>
       {% endfor %}
     </div>
