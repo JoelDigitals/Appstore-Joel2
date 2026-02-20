@@ -345,7 +345,7 @@
       </button>
     </div>
 
-    <!-- App Preview mit ImgBB/Local Icon -->
+    <!-- App Preview -->
     <div class="flex items-center p-4 bg-slate-800/50 rounded-2xl mb-6">
       {% with share_icon=app|get_image_url:"icon" %}
         {% if share_icon %}
@@ -369,63 +369,48 @@
 
     <!-- Share Options -->
     <div class="grid grid-cols-4 gap-4 mb-6">
-      <!-- WhatsApp -->
       <button onclick="shareTo('whatsapp')" class="flex flex-col items-center gap-2 group">
         <div class="w-14 h-14 rounded-2xl bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-all group-hover:scale-110">
           <i class="bi bi-whatsapp text-2xl text-green-400"></i>
         </div>
         <span class="text-xs text-gray-400">WhatsApp</span>
       </button>
-
-      <!-- Instagram -->
       <button onclick="shareTo('instagram')" class="flex flex-col items-center gap-2 group">
         <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all group-hover:scale-110">
           <i class="bi bi-instagram text-2xl text-pink-400"></i>
         </div>
         <span class="text-xs text-gray-400">Instagram</span>
       </button>
-
-      <!-- Twitter/X -->
       <button onclick="shareTo('twitter')" class="flex flex-col items-center gap-2 group">
         <div class="w-14 h-14 rounded-2xl bg-slate-700/50 flex items-center justify-center group-hover:bg-slate-600/50 transition-all group-hover:scale-110">
           <i class="bi bi-twitter-x text-2xl text-white"></i>
         </div>
         <span class="text-xs text-gray-400">X</span>
       </button>
-
-      <!-- Facebook -->
       <button onclick="shareTo('facebook')" class="flex flex-col items-center gap-2 group">
         <div class="w-14 h-14 rounded-2xl bg-blue-600/20 flex items-center justify-center group-hover:bg-blue-600/30 transition-all group-hover:scale-110">
           <i class="bi bi-facebook text-2xl text-blue-500"></i>
         </div>
         <span class="text-xs text-gray-400">Facebook</span>
       </button>
-
-      <!-- Telegram -->
       <button onclick="shareTo('telegram')" class="flex flex-col items-center gap-2 group">
         <div class="w-14 h-14 rounded-2xl bg-sky-500/20 flex items-center justify-center group-hover:bg-sky-500/30 transition-all group-hover:scale-110">
           <i class="bi bi-telegram text-2xl text-sky-400"></i>
         </div>
         <span class="text-xs text-gray-400">Telegram</span>
       </button>
-
-      <!-- Email -->
       <button onclick="shareTo('email')" class="flex flex-col items-center gap-2 group">
         <div class="w-14 h-14 rounded-2xl bg-red-500/20 flex items-center justify-center group-hover:bg-red-500/30 transition-all group-hover:scale-110">
           <i class="bi bi-envelope-fill text-2xl text-red-400"></i>
         </div>
         <span class="text-xs text-gray-400">E-Mail</span>
       </button>
-
-      <!-- SMS -->
       <button onclick="shareTo('sms')" class="flex flex-col items-center gap-2 group">
         <div class="w-14 h-14 rounded-2xl bg-yellow-500/20 flex items-center justify-center group-hover:bg-yellow-500/30 transition-all group-hover:scale-110">
           <i class="bi bi-chat-dots-fill text-2xl text-yellow-400"></i>
         </div>
         <span class="text-xs text-gray-400">SMS</span>
       </button>
-
-      <!-- Link kopieren -->
       <button onclick="shareTo('copy')" class="flex flex-col items-center gap-2 group">
         <div class="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-all group-hover:scale-110">
           <i class="bi bi-link-45deg text-2xl text-primary"></i>
@@ -434,7 +419,7 @@
       </button>
     </div>
 
-    <!-- Native Share (Mobile) -->
+    <!-- Native Share -->
     <button onclick="nativeShare()" class="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all">
       <i class="bi bi-box-arrow-up"></i>
       Mehr Optionen...
@@ -458,42 +443,45 @@
     transform: scale(0.85);
     filter: brightness(0.7);
   }
-  
   .icon-loading canvas {
     display: block !important;
   }
-  
   .icon-loading #progress-text {
     display: flex !important;
   }
 
-  /* Modal Animationen */
+  /* Share Modal */
   #shareModal.active #shareModalContent {
     transform: scale(1);
     opacity: 1;
   }
 
+  /* Screenshot Modal */
   #screenshotModal {
     opacity: 0;
     transition: opacity 0.3s ease;
   }
-  
   #screenshotModal.active {
     opacity: 1;
   }
-  
   #screenshotModal img {
     transform: scale(0.9);
     transition: transform 0.3s ease;
   }
-  
   #screenshotModal.active img {
     transform: scale(1);
+  }
+
+  /* Open-Hint Banner */
+  .open-hint-banner {
+    transition: opacity 0.4s ease, transform 0.4s ease;
   }
 </style>
 
 <script>
+// ─────────────────────────────────────────────
 // Share Modal
+// ─────────────────────────────────────────────
 function openShareModal() {
   const modal = document.getElementById('shareModal');
   modal.classList.remove('hidden');
@@ -512,94 +500,58 @@ function closeShareModal() {
   }, 300);
 }
 
-// Native Web Share API
 async function nativeShare() {
   const shareData = {
     title: '{{ app.name }}',
     text: 'Schau dir {{ app.name }} im JDS Appstore an! {{ app.description|truncatechars:100 }}',
     url: window.location.href
   };
-
   if (navigator.share) {
-    try {
-      await navigator.share(shareData);
-      closeShareModal();
-    } catch (err) {
-      console.log('Share cancelled');
-    }
+    try { await navigator.share(shareData); closeShareModal(); }
+    catch (err) { console.log('Share cancelled'); }
   } else {
     shareTo('copy');
   }
 }
 
-// Share zu spezifischen Plattformen
 function shareTo(platform) {
-  const url = encodeURIComponent(window.location.href);
-  const text = encodeURIComponent(`Schau dir {{ app.name }} im JDS Appstore an!`);
+  const url   = encodeURIComponent(window.location.href);
+  const text  = encodeURIComponent('Schau dir {{ app.name }} im JDS Appstore an!');
   const title = encodeURIComponent('{{ app.name }}');
-  
   let shareUrl = '';
 
-  switch(platform) {
-    case 'whatsapp':
-      shareUrl = `https://wa.me/?text=${text}%20${url}`;
-      break;
+  switch (platform) {
+    case 'whatsapp':  shareUrl = `https://wa.me/?text=${text}%20${url}`; break;
     case 'instagram':
-      if (navigator.share) {
-        nativeShare();
-        return;
-      } else {
-        shareTo('copy');
-        showNotification('Link kopiert! Füge ihn in Instagram ein.', 'success');
-        return;
-      }
-    case 'twitter':
-      shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
-      break;
-    case 'facebook':
-      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
-      break;
-    case 'telegram':
-      shareUrl = `https://t.me/share/url?url=${url}&text=${text}`;
-      break;
-    case 'email':
-      shareUrl = `mailto:?subject=${title}&body=${text}%0A%0A${url}`;
-      break;
-    case 'sms':
-      shareUrl = `sms:?body=${text}%20${url}`;
-      break;
+      if (navigator.share) { nativeShare(); return; }
+      else { shareTo('copy'); showNotification('Link kopiert! Füge ihn in Instagram ein.', 'success'); return; }
+    case 'twitter':   shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`; break;
+    case 'facebook':  shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`; break;
+    case 'telegram':  shareUrl = `https://t.me/share/url?url=${url}&text=${text}`; break;
+    case 'email':     shareUrl = `mailto:?subject=${title}&body=${text}%0A%0A${url}`; break;
+    case 'sms':       shareUrl = `sms:?body=${text}%20${url}`; break;
     case 'copy':
-      navigator.clipboard.writeText(window.location.href).then(() => {
-        showNotification('Link in Zwischenablage kopiert!', 'success');
-        closeShareModal();
-      }).catch(() => {
-        showNotification('Konnte Link nicht kopieren', 'error');
-      });
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => { showNotification('Link in Zwischenablage kopiert!', 'success'); closeShareModal(); })
+        .catch(() => showNotification('Konnte Link nicht kopieren', 'error'));
       return;
   }
 
   if (shareUrl) {
-    const width = 600;
-    const height = 400;
-    const left = (screen.width - width) / 2;
-    const top = (screen.height - height) / 2;
-    
-    window.open(
-      shareUrl, 
-      'share', 
-      `width=${width},height=${height},left=${left},top=${top},toolbar=0,menubar=0`
-    );
-    
+    const w = 600, h = 400;
+    window.open(shareUrl, 'share',
+      `width=${w},height=${h},left=${(screen.width-w)/2},top=${(screen.height-h)/2},toolbar=0,menubar=0`);
     closeShareModal();
   }
 }
 
+// ─────────────────────────────────────────────
 // Screenshot Modal
+// ─────────────────────────────────────────────
 function openScreenshotModal(src, alt) {
   const modal = document.getElementById('screenshotModal');
-  const img = document.getElementById('screenshotModalImg');
-  img.src = src;
-  img.alt = alt;
+  document.getElementById('screenshotModalImg').src = src;
+  document.getElementById('screenshotModalImg').alt = alt;
   modal.classList.remove('hidden');
   modal.classList.add('flex', 'active');
   document.body.style.overflow = 'hidden';
@@ -615,84 +567,70 @@ function closeScreenshotModal() {
   }, 300);
 }
 
-// Toggle Functions
+// ─────────────────────────────────────────────
+// Toggle-Funktionen
+// ─────────────────────────────────────────────
 function toggleVersions() {
   const container = document.getElementById('olderVersions');
   const text = document.getElementById('versionsToggleText');
   const icon = document.getElementById('versionsToggleIcon');
-  
-  if (container.classList.contains('hidden')) {
-    container.classList.remove('hidden');
-    text.textContent = 'Weniger anzeigen';
-    icon.style.transform = 'rotate(180deg)';
-  } else {
-    container.classList.add('hidden');
-    text.textContent = 'Alle anzeigen';
-    icon.style.transform = 'rotate(0deg)';
-  }
+  const hidden = container.classList.contains('hidden');
+  container.classList.toggle('hidden');
+  text.textContent = hidden ? 'Weniger anzeigen' : 'Alle anzeigen';
+  icon.style.transform = hidden ? 'rotate(180deg)' : 'rotate(0deg)';
 }
 
 function toggleReleaseNotes() {
-  const notes = document.getElementById('releaseNotes');
-  notes.classList.toggle('hidden');
+  document.getElementById('releaseNotes').classList.toggle('hidden');
 }
 
 function toggleOldReleaseNotes(id) {
-  const notes = document.getElementById('oldReleaseNotes' + id);
-  notes.classList.toggle('hidden');
+  document.getElementById('oldReleaseNotes' + id).classList.toggle('hidden');
 }
 
 // Beschreibung Toggle
 document.addEventListener('DOMContentLoaded', function () {
   const btn = document.getElementById('toggleDescBtn');
   if (!btn) return;
-  
   const preview = document.getElementById('descPreview');
-  const full = document.getElementById('descFull');
-  const icon = btn.querySelector('i');
-  const text = btn.querySelector('span');
+  const full    = document.getElementById('descFull');
+  const icon    = btn.querySelector('i');
+  const text    = btn.querySelector('span');
 
   btn.addEventListener('click', function () {
-    if (full.classList.contains('hidden')) {
-      full.classList.remove('hidden');
-      preview.classList.add('hidden');
-      text.textContent = 'Weniger anzeigen';
-      icon.style.transform = 'rotate(180deg)';
-    } else {
-      full.classList.add('hidden');
-      preview.classList.remove('hidden');
-      text.textContent = 'Mehr anzeigen';
-      icon.style.transform = 'rotate(0deg)';
-    }
+    const expanded = !full.classList.contains('hidden');
+    full.classList.toggle('hidden', expanded);
+    preview.classList.toggle('hidden', !expanded);
+    text.textContent = expanded ? 'Mehr anzeigen' : 'Weniger anzeigen';
+    icon.style.transform = expanded ? 'rotate(0deg)' : 'rotate(180deg)';
   });
 });
 
-// Download System mit VersionDownload Tracking
+// ─────────────────────────────────────────────
+// Download-System
+// ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('downloadBtn');
   if (!btn) return;
 
   const iconContainer = document.getElementById('icon-container');
-  const canvas = document.getElementById('progress-circle');
-  const progressText = document.getElementById('progress-text');
-  const ctx = canvas.getContext('2d');
-  
-  const versionId = btn.dataset.versionId;
-  const downloadUrl = "{% url 'download_file_view' 0 %}".replace('0', versionId);
-  const fileExtension = '{{ latest_version.file.name|default:"" }}'.split('.').pop().toLowerCase();
-  const fileName = '{{ app.name|slugify }}-v{{ latest_version.version_number|default:"" }}.' + fileExtension;
+  const canvas        = document.getElementById('progress-circle');
+  const progressText  = document.getElementById('progress-text');
+  const ctx           = canvas.getContext('2d');
 
-  let installed = {% if user_installed_version and user_installed_version.id == latest_version.id %}true{% else %}false{% endif %};
+  const versionId    = btn.dataset.versionId;
+  const downloadUrl  = "{% url 'download_file_view' 0 %}".replace('0', versionId);
+  const fileExtension = '{{ latest_version.file.name|default:"" }}'.split('.').pop().toLowerCase();
+  const fileName     = '{{ app.name|slugify }}-v{{ latest_version.version_number|default:"" }}.' + fileExtension;
+
+  let installed  = {% if user_installed_version and user_installed_version.id == latest_version.id %}true{% else %}false{% endif %};
   let downloading = false;
 
   function drawProgress(percent) {
-    const size = canvas.width;
-    const center = size / 2;
-    const radius = center - 8;
+    const size = canvas.width, center = size / 2, radius = center - 8;
     const startAngle = -Math.PI / 2;
-    
     ctx.clearRect(0, 0, size, size);
-    
+
     ctx.beginPath();
     ctx.arc(center, center, radius, 0, 2 * Math.PI);
     ctx.strokeStyle = 'rgba(255,255,255,0.1)';
@@ -700,14 +638,13 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.stroke();
 
     ctx.beginPath();
-    const endAngle = startAngle + (2 * Math.PI * percent / 100);
     const gradient = ctx.createConicGradient(startAngle, center, center);
     gradient.addColorStop(0, '#0d6efd');
     gradient.addColorStop(1, '#0066ff');
     ctx.strokeStyle = gradient;
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
-    ctx.arc(center, center, radius, startAngle, endAngle);
+    ctx.arc(center, center, radius, startAngle, startAngle + (2 * Math.PI * percent / 100));
     ctx.stroke();
 
     progressText.textContent = percent < 100 ? Math.floor(percent) + '%' : '✓';
@@ -716,26 +653,17 @@ document.addEventListener('DOMContentLoaded', () => {
   async function animateProgress(start, end, duration) {
     const startTime = performance.now();
     return new Promise(resolve => {
-      function update(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const current = start + (end - start) * progress;
-        drawProgress(current);
-        if (progress < 1) {
-          requestAnimationFrame(update);
-        } else {
-          resolve();
-        }
+      function update(now) {
+        const p = Math.min((now - startTime) / duration, 1);
+        drawProgress(start + (end - start) * p);
+        p < 1 ? requestAnimationFrame(update) : resolve();
       }
       requestAnimationFrame(update);
     });
   }
 
   async function startDownload() {
-    if (installed) {
-      showNotification('App ist bereits installiert', 'info');
-      return;
-    }
+    if (installed)   { showNotification('App ist bereits installiert', 'info'); return; }
     if (downloading) return;
 
     downloading = true;
@@ -743,36 +671,24 @@ document.addEventListener('DOMContentLoaded', () => {
     iconContainer.classList.add('icon-loading');
     canvas.classList.remove('hidden');
     progressText.classList.remove('hidden');
-    
     btn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin mr-2"></i>Lädt...';
 
     await animateProgress(0, 20, 1500);
 
     try {
-      // 1. Zuerst den Download-Tracking-Eintrag erstellen
-      const trackResponse = await fetch(`/track-download/${versionId}/`, {
+      // 1. Download tracken
+      const trackRes = await fetch(`/track-download/${versionId}/`, {
         method: 'POST',
-        headers: {
-          'X-CSRFToken': getCookie('csrftoken'),
-          'Content-Type': 'application/json'
-        }
+        headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' }
       });
-      
-      if (!trackResponse.ok) {
-        console.warn('Download-Tracking fehlgeschlagen, fahre trotzdem fort');
-      } else {
-        const trackData = await trackResponse.json();
-        if (trackData.success) {
-          console.log('Download erfolgreich getrackt');
-        }
-      }
+      if (!trackRes.ok) console.warn('Tracking fehlgeschlagen, fahre fort');
 
-      // 2. Dann die Datei herunterladen
+      // 2. Datei streamen
       const response = await fetch(downloadUrl);
       if (!response.ok) throw new Error('Download fehlgeschlagen');
 
       const contentLength = response.headers.get('content-length');
-      const total = contentLength ? parseInt(contentLength, 10) : 0;
+      const total  = contentLength ? parseInt(contentLength, 10) : 0;
       const reader = response.body.getReader();
       let receivedLength = 0;
       const chunks = [];
@@ -782,39 +698,66 @@ document.addEventListener('DOMContentLoaded', () => {
         if (done) break;
         chunks.push(value);
         receivedLength += value.length;
-        
-        if (total) {
-          const percent = 20 + ((receivedLength / total) * 75);
-          drawProgress(percent);
-        }
+        if (total) drawProgress(20 + (receivedLength / total) * 75);
       }
 
       await animateProgress(95, 100, 500);
 
-      const mimeType = fileExtension === 'apk' ? 'application/vnd.android.package-archive' : 'application/octet-stream';
+      // ── MIME-Type bestimmen ────────────────────────────────────────
+      const mimeTypes = {
+        apk: 'application/vnd.android.package-archive',
+        exe: 'application/vnd.microsoft.portable-executable',
+        msi: 'application/x-msi',
+        dmg: 'application/x-apple-diskimage',
+        pkg: 'application/x-newton-compatible-pkg',
+        deb: 'application/x-debian-package',
+        rpm: 'application/x-rpm',
+        sh:  'application/x-sh',
+        zip: 'application/zip',
+      };
+      const mimeType = mimeTypes[fileExtension] || 'application/octet-stream';
       const blob = new Blob(chunks, { type: mimeType });
-      const url = URL.createObjectURL(blob);
+      const objectUrl = URL.createObjectURL(blob);
 
+      // ── Datei direkt in Download-Ordner speichern ─────────────────
       const a = document.createElement('a');
-      a.href = url;
+      a.href     = objectUrl;
       a.download = fileName;
-      a.target = fileExtension === 'apk' ? '_blank' : '_self';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      
-      URL.revokeObjectURL(url);
 
-      btn.innerHTML = '<i class="bi bi-check-circle-fill mr-2"></i>Installiert';
+      // Blob-URL nach kurzer Verzögerung freigeben
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+
+      // ── Plattform-spezifischer Öffnen-Hinweis ─────────────────────
+      const openHints = {
+        exe: `Die Datei wurde im Download-Ordner gespeichert. <strong>Doppelklicke</strong> auf <code>${fileName}</code>, um die Installation zu starten.`,
+        msi: `Die Datei wurde im Download-Ordner gespeichert. <strong>Doppelklicke</strong> auf <code>${fileName}</code>, um die Installation zu starten.`,
+        dmg: `Die Datei wurde im Download-Ordner gespeichert. <strong>Doppelklicke</strong> auf <code>${fileName}</code> und folge den Installationsschritten.`,
+        pkg: `Die Datei wurde im Download-Ordner gespeichert. <strong>Doppelklicke</strong> auf <code>${fileName}</code>, um zu installieren.`,
+        apk: `Die APK wurde gespeichert. Öffne auf deinem Android-Gerät den <strong>Download-Ordner</strong>, tippe auf die Datei und folge den Anweisungen.<br><small>Ggf. musst du unter <em>Einstellungen → Sicherheit</em> die Installation aus unbekannten Quellen erlauben.</small>`,
+        deb: `Die Datei wurde gespeichert. Installiere sie im Terminal mit:<br><code>sudo dpkg -i ${fileName}</code>`,
+        rpm: `Die Datei wurde gespeichert. Installiere sie im Terminal mit:<br><code>sudo rpm -i ${fileName}</code>`,
+        sh:  `Die Datei wurde gespeichert. Führe sie im Terminal aus:<br><code>chmod +x ${fileName} && ./${fileName}</code>`,
+        zip: `Die Datei wurde im Download-Ordner gespeichert. <strong>Entpacke</strong> das Archiv und öffne die enthaltene Anwendung.`,
+      };
+      const hint = openHints[fileExtension]
+        || `Die Datei <code>${fileName}</code> wurde im <strong>Download-Ordner</strong> gespeichert. Du kannst sie jetzt öffnen und ausführen.`;
+
+      showOpenHint(hint);
+
+      // Button-Status
+      btn.innerHTML = '<i class="bi bi-check-circle-fill mr-2"></i>Heruntergeladen';
       btn.classList.remove('from-primary', 'to-secondary');
       btn.classList.add('bg-green-500/20', 'text-green-400');
-      
-      // Download-Count im UI aktualisieren
-      const downloadCountEl = document.querySelector('.bi-download').parentElement;
-      if (downloadCountEl) {
-        const currentText = downloadCountEl.textContent;
-        const currentCount = parseInt(currentText.replace(/\D/g, '')) || 0;
-        downloadCountEl.innerHTML = `<i class="bi bi-download mr-2 text-primary"></i>${currentCount + 1} Downloads`;
+
+      // Download-Zähler im UI hochzählen
+      const dlBadge = document.querySelector('.bi-download.text-primary');
+      if (dlBadge) {
+        const badge = dlBadge.parentElement;
+        const count = parseInt(badge.textContent.replace(/\D/g, '')) || 0;
+        badge.innerHTML = `<i class="bi bi-download mr-2 text-primary"></i>${count + 1} Downloads`;
       }
 
       setTimeout(() => {
@@ -827,7 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       showNotification('Download fehlgeschlagen: ' + error.message, 'error');
       btn.innerHTML = '<i class="bi bi-download mr-2"></i>Erneut versuchen';
-      btn.disabled = false;
+      btn.disabled  = false;
       iconContainer.classList.remove('icon-loading');
       canvas.classList.add('hidden');
       progressText.classList.add('hidden');
@@ -835,48 +778,89 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // CSRF Token Helper
   function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
+    let value = null;
+    if (document.cookie) {
+      document.cookie.split(';').forEach(c => {
+        c = c.trim();
+        if (c.startsWith(name + '='))
+          value = decodeURIComponent(c.substring(name.length + 1));
+      });
     }
-    return cookieValue;
+    return value;
   }
 
   btn.addEventListener('click', startDownload);
 });
 
-// Notification Helper
+// ─────────────────────────────────────────────
+// Öffnen-Hinweis Banner (nach erfolgreichem Download)
+// ─────────────────────────────────────────────
+function showOpenHint(message) {
+  document.querySelectorAll('.open-hint-banner').forEach(el => el.remove());
+
+  const banner = document.createElement('div');
+  banner.className = [
+    'open-hint-banner',
+    'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
+    'max-w-lg w-[calc(100%-2rem)]',
+    'px-6 py-4 rounded-2xl border',
+    'bg-green-500/20 text-green-300 border-green-500/30',
+    'backdrop-blur shadow-2xl',
+    'flex items-start gap-4',
+    'opacity-0 translate-y-4'
+  ].join(' ');
+
+  banner.innerHTML = `
+    <i class="bi bi-folder2-open text-2xl text-green-400 flex-shrink-0 mt-0.5"></i>
+    <div class="flex-1 min-w-0">
+      <p class="font-semibold text-green-200 mb-1">✓ Download abgeschlossen!</p>
+      <p class="text-sm leading-relaxed">${message}</p>
+    </div>
+    <button onclick="this.closest('.open-hint-banner').remove()"
+            class="text-green-400 hover:text-white transition flex-shrink-0 mt-0.5 ml-2">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  `;
+
+  document.body.appendChild(banner);
+
+  // Einblend-Animation (doppeltes rAF für zuverlässigen Übergang)
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    banner.classList.remove('opacity-0', 'translate-y-4');
+  }));
+
+  // Nach 14 Sekunden automatisch ausblenden
+  setTimeout(() => {
+    banner.classList.add('opacity-0', 'translate-y-4');
+    setTimeout(() => banner.remove(), 400);
+  }, 14000);
+}
+
+// ─────────────────────────────────────────────
+// Allgemeine Benachrichtigungen (Toast)
+// ─────────────────────────────────────────────
 function showNotification(message, type = 'info') {
   const colors = {
-    info: 'bg-primary/20 text-primary border-primary/30',
-    error: 'bg-red-500/20 text-red-400 border-red-500/30',
+    info:    'bg-primary/20 text-primary border-primary/30',
+    error:   'bg-red-500/20 text-red-400 border-red-500/30',
     success: 'bg-green-500/20 text-green-400 border-green-500/30'
   };
-  
-  const notification = document.createElement('div');
-  notification.className = `fixed top-24 right-4 px-6 py-4 rounded-xl border ${colors[type]} backdrop-blur z-50 transform translate-x-full transition-transform duration-300`;
-  notification.innerHTML = `
+  const icons = { info: 'info-circle', error: 'exclamation-triangle', success: 'check-circle' };
+
+  const el = document.createElement('div');
+  el.className = `fixed top-24 right-4 px-6 py-4 rounded-xl border ${colors[type]} backdrop-blur z-50 transform translate-x-full transition-transform duration-300`;
+  el.innerHTML = `
     <div class="flex items-center">
-      <i class="bi bi-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'} mr-3"></i>
+      <i class="bi bi-${icons[type]} mr-3"></i>
       <span class="font-medium">${message}</span>
     </div>
   `;
-  
-  document.body.appendChild(notification);
-  requestAnimationFrame(() => notification.classList.remove('translate-x-full'));
-  
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.remove('translate-x-full'));
   setTimeout(() => {
-    notification.classList.add('translate-x-full');
-    setTimeout(() => notification.remove(), 300);
+    el.classList.add('translate-x-full');
+    setTimeout(() => el.remove(), 300);
   }, 3000);
 }
 </script>
