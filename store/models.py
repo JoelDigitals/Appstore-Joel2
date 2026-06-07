@@ -186,6 +186,10 @@ class Version(models.Model):
     app = models.ForeignKey(App, on_delete=models.CASCADE, related_name='versions')
     version_number = models.CharField(max_length=50)
     file = models.FileField(upload_to='app_files/')
+    original_filename = models.CharField(
+        max_length=255, blank=True, default='',
+        help_text="Originaler Dateiname beim Upload (z.B. MyApp-v2.0.apk)"
+    )
     release_notes = models.TextField(blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     checking_status = models.CharField(max_length=10, choices=CHECKING_STATUS, default='pending')

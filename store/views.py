@@ -875,6 +875,10 @@ def upload_version(request, app_id):
             version.app = app
             version.checking_status = 'pending'
             version.approved = False
+            # Originalen Dateinamen speichern (bevor Django ihn ggf. umbenennt)
+            uploaded_file = request.FILES.get('file')
+            if uploaded_file:
+                version.original_filename = uploaded_file.name
             version.save()
 
             try:
@@ -1025,42 +1029,55 @@ def download_app_start(request, version_id):
 
 @login_required
 def download_file_view(request, version_id):
-    version = get_object_or_404(Version, id=version_id, approved=True)
+    """
+    Download einer App-Version.
+    - Wenn approved=True:  direkt herunterladen (Cloud → Fallback lokale Datei)
+    - Wenn approved=False: Bestätigungsseite zeigen (ungeprüfte Datei)
+    """
+    version = get_object_or_404(Version, id=version_id)
+
+    # ── Ungeprüfte Version: Bestätigung einholen ──────────────────────────
+    if not version.approved:
+        confirmed = request.GET.get('confirmed') == '1'
+        if not confirmed:
+            return render(request, 'store/download_unreviewed_confirm.html', {
+                'version': version,
+                'app':     version.app,
+            })
 
     # ── 1. Bevorzuge JDS Cloud URL (falls vorhanden) ──────────────────────
     if version.jds_cloud_url:
-        # Redirect direkt zur Cloud-Download-URL – kein Proxy nötig
         from django.http import HttpResponseRedirect
         return HttpResponseRedirect(version.jds_cloud_url)
 
     # ── 2. Fallback: lokale Mediendatei ───────────────────────────────────
+    file_path = None
     try:
-        file_path = version.file.path
-    except Exception:
-        from django.http import HttpResponseNotFound
-        return HttpResponseNotFound("Datei nicht gefunden / File not found")
+        raw = version.file.path
+        if os.path.isfile(raw):
+            file_path = raw
+        else:
+            candidate = os.path.join(settings.MEDIA_ROOT, str(version.file))
+            if os.path.isfile(candidate):
+                file_path = candidate
+    except (ValueError, NotImplementedError):
+        pass
 
-    if not os.path.isfile(file_path):
-        from django.http import HttpResponseNotFound
+    if not file_path:
         return HttpResponseNotFound("Datei nicht gefunden / File not found")
 
     filename = os.path.basename(file_path)
-
-    # MIME-Type bestimmen
     if filename.endswith('.apk'):
         content_type = 'application/vnd.android.package-archive'
-    elif filename.endswith('.ipa'):
-        content_type = 'application/octet-stream'
     else:
         content_type = 'application/octet-stream'
 
-    response = FileResponse(
+    return FileResponse(
         open(file_path, 'rb'),
         as_attachment=True,
         filename=filename,
         content_type=content_type,
     )
-    return response
 
 
 

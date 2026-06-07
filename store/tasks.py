@@ -3,11 +3,12 @@ store/tasks.py
 ──────────────
 Celery-Tasks für App-Prüfung & Veröffentlichung.
 
-Datei-Strategie beim Prüfen:
-  1. Lokale Datei vorhanden → direkt prüfen + zur JDS Cloud hochladen
-  2. Datei bereits in JDS Cloud (jds_cloud_url gesetzt) → von Cloud
-     herunterladen, lokal prüfen (temp), aufräumen
-  3. Erst Stufe 1 schlägt fehl → Stufe 2 automatisch als Fallback
+Datei-Strategie:
+  • Neue Uploads: Datei liegt lokal → zur JDS Cloud hochladen → von Cloud prüfen
+  • Re-Checks / alle Fälle wo Cloud-URL existiert: direkt von Cloud herunterladen
+  • Lokale Datei wird NIE mehr direkt für Schritt 2-5 genutzt – nur für den Upload
+  • Extension/MIME wird aus original_filename (DB-Feld) oder aus dem
+    Content-Type-Header der Cloud-Antwort ermittelt
 """
 
 import os
@@ -17,10 +18,9 @@ import tarfile
 import zipfile
 import hashlib
 import tempfile
-import shutil
+import requests as _requests
 import pefile
 import pyclamd
-import requests as _requests
 from celery import shared_task
 from django.utils import timezone
 from django.core.mail import EmailMultiAlternatives
@@ -30,6 +30,87 @@ from settings.models import NotificationSettings
 from .jds_cloud import upload_file as upload_to_jds_cloud
 
 logger = logging.getLogger(__name__)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MIME → Extension Map  (Content-Type → .ext)
+# ─────────────────────────────────────────────────────────────────────────────
+_MIME_TO_EXT = {
+    "application/vnd.android.package-archive": ".apk",
+    "application/x-authorware-bin":            ".aab",
+    "application/octet-stream":                ".bin",   # generic fallback
+    "application/vnd.debian.binary-package":   ".deb",
+    "application/x-rpm":                       ".rpm",
+    "application/x-apple-diskimage":           ".dmg",
+    "application/x-msdos-program":             ".exe",
+    "application/x-msdownload":                ".exe",
+    "application/x-msi":                       ".msi",
+    "application/x-tar":                       ".tar.gz",
+    "application/x-bzip2":                     ".tar.gz",
+    "application/gzip":                        ".gz",
+    "application/zip":                         ".zip",
+}
+
+ALLOWED_EXTS = {
+    ".apk", ".aab", ".ipa", ".exe", ".msi", ".dmg", ".pkg",
+    ".deb", ".rpm", ".appimage", ".tar.gz", ".tgz", ".gz",
+}
+
+
+def _ext_from_name(name: str) -> str:
+    """Gibt Dateiendung aus einem Dateinamen zurück."""
+    name = name.lower()
+    if name.endswith(".tar.gz"):
+        return ".tar.gz"
+    return os.path.splitext(name)[1].lower()
+
+
+def _ext_from_content_type(ct: str) -> str:
+    """Ermittelt Dateiendung aus HTTP Content-Type Header."""
+    if not ct:
+        return ""
+    ct_base = ct.split(";")[0].strip().lower()
+    return _MIME_TO_EXT.get(ct_base, "")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Datei von JDS Cloud herunterladen
+# ─────────────────────────────────────────────────────────────────────────────
+def _download_from_cloud(cloud_url: str, hint_ext: str, log: list) -> tuple:
+    """
+    Lädt die Datei von der JDS Cloud in eine temporäre Datei herunter.
+    Gibt (tmp_path, detected_ext) zurück oder (None, '') bei Fehler.
+
+    detected_ext: Dateiendung aus Content-Type Header oder hint_ext
+    """
+    log.append(f"  ↓ Lade von JDS Cloud: {cloud_url}")
+    try:
+        with _requests.get(cloud_url, timeout=600, stream=True) as r:
+            r.raise_for_status()
+
+            # Extension aus Content-Type ermitteln
+            ct  = r.headers.get("Content-Type", "")
+            ext = _ext_from_content_type(ct)
+            if not ext or ext == ".bin":
+                ext = hint_ext  # Fallback auf hint (aus original_filename)
+            if not ext:
+                ext = ".bin"
+
+            log.append(f"  Content-Type: {ct or 'unbekannt'}  →  Extension: {ext}")
+
+            tmp_fd, tmp_path = tempfile.mkstemp(suffix=ext, prefix="jds_")
+            os.close(tmp_fd)
+            total = 0
+            with open(tmp_path, "wb") as tf:
+                for chunk in r.iter_content(chunk_size=65536):
+                    tf.write(chunk)
+                    total += len(chunk)
+
+        log.append(f"  ✓ Download OK: {total/(1024*1024):.2f} MB → {tmp_path}")
+        return tmp_path, ext
+
+    except Exception as e:
+        log.append(f"  ✗ Download fehlgeschlagen: {e}")
+        return None, ""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -110,7 +191,7 @@ def _do_publish(version: Version) -> None:
             ),
             message_en=(
                 f"{'The update for' if old_ver else 'Your app'} {app.name} "
-                f"v{version.version_number}{tag_info} is now publicly available on the JDS AppStore."
+                f"v{version.version_number}{tag_info} is now publicly available on JDS AppStore."
             ),
             log_lines=log, app=app, version=version, level="success_2",
         )
@@ -121,102 +202,6 @@ def _do_publish(version: Version) -> None:
             message=f"Version {version.version_number}{tag_info} ist veröffentlicht.",
             app=app, version=version, level="success_2",
         )
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Datei beschaffen – lokal oder von JDS Cloud herunterladen
-# ─────────────────────────────────────────────────────────────────────────────
-def _resolve_file(version: Version, log: list) -> tuple:
-    """
-    Gibt (file_path, is_temp) zurück.
-    is_temp=True → Aufrufer muss die Datei danach löschen.
-
-    Strategie:
-      A) Lokale Datei vorhanden → nutzen (is_temp=False)
-      B) JDS Cloud URL vorhanden → herunterladen nach temp (is_temp=True)
-      C) Nichts → (None, False)
-    """
-    from django.conf import settings as _s
-
-    # ── A: Lokale Datei suchen ────────────────────────────────────────────
-    local_path = None
-    tried = []
-
-    # A1: version.file.path
-    try:
-        p = version.file.path
-        tried.append(p)
-        if os.path.isfile(p):
-            local_path = p
-    except (ValueError, NotImplementedError, AttributeError):
-        pass
-
-    # A2: MEDIA_ROOT + file.name
-    if not local_path:
-        try:
-            p = os.path.join(_s.MEDIA_ROOT, str(version.file))
-            tried.append(p)
-            if os.path.isfile(p):
-                local_path = p
-        except Exception:
-            pass
-
-    # A3: MEDIA_ROOT + basename
-    if not local_path:
-        try:
-            basename = os.path.basename(str(version.file))
-            p = os.path.join(_s.MEDIA_ROOT, basename)
-            tried.append(p)
-            if os.path.isfile(p):
-                local_path = p
-        except Exception:
-            pass
-
-    # A4: rekursive Suche in MEDIA_ROOT
-    if not local_path:
-        try:
-            basename = os.path.basename(str(version.file))
-            for root, _, files in os.walk(_s.MEDIA_ROOT):
-                if basename in files:
-                    p = os.path.join(root, basename)
-                    tried.append(p)
-                    local_path = p
-                    break
-        except Exception:
-            pass
-
-    if local_path:
-        log.append(f"  Datei lokal gefunden: {local_path}")
-        return local_path, False
-
-    log.append(f"  Lokal nicht gefunden. Geprüfte Pfade: {tried}")
-
-    # ── B: Von JDS Cloud herunterladen ────────────────────────────────────
-    cloud_url = version.jds_cloud_url or ""
-    if cloud_url:
-        log.append(f"  Lade von JDS Cloud herunter: {cloud_url}")
-        ext = os.path.splitext(str(version.file))[1].lower() or ".bin"
-        try:
-            tmp_fd, tmp_path = tempfile.mkstemp(suffix=ext, prefix="jds_check_")
-            os.close(tmp_fd)
-            with _requests.get(cloud_url, timeout=600, stream=True) as r:
-                r.raise_for_status()
-                with open(tmp_path, "wb") as tf:
-                    for chunk in r.iter_content(chunk_size=65536):
-                        tf.write(chunk)
-            size = os.path.getsize(tmp_path)
-            log.append(f"  ✓ Cloud-Download OK: {size/(1024*1024):.2f} MB → {tmp_path}")
-            return tmp_path, True
-        except Exception as dl_err:
-            log.append(f"  ✗ Cloud-Download fehlgeschlagen: {dl_err}")
-            try:
-                os.remove(tmp_path)
-            except Exception:
-                pass
-            return None, False
-
-    log.append("  Keine Cloud-URL und keine lokale Datei vorhanden.")
-    return None, False
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -265,271 +250,241 @@ def _run_check(version: Version) -> bool:
     version.checking_progress = 0
     version.save()
 
-    # ── Datei beschaffen ─────────────────────────────────────────────────────
+    # ── Step 1: Basisvalidierung ─────────────────────────────────────────────
     progress(1, "▶ Schritt 1/5 – Basisvalidierung / Basic validation")
-    log.append("  Suche Datei (lokal → JDS Cloud)…")
 
-    file_path, is_temp = _resolve_file(version, log)
+    # Extension aus gespeichertem Originalnamen ermitteln
+    original_name = (version.original_filename or "").strip()
+    hint_ext      = _ext_from_name(original_name) if original_name else ""
+    log.append(f"  Originaldatei: '{original_name or '(unbekannt)'}' → hint_ext='{hint_ext}'")
 
-    if not file_path:
-        return fail(
-            f"Datei '{version.file}' weder lokal noch in der JDS Cloud gefunden. "
-            f"Bitte erneut hochladen.",
-            f"File '{version.file}' not found locally or in JDS Cloud. Please re-upload.",
-        )
+    tmp_path = None   # temporäre Datei (von Cloud geladen) – wird am Ende gelöscht
 
-    # ── Step 1: Basic validation ──────────────────────────────────────────────
-    try:
-        size = os.path.getsize(file_path)
-    except OSError as e:
-        return fail(f"Dateigröße nicht lesbar: {e}", f"Cannot read file size: {e}")
+    # ── Step 3 zuerst: In JDS Cloud hochladen (falls noch nicht geschehen) ───
+    # Lade lokal nur für den Upload, dann sofort zur Cloud
+    progress(1, "▶ Schritt 1/5 – Basisvalidierung / Basic validation")
 
-    log.append(f"  Größe / Size: {size / (1024 * 1024):.2f} MB")
-    if size == 0:
-        return fail("Datei ist leer (0 Bytes).", "File is empty (0 bytes).")
-    if size > 1024 * 1024 * 1024:
-        return fail("Datei überschreitet 1 GB.", "File exceeds 1 GB limit.")
+    if not version.jds_cloud_url:
+        # Lokale Datei für Upload suchen
+        log.append("  Suche lokale Datei für Upload zur JDS Cloud…")
+        local_path = None
+        from django.conf import settings as _s
 
-    # Extension aus dem Originalnamen ableiten (nicht aus temp-Pfad)
-    original_name = os.path.basename(str(version.file))
-    ext = os.path.splitext(original_name)[1].lower()
-    if original_name.lower().endswith(".tar.gz"):
-        ext = ".tar.gz"
+        for candidate in [
+            getattr(version.file, 'path', None),
+            os.path.join(_s.MEDIA_ROOT, str(version.file)) if hasattr(_s, 'MEDIA_ROOT') else None,
+            os.path.join(_s.MEDIA_ROOT, os.path.basename(str(version.file))) if hasattr(_s, 'MEDIA_ROOT') else None,
+        ]:
+            if candidate and os.path.isfile(candidate):
+                local_path = candidate
+                log.append(f"  Lokale Datei: {local_path}")
+                break
 
-    mime_type, _ = mimetypes.guess_type(original_name)
-    log.append(f"  Dateiname: {original_name}  |  Extension: {ext}  |  MIME: {mime_type or 'unknown'}")
+        if local_path:
+            # Extension für den Dateinamen in der Cloud
+            upload_ext  = hint_ext or os.path.splitext(local_path)[1].lower() or ".bin"
+            upload_name = f"{app.name.replace(' ', '_')}_{version.version_number}{upload_ext}"
+            log.append(f"  Lade zur JDS Cloud hoch als '{upload_name}'…")
 
-    ALLOWED = {
-        ".apk", ".aab", ".ipa", ".exe", ".msi", ".dmg", ".pkg",
-        ".deb", ".rpm", ".appimage", ".tar.gz", ".tgz", ".gz",
-    }
-    if ext not in ALLOWED:
-        if is_temp:
-            try: os.remove(file_path)
-            except: pass
-        return fail(
-            f"Nicht erlaubter Dateityp: '{ext}'.",
-            f"File type not allowed: '{ext}'.",
-        )
+            progress(3, "▶ Schritt 3/5 – Upload zur JDS Cloud / Uploading to JDS Cloud")
+            result = upload_to_jds_cloud(local_path, upload_name)
 
-    sha256 = hashlib.sha256()
-    with open(file_path, "rb") as fh:
-        for chunk in iter(lambda: fh.read(65536), b""):
-            sha256.update(chunk)
-    log.append(f"  SHA-256: {sha256.hexdigest()}")
+            if not result["success"]:
+                detail = result.get("error", "Unbekannt")
+                if result.get("status"):
+                    detail = f"HTTP {result['status']}: {detail}"
+                log.append(f"  ✗ API: {result.get('body','')[:200]}")
+                return fail(
+                    f"JDS-Cloud-Upload fehlgeschlagen: {detail}",
+                    f"JDS Cloud upload failed: {detail}",
+                )
 
-    # ── Step 2: Structure check ───────────────────────────────────────────────
-    progress(2, "▶ Schritt 2/5 – Strukturprüfung / Structure check")
+            version.jds_cloud_file_id  = result["file_id"]
+            version.jds_cloud_url      = result["download_url"]
+            version.jds_cloud_view_url = result["view_url"]
+            version.save(update_fields=["jds_cloud_file_id","jds_cloud_url","jds_cloud_view_url"])
+            log.append(f"  ✓ JDS Cloud Upload OK – ID: {result['file_id']}")
+            log.append(f"  URL: {result['download_url']}")
+        else:
+            log.append("  Keine lokale Datei – überspringe direkten Upload (Cloud-URL wird vorausgesetzt)")
 
-    if ext in (".exe", ".msi"):
-        try:
-            pe = pefile.PE(file_path, fast_load=True)
-            log.append(f"  PE EntryPoint: {hex(pe.OPTIONAL_HEADER.AddressOfEntryPoint)}")
-            has_cert = hasattr(pe, "DIRECTORY_ENTRY_SECURITY") and pe.DIRECTORY_ENTRY_SECURITY
-            log.append(f"  Certificate: {'✓' if has_cert else '⚠ missing (recommended)'}")
-            pe.close()
-        except pefile.PEFormatError as e:
-            if is_temp: os.remove(file_path)
-            return fail(f"Ungültige EXE/MSI: {e}", f"Invalid EXE/MSI: {e}")
-
-    elif ext in (".ipa", ".apk", ".aab", ".deb"):
-        try:
-            with zipfile.ZipFile(file_path, "r") as zf:
-                names   = zf.namelist()
-                c_size  = sum(i.compress_size for i in zf.infolist())
-                uc_size = sum(i.file_size      for i in zf.infolist())
-                log.append(f"  {len(names)} files  |  {c_size/1024:.0f} KB compressed")
-                if c_size and (uc_size / max(c_size, 1)) > 200:
-                    if is_temp: os.remove(file_path)
-                    return fail("ZIP-Bombe erkannt.", "ZIP bomb detected.")
-                bad = [n for n in names if ".." in n or n.startswith("/")]
-                if bad:
-                    if is_temp: os.remove(file_path)
-                    return fail(f"Unsichere Pfade: {bad[:3]}", f"Unsafe paths: {bad[:3]}")
-                if ext == ".ipa" and not any(n.startswith("Payload/") for n in names):
-                    if is_temp: os.remove(file_path)
-                    return fail("Kein Payload/-Ordner in IPA.", "No Payload/ folder in IPA.")
-                if ext in (".apk", ".aab") and "AndroidManifest.xml" not in names:
-                    if is_temp: os.remove(file_path)
-                    return fail("Keine AndroidManifest.xml.", "No AndroidManifest.xml.")
-                log.append("  ✓ Archive structure OK")
-        except zipfile.BadZipFile as e:
-            if is_temp: os.remove(file_path)
-            return fail(f"Beschädigtes Archiv: {e}", f"Corrupted archive: {e}")
-
-    elif ext in (".tar.gz", ".tgz"):
-        try:
-            with tarfile.open(file_path, "r:gz") as tar:
-                members = tar.getmembers()
-                log.append(f"  {len(members)} entries")
-                bad = [m.name for m in members if m.name.startswith("/") or ".." in m.name]
-                if bad:
-                    if is_temp: os.remove(file_path)
-                    return fail(f"Unsichere Pfade: {bad[:3]}", f"Unsafe paths: {bad[:3]}")
-        except Exception as e:
-            if is_temp: os.remove(file_path)
-            return fail(f"tar.gz Fehler: {e}", f"tar.gz error: {e}")
-
-    log.append("  ✓ Structure check passed")
-
-    # ── Step 3: JDS Cloud Upload (nur wenn noch nicht hochgeladen) ────────────
-    progress(3, "▶ Schritt 3/5 – JDS Cloud / Upload to JDS Cloud")
-
-    if version.jds_cloud_url:
-        # Datei wurde bereits hochgeladen (z.B. war is_temp=True → von Cloud geladen)
-        log.append(f"  ✓ Bereits in JDS Cloud vorhanden")
-        log.append(f"  URL: {version.jds_cloud_url}")
     else:
-        fname  = f"{app.name.replace(' ', '_')}_{version.version_number}{ext}"
-        result = upload_to_jds_cloud(file_path, fname)
+        log.append(f"  ✓ Bereits in JDS Cloud: {version.jds_cloud_url}")
 
-        if not result["success"]:
-            detail = result.get("error", "Unbekannt")
-            if result.get("status"):
-                detail = f"HTTP {result['status']}: {detail}"
-            if result.get("body"):
-                log.append(f"  ✗ API-Antwort: {result['body'][:300]}")
-            if is_temp:
-                try: os.remove(file_path)
-                except: pass
+    # ── Datei von Cloud laden (für Prüfung) ──────────────────────────────────
+    cloud_url = version.jds_cloud_url
+    if not cloud_url:
+        return fail(
+            "Keine JDS-Cloud-URL vorhanden. Bitte Datei erneut hochladen.",
+            "No JDS Cloud URL available. Please re-upload the file.",
+        )
+
+    progress(1, "▶ Schritt 1/5 – Basisvalidierung / Basic validation")
+    tmp_path, detected_ext = _download_from_cloud(cloud_url, hint_ext, log)
+
+    if not tmp_path:
+        return fail(
+            "Cloud-Datei konnte nicht heruntergeladen werden.",
+            "Could not download file from JDS Cloud.",
+        )
+
+    try:
+        # Endgültige Extension: bevorzuge hint_ext (vom Originalnamen), dann Content-Type
+        ext = hint_ext if hint_ext in ALLOWED_EXTS else detected_ext
+        if ext not in ALLOWED_EXTS:
             return fail(
-                f"JDS-Cloud-Upload fehlgeschlagen: {detail}",
-                f"JDS Cloud upload failed: {detail}",
+                f"Nicht erlaubter Dateityp: '{ext}' (Originaldatei: '{original_name}'). "
+                f"Erlaubt: {', '.join(sorted(ALLOWED_EXTS))}",
+                f"File type not allowed: '{ext}'. Allowed: {', '.join(sorted(ALLOWED_EXTS))}",
             )
 
-        version.jds_cloud_file_id  = result["file_id"]
-        version.jds_cloud_url      = result["download_url"]
-        version.jds_cloud_view_url = result["view_url"]
-        version.save(update_fields=["jds_cloud_file_id", "jds_cloud_url", "jds_cloud_view_url"])
-        log.append(f"  ✓ Hochgeladen / Uploaded")
-        log.append(f"  ID:   {result['file_id']}")
-        log.append(f"  Name: {result['name']}  ({result['size'] / (1024*1024):.2f} MB)")
-        log.append(f"  URL:  {result['download_url']}")
+        size = os.path.getsize(tmp_path)
+        log.append(f"  Größe / Size: {size/(1024*1024):.2f} MB")
+        if size == 0:
+            return fail("Datei ist leer (0 Bytes).", "File is empty (0 bytes).")
+        if size > 1024 * 1024 * 1024:
+            return fail("Datei überschreitet 1 GB.", "File exceeds 1 GB limit.")
 
-    # ── Temporäre Datei aufräumen (wenn von Cloud geladen) ────────────────────
-    if is_temp:
+        sha256 = hashlib.sha256()
+        with open(tmp_path, "rb") as fh:
+            for chunk in iter(lambda: fh.read(65536), b""):
+                sha256.update(chunk)
+        log.append(f"  SHA-256: {sha256.hexdigest()}")
+        log.append(f"  Extension: {ext}  |  MIME: {mimetypes.guess_type(original_name or tmp_path)[0] or 'unknown'}")
+
+        # ── Step 2: Strukturprüfung ───────────────────────────────────────────
+        progress(2, "▶ Schritt 2/5 – Strukturprüfung / Structure check")
+
+        if ext in (".exe", ".msi"):
+            try:
+                pe = pefile.PE(tmp_path, fast_load=True)
+                log.append(f"  PE EntryPoint: {hex(pe.OPTIONAL_HEADER.AddressOfEntryPoint)}")
+                has_cert = hasattr(pe, "DIRECTORY_ENTRY_SECURITY") and pe.DIRECTORY_ENTRY_SECURITY
+                log.append(f"  Certificate: {'✓' if has_cert else '⚠ missing (recommended)'}")
+                pe.close()
+            except pefile.PEFormatError as e:
+                return fail(f"Ungültige EXE/MSI: {e}", f"Invalid EXE/MSI: {e}")
+
+        elif ext in (".ipa", ".apk", ".aab", ".deb"):
+            try:
+                with zipfile.ZipFile(tmp_path, "r") as zf:
+                    names   = zf.namelist()
+                    c_size  = sum(i.compress_size for i in zf.infolist())
+                    uc_size = sum(i.file_size      for i in zf.infolist())
+                    log.append(f"  {len(names)} Dateien  |  {c_size/1024:.0f} KB komprimiert")
+                    if c_size and (uc_size / max(c_size, 1)) > 200:
+                        return fail("ZIP-Bombe erkannt.", "ZIP bomb detected.")
+                    bad = [n for n in names if ".." in n or n.startswith("/")]
+                    if bad:
+                        return fail(f"Unsichere Pfade: {bad[:3]}", f"Unsafe paths: {bad[:3]}")
+                    if ext == ".ipa" and not any(n.startswith("Payload/") for n in names):
+                        return fail("Kein Payload/-Ordner in IPA.", "No Payload/ in IPA.")
+                    if ext in (".apk", ".aab") and "AndroidManifest.xml" not in names:
+                        return fail("Keine AndroidManifest.xml.", "No AndroidManifest.xml.")
+                    log.append("  ✓ Archivstruktur OK / Archive structure OK")
+            except zipfile.BadZipFile as e:
+                return fail(f"Beschädigtes Archiv: {e}", f"Corrupted archive: {e}")
+
+        elif ext in (".tar.gz", ".tgz"):
+            try:
+                with tarfile.open(tmp_path, "r:gz") as tar:
+                    members = tar.getmembers()
+                    log.append(f"  {len(members)} Einträge / entries")
+                    bad = [m.name for m in members if m.name.startswith("/") or ".." in m.name]
+                    if bad:
+                        return fail(f"Unsichere Pfade: {bad[:3]}", f"Unsafe paths: {bad[:3]}")
+            except Exception as e:
+                return fail(f"tar.gz Fehler: {e}", f"tar.gz error: {e}")
+
+        log.append("  ✓ Strukturprüfung bestanden / Structure check passed")
+
+        # Step 3 wurde bereits oben erledigt (Upload)
+        progress(3, "▶ Schritt 3/5 – JDS Cloud / JDS Cloud")
+        log.append(f"  ✓ In JDS Cloud gespeichert")
+        log.append(f"  URL: {version.jds_cloud_url}")
+
+        # ── Step 4: Virenscan ─────────────────────────────────────────────────
+        progress(4, "▶ Schritt 4/5 – Virenscan / Malware scan")
         try:
-            os.remove(file_path)
-            log.append(f"  Temporäre Datei gelöscht.")
-        except Exception:
-            pass
-
-    # ── Step 4: ClamAV Scan ───────────────────────────────────────────────────
-    progress(4, "▶ Schritt 4/5 – Virenscan / Malware scan")
-
-    # Für den Scan laden wir die Cloud-Datei erneut herunter (sauber, frisch von Cloud)
-    cloud_url  = version.jds_cloud_url or ""
-    scan_path  = None
-    scan_is_temp = False
-
-    if cloud_url:
-        log.append(f"  Lade Cloud-Datei für Scan…")
-        ext2 = os.path.splitext(original_name)[1].lower() or ".bin"
-        try:
-            tmp_fd2, scan_path = tempfile.mkstemp(suffix=ext2, prefix="jds_scan_")
-            os.close(tmp_fd2)
-            with _requests.get(cloud_url, timeout=600, stream=True) as r:
-                r.raise_for_status()
-                with open(scan_path, "wb") as tf:
-                    for chunk in r.iter_content(chunk_size=65536):
-                        tf.write(chunk)
-            scan_is_temp = True
-            log.append(f"  ✓ Cloud-Datei für Scan bereit")
-        except Exception as dl_err:
-            log.append(f"  ⚠ Cloud-Download für Scan fehlgeschlagen: {dl_err} – Scan übersprungen")
-            scan_path = None
-
-    try:
-        if scan_path and os.path.isfile(scan_path):
             cd = pyclamd.ClamdNetworkSocket()
             if cd.ping():
-                scan = cd.scan_file(scan_path)
+                scan = cd.scan_file(tmp_path)
                 if scan:
                     return fail(f"Malware erkannt: {scan}", f"Malware detected: {scan}")
-                log.append("  ✓ No malware found")
+                log.append("  ✓ Kein Malware-Fund / No malware found")
             else:
-                log.append("  ⚠ ClamAV unavailable – scan skipped")
-        else:
-            log.append("  ⚠ Keine Scan-Datei verfügbar – Scan übersprungen")
-    except Exception as e:
-        log.append(f"  ⚠ Scan error: {e} – continuing")
-    finally:
-        if scan_is_temp and scan_path:
-            try: os.remove(scan_path)
-            except: pass
+                log.append("  ⚠ ClamAV nicht erreichbar – Scan übersprungen")
+        except Exception as e:
+            log.append(f"  ⚠ Scan-Fehler: {e} – wird fortgesetzt")
 
-    # ── Step 5: Release / Schedule ────────────────────────────────────────────
-    progress(5, "▶ Schritt 5/5 – Freigabe / Release")
+        # ── Step 5: Freigabe ──────────────────────────────────────────────────
+        progress(5, "▶ Schritt 5/5 – Freigabe / Release")
 
-    release_label = version.get_release_label()
-    tag_info      = f" [{release_label}]" if release_label else ""
+        release_label = version.get_release_label()
+        tag_info      = f" [{release_label}]" if release_label else ""
 
-    version.checking_status   = "passed"
-    version.approved          = True
-    version.checking_log      = "\n".join(log)
-    version.checking_progress = 5
-    version.save()
+        version.checking_status   = "passed"
+        version.approved          = True
+        version.checking_log      = "\n".join(log)
+        version.checking_progress = 5
+        version.save()
 
-    # Geplantes Release?
-    if version.scheduled_release_at and version.scheduled_release_at > timezone.now():
-        version.release_held = True
-        version.save(update_fields=["release_held"])
+        # Geplantes Release?
+        if version.scheduled_release_at and version.scheduled_release_at > timezone.now():
+            version.release_held = True
+            version.save(update_fields=["release_held"])
+            rel_dt = version.scheduled_release_at.strftime("%d.%m.%Y %H:%M")
+            log.append(f"  ⏰ Geplante Veröffentlichung: {rel_dt} UTC")
+            if notif_cfg and notif_cfg.email_notifications:
+                send_check_email(
+                    user=dev.user,
+                    subject_de=f"✓ Prüfung bestanden – Release am {rel_dt} UTC",
+                    subject_en=f"✓ Review passed – scheduled for {rel_dt} UTC",
+                    message_de=f"Prüfung für {app.name} v{version.version_number}{tag_info} bestanden. Veröffentlichung am {rel_dt} UTC.",
+                    message_en=f"Review for {app.name} v{version.version_number}{tag_info} passed. Will publish on {rel_dt} UTC.",
+                    log_lines=log, app=app, version=version, level="success_1",
+                )
+            if notif_cfg and notif_cfg.push_notifications:
+                create_notification(
+                    user=dev.user,
+                    title=f"Prüfung bestanden – Release am {rel_dt}",
+                    message=f"{app.name} v{version.version_number}{tag_info} wird am {rel_dt} UTC veröffentlicht.",
+                    app=app, version=version, level="success_1",
+                )
+            return True
 
-        rel_dt = version.scheduled_release_at.strftime("%d.%m.%Y %H:%M")
-        log.append(f"  ⏰ Geplante Veröffentlichung: {rel_dt} UTC")
-
+        # Sofort veröffentlichen
+        log.append("  → Sofortige Veröffentlichung / Immediate release")
         if notif_cfg and notif_cfg.email_notifications:
             send_check_email(
                 user=dev.user,
-                subject_de=f"✓ Prüfung bestanden – Release am {rel_dt} UTC",
-                subject_en=f"✓ Review passed – Release scheduled for {rel_dt} UTC",
-                message_de=(
-                    f"Prüfung für {app.name} v{version.version_number}{tag_info} bestanden. "
-                    f"Veröffentlichung am {rel_dt} UTC."
-                ),
-                message_en=(
-                    f"Review for {app.name} v{version.version_number}{tag_info} passed. "
-                    f"Will be published on {rel_dt} UTC."
-                ),
+                subject_de=f"✓ Prüfung bestanden: {app.name} v{version.version_number}{tag_info}",
+                subject_en=f"✓ Review passed: {app.name} v{version.version_number}{tag_info}",
+                message_de=f"Version {version.version_number}{tag_info} von {app.name} wurde geprüft und gespeichert.",
+                message_en=f"Version {version.version_number}{tag_info} of {app.name} has been reviewed and stored.",
                 log_lines=log, app=app, version=version, level="success_1",
             )
         if notif_cfg and notif_cfg.push_notifications:
             create_notification(
                 user=dev.user,
-                title=f"Prüfung bestanden: {app.name} – Release am {rel_dt}",
-                message=f"Version {version.version_number}{tag_info} wird am {rel_dt} UTC veröffentlicht.",
+                title=f"Prüfung bestanden: {app.name} v{version.version_number}",
+                message="Version wird jetzt veröffentlicht.",
                 app=app, version=version, level="success_1",
             )
+        _do_publish(version)
         return True
 
-    # Sofortige Veröffentlichung
-    log.append("  → Sofortige Veröffentlichung / Immediate release")
-
-    if notif_cfg and notif_cfg.email_notifications:
-        send_check_email(
-            user=dev.user,
-            subject_de=f"✓ Prüfung bestanden: {app.name} v{version.version_number}{tag_info}",
-            subject_en=f"✓ Review passed: {app.name} v{version.version_number}{tag_info}",
-            message_de=(
-                f"Version {version.version_number}{tag_info} von {app.name} "
-                f"wurde geprüft und in der JDS Cloud gespeichert."
-            ),
-            message_en=(
-                f"Version {version.version_number}{tag_info} of {app.name} "
-                f"has been reviewed and stored in the JDS Cloud."
-            ),
-            log_lines=log, app=app, version=version, level="success_1",
-        )
-    if notif_cfg and notif_cfg.push_notifications:
-        create_notification(
-            user=dev.user,
-            title=f"Prüfung bestanden: {app.name} v{version.version_number}",
-            message="Version wird jetzt veröffentlicht.",
-            app=app, version=version, level="success_1",
-        )
-
-    _do_publish(version)
-    return True
+    finally:
+        # Temporäre Datei immer aufräumen
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+                log.append(f"  Temporäre Datei gelöscht.")
+            except Exception:
+                pass
+            # Log nochmal speichern nach cleanup
+            version.checking_log = "\n".join(log)
+            version.save(update_fields=["checking_log"])
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -558,7 +513,7 @@ def start_background_check_version(version_id: int):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Cron-triggered publish  (called by HTTP endpoint every 5 minutes)
+# Cron-triggered publish
 # ─────────────────────────────────────────────────────────────────────────────
 def publish_due_scheduled_releases() -> dict:
     due = Version.objects.filter(
@@ -568,23 +523,13 @@ def publish_due_scheduled_releases() -> dict:
         scheduled_release_at__lte=timezone.now(),
     ).select_related("app", "app__developer", "app__developer__user")
 
-    published = []
-    errors    = []
-
+    published, errors = [], []
     for version in due:
         try:
             _do_publish(version)
-            published.append({
-                "id":      version.id,
-                "app":     version.app.name,
-                "version": version.version_number,
-            })
+            published.append({"id": version.id, "app": version.app.name, "version": version.version_number})
         except Exception as exc:
-            errors.append({
-                "id":    version.id,
-                "app":   version.app.name,
-                "error": str(exc),
-            })
+            errors.append({"id": version.id, "app": version.app.name, "error": str(exc)})
 
     return {
         "published_count": len(published),
