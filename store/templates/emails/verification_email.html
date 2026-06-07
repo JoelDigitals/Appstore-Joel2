@@ -1,277 +1,116 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verifizierungscode - JDS Appstore</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #0f172a;
-            color: #f1f5f9;
-        }
-        
-        .email-wrapper {
-            max-width: 600px;
-            margin: 0 auto;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border-radius: 24px;
-            overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-        
-        .email-header {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            padding: 40px 30px;
-            text-align: center;
-        }
-        
-        .logo-container {
-            width: 80px;
-            height: 80px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(10px);
-        }
-        
-        .logo-icon {
-            font-size: 40px;
-            color: white;
-        }
-        
-        .email-header h1 {
-            color: white;
-            font-size: 28px;
-            font-weight: 700;
-            margin: 0;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        .email-body {
-            padding: 40px 30px;
-        }
-        
-        .greeting {
-            font-size: 18px;
-            color: #f1f5f9;
-            margin-bottom: 20px;
-            font-weight: 500;
-        }
-        
-        .message {
-            font-size: 16px;
-            color: #94a3b8;
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
-        
-        .code-container {
-            background: rgba(99, 102, 241, 0.1);
-            border: 2px solid rgba(99, 102, 241, 0.3);
-            border-radius: 16px;
-            padding: 30px;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .code-label {
-            font-size: 14px;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-        
-        .verification-code {
-            font-size: 42px;
-            font-weight: 700;
-            color: #6366f1;
-            letter-spacing: 8px;
-            font-family: 'Courier New', monospace;
-            text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
-        }
-        
-        .expiry-notice {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .expiry-icon {
-            color: #ef4444;
-            font-size: 20px;
-        }
-        
-        .expiry-text {
-            color: #ef4444;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
-        .security-info {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .security-title {
-            color: #10b981;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .security-text {
-            color: #94a3b8;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        
-        .cta-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            color: white;
-            text-decoration: none;
-            padding: 16px 40px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 16px;
-            margin: 20px 0;
-            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
-        }
-        
-        .divider {
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 30px 0;
-        }
-        
-        .footer {
-            text-align: center;
-            color: #64748b;
-            font-size: 13px;
-            line-height: 1.6;
-        }
-        
-        .footer-links {
-            margin-top: 20px;
-        }
-        
-        .footer-links a {
-            color: #6366f1;
-            text-decoration: none;
-            margin: 0 10px;
-            font-weight: 500;
-        }
-        
-        .device-info {
-            background: rgba(30, 41, 59, 0.5);
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            font-size: 12px;
-            color: #64748b;
-        }
-        
-        @media only screen and (max-width: 600px) {
-            .email-body {
-                padding: 30px 20px;
-            }
-            
-            .verification-code {
-                font-size: 32px;
-                letter-spacing: 4px;
-            }
-            
-            .email-header h1 {
-                font-size: 24px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-Mail bestätigen / Verify Email – JDS AppStore</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0b1120;color:#e2e8f0}
+    .root{background:#0b1120;padding:32px 16px}
+    .wrap{max-width:560px;margin:0 auto}
+    .hd{background:linear-gradient(135deg,#1a1744 0%,#2d2778 60%,#3b1d7a 100%);border-radius:20px 20px 0 0;padding:40px 40px 36px;text-align:center;position:relative;overflow:hidden}
+    .hd::after{content:'';position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,.18) 0%,transparent 70%);pointer-events:none}
+    .logo{width:68px;height:68px;border-radius:16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:inline-flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 6px 28px rgba(99,102,241,.4)}
+    .logo svg{width:32px;height:32px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+    .brand{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(167,139,250,.75);margin-bottom:7px}
+    .hd-title{font-size:22px;font-weight:700;color:#fff}
+    .bd{background:#111827;padding:36px 40px}
+    .lb{padding:22px 0}
+    .lb+.lb{border-top:1px solid rgba(255,255,255,.06);padding-top:24px}
+    .flag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#475569;margin-bottom:14px;padding:4px 10px;background:rgba(255,255,255,.04);border-radius:20px;border:1px solid rgba(255,255,255,.07)}
+    .greet{font-size:17px;font-weight:600;color:#f1f5f9;margin-bottom:8px}
+    .intro{font-size:14px;color:#94a3b8;line-height:1.7;margin-bottom:22px}
+    .code-wrap{background:#0f172a;border:1px solid rgba(99,102,241,.22);border-radius:14px;padding:28px 24px;text-align:center;margin-bottom:20px}
+    .code-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#6366f1;margin-bottom:16px}
+    .digits{display:inline-flex;gap:8px;margin-bottom:16px}
+    .digit{width:46px;height:58px;border-radius:11px;background:#1e293b;border:2px solid rgba(99,102,241,.28);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#a5b4fc;font-family:'Courier New',monospace;box-shadow:0 3px 12px rgba(0,0,0,.3)}
+    .exp{font-size:11px;color:#475569}
+    .info-box{background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.14);border-radius:11px;padding:14px 18px;font-size:13px;color:#94a3b8;line-height:1.65;margin-bottom:18px}
+    .info-box strong{color:#c7d2fe}
+    .warn{display:flex;align-items:flex-start;gap:10px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.14);border-radius:11px;padding:12px 16px;font-size:12px;color:#94a3b8;line-height:1.6}
+    .warn-ic{color:#f87171;font-size:15px;flex-shrink:0;margin-top:1px}
+    .div{height:1px;background:rgba(255,255,255,.06);margin:22px 0}
+    .ft{background:#0d1526;border-radius:0 0 20px 20px;border-top:1px solid rgba(255,255,255,.05);padding:20px 40px;text-align:center}
+    .ft-logo{font-size:13px;font-weight:700;color:#4f46e5;margin-bottom:6px}
+    .ft-t{font-size:10px;color:#334155;line-height:1.7}
+    .ft-t a{color:#4f46e5}
+  </style>
 </head>
 <body>
-    <div class="email-wrapper">
-        <!-- Header -->
-        <div class="email-header">
-            <div class="logo-container">
-                <span class="logo-icon">🔒</span>
-            </div>
-            <h1>JDS Appstore</h1>
-        </div>
-        
-        <!-- Body -->
-        <div class="email-body">
-            <div class="greeting">
-                Hallo {{ username }},
-            </div>
-            
-            <div class="message">
-                wir haben eine Anfrage zur Verifizierung deines Accounts erhalten. Verwende den folgenden Code, um deine E-Mail-Adresse zu bestätigen und deinen Account zu reaktivieren:
-            </div>
-            
-            <!-- Verification Code -->
-            <div class="code-container">
-                <div class="code-label">Dein Verifizierungscode</div>
-                <div class="verification-code">{{ code }}</div>
-            </div>
-            
-            <!-- Expiry Notice -->
-            <div class="expiry-notice">
-                <span class="expiry-icon">⏱️</span>
-                <span class="expiry-text">Dieser Code ist 30 Minuten gültig</span>
-            </div>
-            
-            <!-- Security Info -->
-            <div class="security-info">
-                <div class="security-title">
-                    <span>🛡️</span>
-                    Sicherheitshinweis
-                </div>
-                <div class="security-text">
-                    Teile diesen Code niemals mit anderen. Unser Team wird dich nie nach diesem Code fragen. Wenn du diese Anfrage nicht gestellt hast, ignoriere diese E-Mail bitte.
-                </div>
-            </div>
-            
-            <div class="divider"></div>
-            
-            <!-- Footer -->
-            <div class="footer">
-                <p>Du erhältst diese E-Mail, weil jemand versucht hat, sich mit deinem Account bei <strong>JDS Appstore</strong> anzumelden.</p>
-                
-                <div class="device-info">
-                    Anfrage von: {{ user_agent|default:"Unbekanntes Gerät" }}<br>
-                    IP-Adresse: {{ ip_address|default:"Unbekannt" }}<br>
-                    Zeitpunkt: {{ timestamp|default:"Jetzt" }}
-                </div>
-                
-                <div class="footer-links">
-                    <a href="https://joel-digitals.de/contact/">Support</a>
-                </div>
-                
-                <p style="margin-top: 20px;">
-                    © 2025-2026 Joel Digitals Alle Rechte vorbehalten.
-                </p>
-            </div>
-        </div>
-    </div>"
+<div class="root"><div class="wrap">
+
+<!-- Header -->
+<div class="hd">
+  <div class="logo">
+    <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+  </div>
+  <div class="brand">JDS AppStore</div>
+  <div class="hd-title">E-Mail bestätigen / Verify Email</div>
+</div>
+
+<!-- Body -->
+<div class="bd">
+
+  <!-- Code (shared, above both lang blocks) -->
+  <div class="code-wrap">
+    <div class="code-lbl">Verifizierungscode / Verification Code</div>
+    <div class="digits">
+      {% for digit in code %}
+        <div class="digit">{{ digit }}</div>
+      {% endfor %}
+    </div>
+    <div class="exp">⏱ 15 Min. gültig / valid</div>
+  </div>
+
+  <!-- ═══ DEUTSCH ═══ -->
+  <div class="lb">
+    <div class="flag">🇩🇪 Deutsch</div>
+    <div class="greet">Hallo {{ user.first_name|default:user.username }},</div>
+    <div class="intro">
+      um deine E-Mail-Adresse zu bestätigen und deinen JDS AppStore-Account zu aktivieren, gib bitte den obigen 6-stelligen Code auf der Bestätigungsseite ein.
+    </div>
+    <div class="info-box">
+      Gib diesen Code auf der Bestätigungsseite ein.<br>
+      <strong>Teile diesen Code niemals</strong> mit anderen – das JDS-Team wird dich niemals danach fragen.
+    </div>
+    <div class="warn">
+      <span class="warn-ic">⚠</span>
+      <span>Wenn du diese Registrierung <strong style="color:#fca5a5">nicht</strong> selbst angefordert hast, ignoriere diese E-Mail einfach. Dein Konto bleibt sicher.</span>
+    </div>
+  </div>
+
+  <div class="div"></div>
+
+  <!-- ═══ ENGLISH ═══ -->
+  <div class="lb">
+    <div class="flag">🇬🇧 English</div>
+    <div class="greet">Hello {{ user.first_name|default:user.username }},</div>
+    <div class="intro">
+      To confirm your email address and activate your JDS AppStore account, please enter the 6-digit code above on the verification page.
+    </div>
+    <div class="info-box">
+      Enter this code on the verification page.<br>
+      <strong>Never share this code</strong> with anyone – the JDS team will never ask for it.
+    </div>
+    <div class="warn">
+      <span class="warn-ic">⚠</span>
+      <span>If you did <strong style="color:#fca5a5">not</strong> sign up for this account, simply ignore this email. Your account will remain secure.</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="ft">
+  <div class="ft-logo">⬡ JDS AppStore</div>
+  <div class="ft-t">
+    Automatisch generiert / Auto-generated · Bitte nicht antworten / Do not reply<br>
+    <a href="#">Datenschutz / Privacy</a> · <a href="#">Impressum / Imprint</a>
+  </div>
+</div>
+
+</div></div>
 </body>
 </html>

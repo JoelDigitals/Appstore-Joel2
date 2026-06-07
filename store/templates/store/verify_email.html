@@ -367,6 +367,7 @@
 
         <form method="post" id="verifyForm">
             {% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
             <div class="code-input">
                 <input type="text" maxlength="1" name="code_1" required autofocus />
                 <input type="text" maxlength="1" name="code_2" required />

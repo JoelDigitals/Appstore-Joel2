@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ build.app_name }} – Build-Status{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8 space-y-6">
+  <nav class="flex items-center gap-2 text-sm text-gray-500 mb-2">
+    <a href="{% url 'wb_home' %}" class="hover:text-violet-400 transition-colors">WebApp Builder</a>
+    <i class="bi bi-chevron-right text-xs"></i>
+    <span class="text-gray-300">{{ build.app_name }}</span>
+  </nav>
+
+  <!-- Status header -->
+  <div class="glass rounded-3xl p-8">
+    <div class="flex items-start gap-5">
+      <div class="w-16 h-16 rounded-2xl
+        {% if build.status == 'done' %}bg-emerald-500/15{% elif build.status == 'failed' %}bg-red-500/15{% elif build.status == 'building' %}bg-blue-500/15{% else %}bg-slate-700{% endif %}
+        flex items-center justify-center flex-shrink-0">
+        {% if build.platform == 'android' %}<i class="bi bi-android2 text-green-400 text-3xl"></i>
+        {% elif build.platform == 'ios' %}<i class="bi bi-apple text-gray-300 text-3xl"></i>
+        {% else %}<i class="bi bi-phone text-violet-400 text-3xl"></i>{% endif %}
+      </div>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-2xl font-bold text-gray-100 mb-1">{{ build.app_name }}</h1>
+        <div class="flex flex-wrap gap-3 text-sm text-gray-400">
+          <span><i class="bi bi-link-45deg mr-1"></i>{{ build.website_url|truncatechars:50 }}</span>
+          <span><i class="bi bi-tag mr-1"></i>v{{ build.version }}</span>
+          <span><i class="bi bi-calendar3 mr-1"></i>{{ build.created_at|date:"d.m.Y H:i" }}</span>
+        </div>
+      </div>
+      <span class="px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0
+        {% if build.status == 'done' %}bg-emerald-500/15 text-emerald-400
+        {% elif build.status == 'failed' %}bg-red-500/15 text-red-400
+        {% elif build.status == 'building' %}bg-blue-500/15 text-blue-400
+        {% else %}bg-slate-700 text-gray-400{% endif %}"
+        id="statusBadge">
+        {% if build.status == 'building' %}<i class="bi bi-arrow-repeat animate-spin mr-1"></i>{% endif %}
+        {{ build.get_status_display }}
+      </span>
+    </div>
+
+    <!-- Downloads -->
+    {% if build.apk_url or build.ipa_url %}
+    <div class="mt-6 flex flex-wrap gap-3">
+      {% if build.apk_url %}
+      <a href="{{ build.apk_url }}" class="inline-flex items-center gap-2 px-5 py-3 bg-green-500/15 hover:bg-green-500/25 text-green-400 rounded-xl font-semibold transition-all">
+        <i class="bi bi-android2 text-xl"></i> APK herunterladen
+      </a>
+      {% endif %}
+      {% if build.ipa_url %}
+      <a href="{{ build.ipa_url }}" class="inline-flex items-center gap-2 px-5 py-3 bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 rounded-xl font-semibold transition-all">
+        <i class="bi bi-apple text-xl"></i> IPA herunterladen
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Build Log -->
+  <div class="glass rounded-3xl p-6">
+    <h2 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+      <i class="bi bi-terminal text-violet-400"></i> Build-Log
+    </h2>
+    <div class="bg-slate-900 rounded-xl p-4 font-mono text-xs text-gray-400 min-h-32 max-h-96 overflow-y-auto leading-relaxed whitespace-pre-wrap" id="buildLog">{{ build.build_log|default:"Warte auf Build-Start…" }}</div>
+  </div>
+
+  <!-- Config summary -->
+  <div class="glass rounded-3xl p-6">
+    <h2 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+      <i class="bi bi-sliders text-violet-400"></i> Konfiguration
+    </h2>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+      <div><span class="text-gray-500">Plattform</span><div class="text-gray-200 mt-0.5">{{ build.get_platform_display }}</div></div>
+      <div><span class="text-gray-500">Bundle-ID</span><div class="text-gray-200 mt-0.5 font-mono text-xs">{{ build.app_id|default:"auto" }}</div></div>
+      <div><span class="text-gray-500">Ausrichtung</span><div class="text-gray-200 mt-0.5">{{ build.get_orientation_display }}</div></div>
+      <div><span class="text-gray-500">Fullscreen</span><div class="mt-0.5 {% if build.fullscreen %}text-emerald-400{% else %}text-gray-500{% endif %}">{% if build.fullscreen %}✓ Ja{% else %}Nein{% endif %}</div></div>
+      <div><span class="text-gray-500">JavaScript</span><div class="mt-0.5 {% if build.enable_js %}text-emerald-400{% else %}text-red-400{% endif %}">{% if build.enable_js %}✓ An{% else %}Aus{% endif %}</div></div>
+      <div><span class="text-gray-500">Pull-to-Refresh</span><div class="mt-0.5 {% if build.pull_to_refresh %}text-emerald-400{% else %}text-gray-500{% endif %}">{% if build.pull_to_refresh %}✓ Ja{% else %}Nein{% endif %}</div></div>
+    </div>
+  </div>
+</div>
+
+{% if build.status == 'building' or build.status == 'pending' %}
+<script>
+(function poll() {
+  fetch('/webapp-builder/api/{{ build.id }}/status/')
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('buildLog').textContent = d.log || 'Warte…';
+      document.getElementById('buildLog').scrollTop = 9999;
+      if (d.status === 'building' || d.status === 'pending') {
+        setTimeout(poll, 3000);
+      } else {
+        location.reload();
+      }
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

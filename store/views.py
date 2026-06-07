@@ -117,17 +117,29 @@ def password_reset_complete(request):
 
 
 def get_notifications_for_user(request):
+    # Unauthenticated users → leere Liste zurückgeben, kein 500
+    if not request.user.is_authenticated:
+        return JsonResponse({"count": 0, "notifications": []})
+
     user = request.user
     notification_count = cache.get(f'notification_count_{user.id}')
     if notification_count is None:
         notification_count = Notification.objects.filter(user=user, read=False).count()
         cache.set(f'notification_count_{user.id}', notification_count, timeout=60*5)
-    
-    # Einfache Filter ohne Q-Objekte
-    return Notification.objects.filter(
-        user=user, 
-        read=False
-    ).order_by('-created_at')
+
+    notifications_qs = Notification.objects.filter(
+        user=user, read=False
+    ).order_by('-created_at')[:10]
+
+    notifications = []
+    for n in notifications_qs:
+        notifications.append({
+            'id':         n.id,
+            'message':    n.message,
+            'created_at': n.created_at.strftime("%d.%m.%Y %H:%M"),
+        })
+
+    return JsonResponse({"count": notification_count, "notifications": notifications})
 
 
 
@@ -263,6 +275,13 @@ def get_client_ip(request):
 
 
 def login_view(request):
+    # ?next= auslesen – sowohl GET als auch POST (Hidden Field)
+    next_url = request.POST.get('next') or request.GET.get('next', '').strip()
+
+    # Sicherheit: nur relative Pfade erlauben (kein Open Redirect)
+    if next_url and (not next_url.startswith('/') or next_url.startswith('//')):
+        next_url = ''
+
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -273,27 +292,32 @@ def login_view(request):
                 if not user.is_active:
                     # Alte Codes löschen
                     EmailVerificationCode.objects.filter(user=user).delete()
-                    
+
                     # Neuen Code generieren
                     code = secrets.token_hex(3).upper()  # 6-stellig alphanumerisch
-                    
+
                     # Code in Datenbank speichern
                     EmailVerificationCode.objects.create(user=user, code=code)
-                    
+
                     # HTML-E-Mail senden
                     send_verification_email(user, code, request)
-                    
-                    # Session setzen
+
+                    # Session setzen – next_url für nach der Verifizierung merken
                     request.session['pending_user_id'] = user.id
                     request.session['verification_email'] = user.email
-                    
+                    if next_url:
+                        request.session['next_url_after_verify'] = next_url
+
                     messages.info(request, 'Ein Verifizierungscode wurde an deine E-Mail gesendet.')
-                    return redirect('verify_email')
-                
+                    redirect_target = 'verify_email'
+                    if next_url:
+                        redirect_target = f'/verify-email/?next={next_url}'
+                    return redirect(redirect_target)
+
                 # User ist aktiv -> normaler Login
                 login(request, user)
                 messages.success(request, f'Willkommen zurück, {user.username}!')
-                return redirect('home')
+                return redirect(next_url or 'home')
             else:
                 form_error = True
         except User.DoesNotExist:
@@ -302,11 +326,11 @@ def login_view(request):
         # Fehlerbehandlung
         form = AuthenticationForm(request, data=request.POST)
         form.add_error(None, "Ungültiger Benutzername oder Passwort.")
-        
+
     else:
         form = AuthenticationForm()
 
-    return render(request, 'store/login.html', {'form': form})
+    return render(request, 'store/login.html', {'form': form, 'next': next_url})
 
 
 def verify_email_view(request):
@@ -373,14 +397,28 @@ def verify_email_view(request):
             
             login(request, user)
             messages.success(request, 'E-Mail verifiziert! Dein Account wurde reaktiviert.')
+
+            # Nach Verifizierung zu ?next= weiterleiten falls gesetzt
+            next_url = (
+                request.POST.get('next')
+                or request.GET.get('next', '')
+                or request.session.pop('next_url_after_verify', '')
+            ).strip()
+            if next_url and next_url.startswith('/') and not next_url.startswith('//'):
+                return redirect(next_url)
             return redirect('home')
-            
+
         except EmailVerificationCode.DoesNotExist:
             messages.error(request, 'Ungültiger oder abgelaufener Code!')
-    
+
+    next_url = (
+        request.GET.get('next', '')
+        or request.session.get('next_url_after_verify', '')
+    ).strip()
     return render(request, 'store/verify_email.html', {
         'email': email,
-        'user': user
+        'user':  user,
+        'next':  next_url,
     })
 
 

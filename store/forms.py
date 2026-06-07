@@ -211,9 +211,42 @@ class DeveloperForm(forms.ModelForm):
 
 
 class VersionForm(forms.ModelForm):
+    release_tag_custom = forms.CharField(
+        max_length=50, required=False,
+        label="Benutzerdefinierter Tag",
+        help_text="Nur ausfüllen wenn 'Benutzerdefiniert' gewählt wurde (z. B. v2.0-rc3)",
+        widget=forms.TextInput(attrs={'placeholder': 'z. B. v2.0-rc3'}),
+    )
+
+    scheduled_release_at = forms.DateTimeField(
+        required=False,
+        label="Geplantes Release-Datum",
+        help_text="Optional: Zeitpunkt der Veröffentlichung nach bestandener Prüfung (leer = sofort)",
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+    )
+
     class Meta:
         model = Version
-        fields = ['version_number', 'file', 'release_notes']
+        fields = ['version_number', 'file', 'release_notes', 'release_tag',
+                  'release_tag_custom', 'scheduled_release_at']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['release_tag'].initial = 'stable'
+        self.fields['release_tag'].help_text = "Wähle den Release-Kanal für diese Version"
+
+    def clean(self):
+        cleaned = super().clean()
+        tag = cleaned.get('release_tag')
+        custom = cleaned.get('release_tag_custom', '').strip()
+        if tag == 'custom' and not custom:
+            self.add_error('release_tag_custom', 'Bitte gib einen benutzerdefinierten Tag ein.')
+        scheduled = cleaned.get('scheduled_release_at')
+        if scheduled:
+            from django.utils import timezone as tz
+            if scheduled < tz.now():
+                self.add_error('scheduled_release_at', 'Das Release-Datum muss in der Zukunft liegen.')
+        return cleaned
 
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm

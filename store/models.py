@@ -194,6 +194,46 @@ class Version(models.Model):
     approved = models.BooleanField(default=False)
     new_version = models.BooleanField(default=False)
 
+    # Release-Tag (z.B. stable, beta, alpha, v1.0.0-rc1)
+    RELEASE_TAG_CHOICES = [
+        ('stable',  'Stable'),
+        ('beta',    'Beta'),
+        ('alpha',   'Alpha'),
+        ('rc',      'Release Candidate'),
+        ('hotfix',  'Hotfix'),
+        ('nightly', 'Nightly'),
+        ('custom',  'Benutzerdefiniert'),
+    ]
+    release_tag = models.CharField(
+        max_length=50, blank=True, default='stable',
+        choices=RELEASE_TAG_CHOICES,
+        help_text="Kanal-Label für diese Version (z. B. stable, beta, alpha)"
+    )
+    release_tag_custom = models.CharField(
+        max_length=50, blank=True, default='',
+        help_text="Wird genutzt wenn release_tag='custom'"
+    )
+
+    # JDS Cloud Storage
+    jds_cloud_file_id   = models.CharField(max_length=200, blank=True)
+    jds_cloud_url       = models.URLField(blank=True, help_text="Download-URL in der JDS Cloud")
+    jds_cloud_view_url  = models.URLField(blank=True, help_text="View-URL in der JDS Cloud")
+
+    # Geplantes Release-Datum (optionales Scheduling)
+    scheduled_release_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Veröffentlichung zu diesem Zeitpunkt nach bestandener Prüfung. Leer = sofort."
+    )
+    release_held = models.BooleanField(
+        default=False,
+        help_text="True wenn Prüfung bestanden aber auf Datum gewartet wird."
+    )
+
+    def get_release_label(self):
+        if self.release_tag == 'custom':
+            return self.release_tag_custom or 'custom'
+        return dict(self.RELEASE_TAG_CHOICES).get(self.release_tag, self.release_tag)
+
     def __str__(self):
         return f"{self.app.name} v{self.version_number}"
 

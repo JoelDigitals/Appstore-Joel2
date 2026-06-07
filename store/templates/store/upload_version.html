@@ -27,7 +27,9 @@
   <div class="glass rounded-3xl p-6 mb-8 border border-primary/10">
     <div class="flex items-center gap-4">
       <div class="relative">
-        {% if app.icon %}
+        {% if app.icon_url %}
+          <img src="{{ app.icon_url }}" alt="{{ app.name }}" class="w-16 h-16 object-contain rounded-2xl bg-slate-800/50 p-1">
+        {% elif app.icon %}
           <img src="{{ app.icon.url }}" alt="{{ app.name }}" class="w-16 h-16 object-contain rounded-2xl bg-slate-800/50 p-2">
         {% else %}
           <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
@@ -35,16 +37,11 @@
           </div>
         {% endif %}
         <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-slate-800 rounded-full flex items-center justify-center border border-gray-700">
-          {% if app.platform == 'ios' %}
-            <i class="bi bi-apple text-primary text-xs"></i>
-          {% elif app.platform == 'android' %}
-            <i class="bi bi-android2 text-green-400 text-xs"></i>
-          {% elif app.platform == 'windows' %}
-            <i class="bi bi-microsoft text-blue-400 text-xs"></i>
-          {% elif app.platform == 'macos' %}
-            <i class="bi bi-apple text-gray-300 text-xs"></i>
-          {% elif app.platform == 'linux' %}
-            <i class="bi bi-terminal text-yellow-400 text-xs"></i>
+          {% if app.platform == 'ios' %}<i class="bi bi-apple text-primary text-xs"></i>
+          {% elif app.platform == 'android' %}<i class="bi bi-android2 text-green-400 text-xs"></i>
+          {% elif app.platform == 'windows' %}<i class="bi bi-microsoft text-blue-400 text-xs"></i>
+          {% elif app.platform == 'macos' %}<i class="bi bi-apple text-gray-300 text-xs"></i>
+          {% elif app.platform == 'linux' %}<i class="bi bi-terminal text-yellow-400 text-xs"></i>
           {% endif %}
         </div>
       </div>
@@ -53,12 +50,12 @@
         <div class="flex items-center gap-3 text-sm text-gray-400">
           <span class="flex items-center gap-1">
             <i class="bi bi-tag"></i>
-            Aktuell: v{{ app.current_version|default:"1.0" }}
+            Aktuell: v{{ app.versions.first.version_number|default:"–" }}
           </span>
           <span>•</span>
           <span class="flex items-center gap-1">
             <i class="bi bi-calendar3"></i>
-            {{ app.updated_at|date:"d.m.Y"|default:"Noch nie" }}
+            {{ app.updated_at|date:"d.m.Y" }}
           </span>
         </div>
       </div>
@@ -67,141 +64,297 @@
 
   <!-- Upload Form -->
   <div class="glass rounded-3xl p-6 md:p-8">
-    <form method="post" enctype="multipart/form-data" class="space-y-6" id="uploadForm">
+    <form method="post" enctype="multipart/form-data" class="space-y-8" id="uploadForm">
       {% csrf_token %}
 
-      {% for field in form %}
+      <!-- ── Versionsnummer ─────────────────────────── -->
       <div class="space-y-2">
-        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-300">
-          {{ field.label }}
-          {% if field.field.required %}
-            <span class="text-red-400">*</span>
-          {% endif %}
+        <label for="{{ form.version_number.id_for_label }}" class="block text-sm font-medium text-gray-300">
+          Versionsnummer <span class="text-red-400">*</span>
         </label>
-
         <div class="relative">
-          {% if field.field.widget.input_type == 'file' %}
-            <!-- File Upload Area -->
-            <div class="relative group">
-              <div class="border-2 border-dashed border-gray-700 rounded-2xl p-8 text-center hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer" id="dropZone">
-                <input type="file" 
-                       name="{{ field.name }}" 
-                       id="{{ field.id_for_label }}"
-                       class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                       accept=".apk,.ipa,.exe,.dmg,.pkg,.deb,.rpm,.AppImage{% if app.platform == 'android' %},.apk{% elif app.platform == 'ios' %},.ipa{% elif app.platform == 'windows' %},.exe,.msi{% elif app.platform == 'macos' %},.dmg,.pkg{% elif app.platform == 'linux' %},.deb,.rpm,.AppImage{% endif %}"
-                       required>
-                
-                <div class="pointer-events-none">
-                  <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i class="bi bi-cloud-arrow-up text-3xl text-gray-500 group-hover:text-primary transition-colors"></i>
-                  </div>
-                  <p class="text-gray-300 font-medium mb-1">Datei hierher ziehen oder klicken</p>
-                  <p class="text-sm text-gray-500">
-                    {% if app.platform == 'android' %}
-                      APK-Datei (max. 500 MB)
-                    {% elif app.platform == 'ios' %}
-                      IPA-Datei (max. 500 MB)
-                    {% elif app.platform == 'windows' %}
-                      EXE oder MSI (max. 1 GB)
-                    {% elif app.platform == 'macos' %}
-                      DMG oder PKG (max. 1 GB)
-                    {% elif app.platform == 'linux' %}
-                      DEB, RPM oder AppImage (max. 500 MB)
-                    {% else %}
-                      Unterstützte Dateien
-                    {% endif %}
-                  </p>
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <i class="bi bi-tag text-gray-500"></i>
+          </div>
+          <input type="text"
+                 name="{{ form.version_number.html_name }}"
+                 id="{{ form.version_number.id_for_label }}"
+                 value="{{ form.version_number.value|default:'' }}"
+                 placeholder="z. B. 2.1.0"
+                 class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono"
+                 required>
+        </div>
+        <p class="text-xs text-gray-500">Semantische Versionierung: MAJOR.MINOR.PATCH</p>
+        {% if form.version_number.errors %}
+          <p class="text-red-400 text-sm">{{ form.version_number.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <!-- ── Release-Kanal (Dropdown) ───────────────── -->
+      <div class="space-y-2">
+        <label for="releaseTagSelect" class="block text-sm font-medium text-gray-300">
+          Release-Kanal <span class="text-red-400">*</span>
+        </label>
+        <p class="text-xs text-gray-500">Legt fest, über welchen Kanal diese Version veröffentlicht wird</p>
+
+        <!-- Custom Select Wrapper -->
+        <div class="relative" id="releaseTagDropdown">
+          <!-- Hidden real input for form submit -->
+          <input type="hidden" name="{{ form.release_tag.html_name }}" id="releaseTagValue" value="{{ form.release_tag.value|default:'stable' }}">
+
+          <!-- Trigger button -->
+          <button type="button" id="releaseTagTrigger"
+                  class="w-full flex items-center justify-between gap-3 bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100 hover:border-primary/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-left">
+            <div class="flex items-center gap-3" id="releaseTagDisplay">
+              <!-- filled by JS -->
+            </div>
+            <i class="bi bi-chevron-down text-gray-500 transition-transform duration-200" id="dropdownChevron"></i>
+          </button>
+
+          <!-- Dropdown panel -->
+          <div id="releaseTagPanel"
+               class="hidden absolute z-50 mt-2 w-full bg-slate-800 border border-gray-700 rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
+
+            <!-- Preset options -->
+            <div class="p-2 space-y-1">
+              <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-1">Kanäle</div>
+
+              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="stable">
+                <span class="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
+                  <i class="bi bi-shield-check text-emerald-400 text-sm"></i>
+                </span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-gray-100">Stable</div>
+                  <div class="text-xs text-gray-500">Produktionsreif, empfohlen für alle Nutzer</div>
                 </div>
-              </div>
-              
-              <!-- File Info (shown after selection) -->
-              <div id="fileInfo" class="hidden mt-4 p-4 bg-slate-800/50 rounded-xl border border-gray-700">
-                <div class="flex items-center gap-3">
-                  <i class="bi bi-file-earmark-binary text-2xl text-primary"></i>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-gray-100 truncate" id="fileName">datei.apk</p>
-                    <p class="text-xs text-gray-500" id="fileSize">0 MB</p>
-                  </div>
-                  <button type="button" id="removeFile" class="text-gray-400 hover:text-red-400 transition-colors">
-                    <i class="bi bi-x-lg"></i>
-                  </button>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">stable</span>
+              </button>
+
+              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="beta">
+                <span class="w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
+                  <i class="bi bi-lightning text-blue-400 text-sm"></i>
+                </span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-gray-100">Beta</div>
+                  <div class="text-xs text-gray-500">Fast fertig, für Beta-Tester geeignet</div>
                 </div>
-              </div>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30">beta</span>
+              </button>
+
+              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="alpha">
+                <span class="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/30 flex items-center justify-center flex-shrink-0">
+                  <i class="bi bi-flask text-orange-400 text-sm"></i>
+                </span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-gray-100">Alpha</div>
+                  <div class="text-xs text-gray-500">Frühe Entwicklungsphase, experimentell</div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-500/15 text-orange-400 border border-orange-500/30">alpha</span>
+              </button>
+
+              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="rc">
+                <span class="w-8 h-8 rounded-lg bg-violet-500/15 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
+                  <i class="bi bi-check2-circle text-violet-400 text-sm"></i>
+                </span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-gray-100">Release Candidate</div>
+                  <div class="text-xs text-gray-500">Kandidat für das finale Release</div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-500/15 text-violet-400 border border-violet-500/30">rc</span>
+              </button>
+
+              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="hotfix">
+                <span class="w-8 h-8 rounded-lg bg-red-500/15 border border-red-500/30 flex items-center justify-center flex-shrink-0">
+                  <i class="bi bi-bandaid text-red-400 text-sm"></i>
+                </span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-gray-100">Hotfix</div>
+                  <div class="text-xs text-gray-500">Kritische Fehlerbehebung, dringend</div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/30">hotfix</span>
+              </button>
+
+              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="nightly">
+                <span class="w-8 h-8 rounded-lg bg-gray-500/15 border border-gray-500/30 flex items-center justify-center flex-shrink-0">
+                  <i class="bi bi-moon-stars text-gray-400 text-sm"></i>
+                </span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-gray-100">Nightly</div>
+                  <div class="text-xs text-gray-500">Täglicher automatischer Build</div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/15 text-gray-400 border border-gray-500/30">nightly</span>
+              </button>
             </div>
 
-          {% elif field.field.widget.input_type == 'text' and 'version' in field.name %}
-            <!-- Version Input -->
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <i class="bi bi-tag text-gray-500"></i>
-              </div>
-              <input type="text" 
-                     name="{{ field.name }}" 
-                     id="{{ field.id_for_label }}"
-                     value="{{ field.value|default:'' }}"
-                     placeholder="z.B. 1.2.3"
-                     class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono"
-                     required>
+            <!-- Divider + Custom -->
+            <div class="border-t border-gray-700/60 p-2">
+              <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-1">Eigener Tag</div>
+              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="custom">
+                <span class="w-8 h-8 rounded-lg bg-gray-500/15 border border-gray-600/30 flex items-center justify-center flex-shrink-0">
+                  <i class="bi bi-pencil text-gray-400 text-sm"></i>
+                </span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-gray-100">Custom</div>
+                  <div class="text-xs text-gray-500">Eigenen Release-Tag eingeben</div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/15 text-gray-400 border border-gray-600/30">custom</span>
+              </button>
             </div>
-            <p class="text-xs text-gray-500">Verwende semantische Versionierung (MAJOR.MINOR.PATCH)</p>
+          </div>
+        </div>
 
-          {% elif field.field.widget.input_type == 'textarea' %}
-            <!-- Changelog Textarea -->
-            <textarea name="{{ field.name }}" 
-                      id="{{ field.id_for_label }}"
-                      rows="4"
-                      placeholder="Beschreibe die Änderungen in dieser Version..."
-                      class="w-full bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-y min-h-[120px]">{{ field.value|default:'' }}</textarea>
-            <p class="text-xs text-gray-500">Dies wird den Nutzern im Update-Log angezeigt</p>
-
-          {% else %}
-            <!-- Default Input -->
-            <input type="{{ field.field.widget.input_type|default:'text' }}" 
-                   name="{{ field.name }}" 
-                   id="{{ field.id_for_label }}"
-                   value="{{ field.value|default:'' }}"
-                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+        <!-- Custom Tag Input (conditionally shown) -->
+        <div id="customTagInput" class="hidden mt-2">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <i class="bi bi-pencil text-gray-500"></i>
+            </div>
+            <input type="text"
+                   name="{{ form.release_tag_custom.html_name }}"
+                   id="{{ form.release_tag_custom.id_for_label }}"
+                   value="{{ form.release_tag_custom.value|default:'' }}"
+                   placeholder="z. B. v2.0-rc3 oder enterprise"
+                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono">
+          </div>
+          {% if form.release_tag_custom.errors %}
+            <p class="text-red-400 text-sm mt-1">{{ form.release_tag_custom.errors.0 }}</p>
           {% endif %}
         </div>
 
-        {% if field.errors %}
-          <div class="flex items-center gap-2 text-red-400 text-sm mt-1">
-            <i class="bi bi-exclamation-circle"></i>
-            {% for error in field.errors %}
-              <span>{{ error }}</span>
-            {% endfor %}
+        {% if form.release_tag.errors %}
+          <p class="text-red-400 text-sm">{{ form.release_tag.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <!-- ── Datei-Upload ───────────────────────────── -->
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-gray-300">
+          App-Datei <span class="text-red-400">*</span>
+        </label>
+        <div class="relative group">
+          <div class="border-2 border-dashed border-gray-700 rounded-2xl p-8 text-center hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer" id="dropZone">
+            <input type="file"
+                   name="{{ form.file.html_name }}"
+                   id="{{ form.file.id_for_label }}"
+                   class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                   accept=".apk,.ipa,.exe,.msi,.dmg,.pkg,.deb,.rpm,.AppImage"
+                   required>
+            <div class="pointer-events-none">
+              <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <i class="bi bi-cloud-arrow-up text-3xl text-gray-500 group-hover:text-primary transition-colors"></i>
+              </div>
+              <p class="text-gray-300 font-medium mb-1">Datei hierher ziehen oder klicken</p>
+              <p class="text-sm text-gray-500">
+                {% if app.platform == 'android' %}APK / AAB (max. 500 MB)
+                {% elif app.platform == 'ios' %}IPA-Datei (max. 500 MB)
+                {% elif app.platform == 'windows' %}EXE oder MSI (max. 1 GB)
+                {% elif app.platform == 'macos' %}DMG oder PKG (max. 1 GB)
+                {% elif app.platform == 'linux' %}DEB, RPM oder AppImage (max. 500 MB)
+                {% else %}Unterstützte App-Datei{% endif %}
+              </p>
+              <p class="text-xs text-gray-600 mt-2">Die Datei wird verschlüsselt in der JDS Cloud gespeichert</p>
+            </div>
           </div>
-        {% endif %}
-
-        {% if field.help_text and field.field.widget.input_type != 'textarea' and 'version' not in field.name %}
-          <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
+          <div id="fileInfo" class="hidden mt-4 p-4 bg-slate-800/50 rounded-xl border border-gray-700">
+            <div class="flex items-center gap-3">
+              <i class="bi bi-file-earmark-binary text-2xl text-primary"></i>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-100 truncate" id="fileName">–</p>
+                <p class="text-xs text-gray-500" id="fileSize">–</p>
+              </div>
+              <button type="button" id="removeFile" class="text-gray-400 hover:text-red-400 transition-colors">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        {% if form.file.errors %}
+          <p class="text-red-400 text-sm">{{ form.file.errors.0 }}</p>
         {% endif %}
       </div>
-      {% endfor %}
 
-      <!-- Progress Bar (hidden by default) -->
-      <div id="uploadProgress" class="hidden space-y-2">
-        <div class="flex justify-between text-sm text-gray-400">
-          <span>Hochladen...</span>
-          <span id="progressPercent">0%</span>
+      <!-- ── Geplantes Release-Datum ──────────────── -->
+      <div class="space-y-3">
+        <label class="block text-sm font-medium text-gray-300">
+          Geplantes Release-Datum
+          <span class="ml-2 text-xs font-normal text-gray-500">(optional)</span>
+        </label>
+        <p class="text-xs text-gray-500 -mt-1">
+          Leer lassen = sofort nach bestandener Prüfung veröffentlichen. Datum setzen = App wartet auf diesen Zeitpunkt.
+        </p>
+        <div class="flex items-center gap-3">
+          <button type="button" id="scheduleToggle"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-700 transition-colors focus:outline-none"
+                  aria-checked="false">
+            <span id="scheduleThumb" class="inline-block h-4 w-4 transform rounded-full bg-gray-400 transition-transform translate-x-1"></span>
+          </button>
+          <span class="text-sm text-gray-400" id="scheduleLabel">Sofort veröffentlichen</span>
         </div>
-        <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-          <div id="progressBar" class="bg-gradient-to-r from-primary to-secondary h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+        <div id="schedulePicker" class="hidden space-y-2">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <i class="bi bi-calendar-event text-gray-500"></i>
+            </div>
+            <input type="datetime-local"
+                   name="{{ form.scheduled_release_at.html_name }}"
+                   id="{{ form.scheduled_release_at.id_for_label }}"
+                   value="{{ form.scheduled_release_at.value|default:'' }}"
+                   class="w-full bg-slate-800/50 border border-purple-500/30 rounded-xl pl-11 pr-4 py-3 text-gray-100 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                   style="color-scheme:dark">
+          </div>
+          <div class="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 flex items-start gap-2">
+            <i class="bi bi-info-circle mt-0.5 flex-shrink-0"></i>
+            <span>Die Prüfung läuft sofort. Nach bestandener Prüfung wird die App automatisch zum gewählten Zeitpunkt veröffentlicht. Du erhältst eine E-Mail-Bestätigung.</span>
+          </div>
+          {% if form.scheduled_release_at.errors %}
+            <p class="text-red-400 text-sm">{{ form.scheduled_release_at.errors.0 }}</p>
+          {% endif %}
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-700/50">
-        <button type="submit" 
+      <!-- ── Release Notes ──────────────────────────── -->
+      <div class="space-y-2">
+        <label for="{{ form.release_notes.id_for_label }}" class="block text-sm font-medium text-gray-300">
+          Release Notes
+        </label>
+        <textarea name="{{ form.release_notes.html_name }}"
+                  id="{{ form.release_notes.id_for_label }}"
+                  rows="5"
+                  placeholder="Was ist neu in dieser Version?&#10;&#10;• Neues Feature X&#10;• Bugfix für Y&#10;• Performance-Verbesserungen"
+                  class="w-full bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-y min-h-[130px]">{{ form.release_notes.value|default:'' }}</textarea>
+        <p class="text-xs text-gray-500">Wird den Nutzern im Update-Log angezeigt</p>
+      </div>
+
+      <!-- ── Upload-Fortschritt ─────────────────────── -->
+      <div id="uploadProgress" class="hidden space-y-3 p-4 rounded-2xl bg-slate-800/50 border border-primary/20">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+            <i class="bi bi-cloud-upload text-primary animate-pulse"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex justify-between text-sm text-gray-300 mb-1">
+              <span id="uploadStatusText">Wird hochgeladen…</span>
+              <span id="progressPercent" class="font-mono">0%</span>
+            </div>
+            <div class="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+              <div id="progressBar" class="bg-gradient-to-r from-primary to-secondary h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 text-center">Die Datei wird in der JDS Cloud gespeichert und anschließend geprüft.</p>
+      </div>
+
+      <!-- ── Buttons ────────────────────────────────── -->
+      <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-700/50">
+        <button type="submit"
                 id="submitBtn"
-                class="flex-1 sm:flex-none inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
-          <i class="bi bi-cloud-check mr-2"></i>
-          Hochladen und prüfen
+                class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="bi bi-cloud-check"></i>
+          Hochladen & prüfen
         </button>
-        
-        <a href="{% url 'developer_dashboard' %}" 
-           class="flex-1 sm:flex-none inline-flex items-center justify-center px-8 py-3 glass hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-xl transition-all">
-          <i class="bi bi-x-lg mr-2"></i>
+        <a href="{% url 'developer_dashboard' %}"
+           class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-8 py-3 glass hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-xl transition-all">
+          <i class="bi bi-x-lg"></i>
           Abbrechen
         </a>
       </div>
@@ -216,110 +369,221 @@
     </h3>
     <ul class="space-y-3 text-sm text-gray-400">
       <li class="flex items-start gap-3">
-        <i class="bi bi-check2-circle text-green-400 mt-0.5"></i>
-        <span>Die Datei wird auf Viren und Malware geprüft, bevor sie verfügbar wird</span>
+        <i class="bi bi-cloud-check text-primary mt-0.5"></i>
+        <span>Die Datei wird sicher zur <strong class="text-gray-300">JDS Cloud</strong> hochgeladen und dort gespeichert</span>
       </li>
       <li class="flex items-start gap-3">
-        <i class="bi bi-check2-circle text-green-400 mt-0.5"></i>
-        <span>Nutzer erhalten automatisch eine Benachrichtigung über das Update</span>
+        <i class="bi bi-shield-check text-green-400 mt-0.5"></i>
+        <span>Anschließend erfolgt eine vollautomatische Prüfung auf Viren, Malware und Strukturfehler</span>
       </li>
       <li class="flex items-start gap-3">
-        <i class="bi bi-check2-circle text-green-400 mt-0.5"></i>
-        <span>Alte Versionen bleiben für 30 Tage verfügbar, falls ein Rollback nötig ist</span>
+        <i class="bi bi-bell text-blue-400 mt-0.5"></i>
+        <span>Du wirst per E-Mail und Benachrichtigung über das Ergebnis informiert</span>
+      </li>
+      <li class="flex items-start gap-3">
+        <i class="bi bi-tag text-violet-400 mt-0.5"></i>
+        <span>Der Release-Kanal (stable, beta, …) hilft Nutzern, die richtige Version zu wählen</span>
+      </li>
+      <li class="flex items-start gap-3">
+        <i class="bi bi-calendar-event text-purple-400 mt-0.5"></i>
+        <span>Geplante Releases: Die Prüfung läuft sofort. Ein automatischer Cron-Job veröffentlicht die App zum festgelegten Datum</span>
       </li>
     </ul>
   </div>
 
 </div>
 
+<style>
+  /* Active option highlight */
+  .release-option.is-active {
+    background: rgba(99,102,241,0.12);
+  }
+  .release-option.is-active .text-gray-100 {
+    color: #fff;
+  }
+</style>
+
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = dropZone.querySelector('input[type="file"]');
-    const fileInfo = document.getElementById('fileInfo');
-    const fileName = document.getElementById('fileName');
-    const fileSize = document.getElementById('fileSize');
-    const removeFile = document.getElementById('removeFile');
-    const uploadForm = document.getElementById('uploadForm');
-    const uploadProgress = document.getElementById('uploadProgress');
-    const progressBar = document.getElementById('progressBar');
-    const progressPercent = document.getElementById('progressPercent');
-    const submitBtn = document.getElementById('submitBtn');
+document.addEventListener('DOMContentLoaded', function () {
 
-    // File selection
-    fileInput.addEventListener('change', function(e) {
-      if (this.files.length > 0) {
-        const file = this.files[0];
-        fileName.textContent = file.name;
-        fileSize.textContent = formatFileSize(file.size);
-        dropZone.classList.add('hidden');
-        fileInfo.classList.remove('hidden');
-      }
+  // ── Custom Release-Tag Dropdown ──────────────────────────────────────
+  const TAG_META = {
+    stable:  { icon: 'bi-shield-check',  color: 'emerald', label: 'Stable'            },
+    beta:    { icon: 'bi-lightning',      color: 'blue',    label: 'Beta'              },
+    alpha:   { icon: 'bi-flask',          color: 'orange',  label: 'Alpha'             },
+    rc:      { icon: 'bi-check2-circle',  color: 'violet',  label: 'Release Candidate' },
+    hotfix:  { icon: 'bi-bandaid',        color: 'red',     label: 'Hotfix'            },
+    nightly: { icon: 'bi-moon-stars',     color: 'gray',    label: 'Nightly'           },
+    custom:  { icon: 'bi-pencil',         color: 'gray',    label: 'Custom'            },
+  };
+
+  const COLOR_MAP = {
+    emerald: { bg: 'bg-emerald-500/15', border: 'border-emerald-500/30', text: 'text-emerald-400' },
+    blue:    { bg: 'bg-blue-500/15',    border: 'border-blue-500/30',    text: 'text-blue-400'    },
+    orange:  { bg: 'bg-orange-500/15',  border: 'border-orange-500/30',  text: 'text-orange-400'  },
+    violet:  { bg: 'bg-violet-500/15',  border: 'border-violet-500/30',  text: 'text-violet-400'  },
+    red:     { bg: 'bg-red-500/15',     border: 'border-red-500/30',     text: 'text-red-400'     },
+    gray:    { bg: 'bg-gray-500/15',    border: 'border-gray-600/30',    text: 'text-gray-400'    },
+  };
+
+  const trigger     = document.getElementById('releaseTagTrigger');
+  const panel       = document.getElementById('releaseTagPanel');
+  const chevron     = document.getElementById('dropdownChevron');
+  const display     = document.getElementById('releaseTagDisplay');
+  const hiddenInput = document.getElementById('releaseTagValue');
+  const customBox   = document.getElementById('customTagInput');
+
+  function renderTrigger(value) {
+    const meta  = TAG_META[value] || TAG_META.custom;
+    const color = COLOR_MAP[meta.color];
+    display.innerHTML = `
+      <span class="w-7 h-7 rounded-lg ${color.bg} border ${color.border} flex items-center justify-center flex-shrink-0">
+        <i class="bi ${meta.icon} ${color.text} text-sm"></i>
+      </span>
+      <span class="text-sm font-medium text-gray-100">${meta.label}</span>
+      <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${color.bg} ${color.text} border ${color.border} ml-1">${value}</span>
+    `;
+  }
+
+  function selectTag(value) {
+    hiddenInput.value = value;
+    renderTrigger(value);
+    customBox.classList.toggle('hidden', value !== 'custom');
+    // Highlight active
+    document.querySelectorAll('.release-option').forEach(btn => {
+      btn.classList.toggle('is-active', btn.dataset.value === value);
     });
+    closePanel();
+  }
 
-    // Remove file
-    removeFile.addEventListener('click', function() {
-      fileInput.value = '';
-      fileInfo.classList.add('hidden');
-      dropZone.classList.remove('hidden');
-    });
+  function openPanel() {
+    panel.classList.remove('hidden');
+    chevron.classList.add('rotate-180');
+    trigger.classList.add('border-primary', 'ring-1', 'ring-primary');
+  }
+  function closePanel() {
+    panel.classList.add('hidden');
+    chevron.classList.remove('rotate-180');
+    trigger.classList.remove('border-primary', 'ring-1', 'ring-primary');
+  }
 
-    // Drag and drop
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.classList.add('border-primary', 'bg-primary/5');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-      dropZone.classList.remove('border-primary', 'bg-primary/5');
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('border-primary', 'bg-primary/5');
-      
-      if (e.dataTransfer.files.length > 0) {
-        fileInput.files = e.dataTransfer.files;
-        const file = e.dataTransfer.files[0];
-        fileName.textContent = file.name;
-        fileSize.textContent = formatFileSize(file.size);
-        dropZone.classList.add('hidden');
-        fileInfo.classList.remove('hidden');
-      }
-    });
-
-    // Format file size
-    function formatFileSize(bytes) {
-      if (bytes === 0) return '0 Bytes';
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    // Simulate upload progress (replace with actual progress tracking)
-    uploadForm.addEventListener('submit', function(e) {
-      if (fileInput.files.length === 0) {
-        e.preventDefault();
-        alert('Bitte wähle eine Datei aus.');
-        return;
-      }
-      
-      submitBtn.disabled = true;
-      uploadProgress.classList.remove('hidden');
-      
-      // Simulate progress (in real implementation, use XMLHttpRequest or Fetch with progress)
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.random() * 15;
-        if (progress > 90) progress = 90;
-        
-        progressBar.style.width = progress + '%';
-        progressPercent.textContent = Math.round(progress) + '%';
-        
-        if (progress >= 90) clearInterval(interval);
-      }, 500);
-    });
+  trigger.addEventListener('click', () => {
+    panel.classList.contains('hidden') ? openPanel() : closePanel();
   });
+
+  document.querySelectorAll('.release-option').forEach(btn => {
+    btn.addEventListener('click', () => selectTag(btn.dataset.value));
+  });
+
+  // Close on outside click
+  document.addEventListener('click', e => {
+    if (!document.getElementById('releaseTagDropdown').contains(e.target)) closePanel();
+  });
+
+  // Init with current/default value
+  selectTag(hiddenInput.value || 'stable');
+
+
+  // ── Schedule Toggle ──────────────────────────────────────────────────
+  const schedToggle = document.getElementById('scheduleToggle');
+  const schedThumb  = document.getElementById('scheduleThumb');
+  const schedLabel  = document.getElementById('scheduleLabel');
+  const schedPicker = document.getElementById('schedulePicker');
+  const schedInput  = document.getElementById('{{ form.scheduled_release_at.id_for_label }}');
+
+  schedToggle.addEventListener('click', () => {
+    const on = schedToggle.getAttribute('aria-checked') === 'true';
+    schedToggle.setAttribute('aria-checked', String(!on));
+    if (!on) {
+      schedToggle.classList.replace('bg-slate-700', 'bg-purple-600');
+      schedThumb.classList.replace('bg-gray-400', 'bg-white');
+      schedThumb.classList.replace('translate-x-1', 'translate-x-6');
+      schedLabel.textContent = 'Zeitgeplante Veröffentlichung';
+      schedPicker.classList.remove('hidden');
+      const d = new Date(); d.setDate(d.getDate() + 1);
+      schedInput.value = d.toISOString().slice(0, 16);
+    } else {
+      schedToggle.classList.replace('bg-purple-600', 'bg-slate-700');
+      schedThumb.classList.replace('bg-white', 'bg-gray-400');
+      schedThumb.classList.replace('translate-x-6', 'translate-x-1');
+      schedLabel.textContent = 'Sofort veröffentlichen';
+      schedPicker.classList.add('hidden');
+      schedInput.value = '';
+    }
+  });
+
+
+  // ── File Upload ──────────────────────────────────────────────────────
+  const dropZone    = document.getElementById('dropZone');
+  const fileInput   = dropZone.querySelector('input[type="file"]');
+  const fileInfo    = document.getElementById('fileInfo');
+  const fileNameEl  = document.getElementById('fileName');
+  const fileSizeEl  = document.getElementById('fileSize');
+  const removeBtn   = document.getElementById('removeFile');
+  const uploadForm  = document.getElementById('uploadForm');
+  const progressBox = document.getElementById('uploadProgress');
+  const progressBar = document.getElementById('progressBar');
+  const progressPct = document.getElementById('progressPercent');
+  const statusText  = document.getElementById('uploadStatusText');
+  const submitBtn   = document.getElementById('submitBtn');
+
+  function formatSize(bytes) {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
+  }
+  function showFile(file) {
+    fileNameEl.textContent = file.name;
+    fileSizeEl.textContent = formatSize(file.size);
+    dropZone.classList.add('hidden');
+    fileInfo.classList.remove('hidden');
+  }
+
+  fileInput.addEventListener('change', function () { if (this.files[0]) showFile(this.files[0]); });
+  removeBtn.addEventListener('click', () => {
+    fileInput.value = '';
+    fileInfo.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-primary', 'bg-primary/5'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-primary', 'bg-primary/5'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('border-primary', 'bg-primary/5');
+    if (e.dataTransfer.files[0]) {
+      const dt = new DataTransfer();
+      dt.items.add(e.dataTransfer.files[0]);
+      fileInput.files = dt.files;
+      showFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  uploadForm.addEventListener('submit', function (e) {
+    if (!fileInput.files.length) { e.preventDefault(); alert('Bitte wähle eine Datei aus.'); return; }
+    submitBtn.disabled = true;
+    progressBox.classList.remove('hidden');
+    let pct = 0;
+    const steps = [
+      { to: 30, text: 'Datei wird hochgeladen…', ms: 600 },
+      { to: 55, text: 'Übertragung läuft…',      ms: 600 },
+      { to: 75, text: 'Fast fertig…',             ms: 500 },
+      { to: 90, text: 'Abschluss…',               ms: 400 },
+    ];
+    function runStep(i) {
+      if (i >= steps.length) return;
+      const s = steps[i];
+      statusText.textContent = s.text;
+      const delta = (s.to - pct) / 10;
+      const interval = setInterval(() => {
+        pct = Math.min(pct + delta, s.to);
+        progressBar.style.width = pct + '%';
+        progressPct.textContent = Math.round(pct) + '%';
+        if (pct >= s.to) { clearInterval(interval); setTimeout(() => runStep(i + 1), s.ms); }
+      }, 80);
+    }
+    runStep(0);
+  });
+});
 </script>
 {% endblock %}

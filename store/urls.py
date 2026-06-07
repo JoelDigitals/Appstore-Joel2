@@ -1,5 +1,5 @@
-from django.urls import path
-from . import views
+from django.urls import path, include
+from . import views, cron_views
 
 urlpatterns = [
     path('.well-known/assetlinks.json', views.assetlinks, name='assetlinks'),
@@ -84,4 +84,9 @@ urlpatterns = [
 
     path('nutzungsbedingungen/', views.terms_of_service_view, name='terms_of_service'),
     path('datenschutz/', views.privacy_policy_view, name='privacy_policy'),
+    # ── Cron Endpoints (called every 5 min by external cron service) ──────
+    path('api/cron/scheduled-releases/', cron_views.cron_scheduled_releases, name='cron_scheduled_releases'),
+    path('api/cron/health/',             cron_views.cron_health,              name='cron_health'),
+
+    path('webapp-builder/', include('webapp_builder.urls')),
 ]

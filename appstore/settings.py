@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'store',
     'settings',  # Deine App für Benutzereinstellungen
+    'webapp_builder',
 ]
 
 MIDDLEWARE = [
@@ -129,6 +130,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+CRON_SECRET = os.environ.get('CRON_SECRET', '')
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

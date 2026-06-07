@@ -24,6 +24,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('store.urls')),
     path('accouts/user/profile/', include('settings.urls')),  # URL-Konfiguration für Benutzereinstellungen
+    path('webapp-builder/', include('webapp_builder.urls')),  # URL-Konfiguration für den Webapp-Builder
     path('sw.js', TemplateView.as_view(template_name="sw.js", content_type='application/javascript')),
 ]
 if settings.DEBUG:

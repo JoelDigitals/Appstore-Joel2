@@ -16,6 +16,36 @@
     <p class="text-gray-400">{{ version.app.name }} v{{ version.version_number }}</p>
   </div>
 
+  <!-- Scheduled Release Banner -->
+  {% if version.release_held and version.scheduled_release_at %}
+  <div class="glass rounded-3xl p-6 border border-purple-500/30 bg-purple-500/5">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+      <div class="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+        <i class="bi bi-calendar-event text-2xl text-purple-400"></i>
+      </div>
+      <div class="flex-1">
+        <div class="text-xs font-bold text-purple-400 uppercase tracking-wider mb-1">
+          Geplantes Release / Scheduled Release
+        </div>
+        <div class="text-lg font-semibold text-gray-100">
+          {{ version.scheduled_release_at|date:"d.m.Y" }} um {{ version.scheduled_release_at|date:"H:i" }} UTC
+        </div>
+        <div class="text-sm text-gray-400 mt-1">
+          Die Prüfung wurde bestanden ✓ &nbsp;·&nbsp; Veröffentlichung erfolgt automatisch zum geplanten Zeitpunkt.
+          <span class="block sm:inline text-gray-500 text-xs mt-0.5 sm:mt-0 sm:ml-2">
+            Review passed ✓ · Will be published automatically at the scheduled time.
+          </span>
+        </div>
+      </div>
+      <div class="flex-shrink-0 text-right">
+        <div class="text-xs text-purple-300 font-mono bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
+          release_held = True
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Progress Card -->
   <div class="glass rounded-3xl p-6 md:p-8">
     

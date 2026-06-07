@@ -428,6 +428,9 @@
         </div>
 
         <form method="post" id="loginForm">
+            {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
             {% csrf_token %}
 
             {% for field in form %}

@@ -1,12 +1,16 @@
 {
   "name": "jds-appstore",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "JDS Appstore Desktop App",
-  "author": "Joel Digitals",
+  "author": "Joel Digitals <j-nicolay@joel-digitals.com>",
+  "homepage": "https://jds-appstore.de",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "npm run build:all",
+    "build:all": "npm run build:windows && npm run build:linux",
+    "build:windows": "electron-builder --windows",
+    "build:linux": "electron-builder --linux"
   },
   "devDependencies": {
     "electron": "26.2.0",
@@ -15,9 +19,30 @@
   "build": {
     "appId": "com.joeldigitals.jdsappstore",
     "productName": "JDS AppStore",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "package.json"
+    ],
     "win": {
-      "target": "nsis",
-      "icon": "icon.ico"
+      "target": ["nsis", "portable"],
+      "icon": "static/images/icon.ico"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "static/images/logo.png",
+      "category": "Utility",
+      "maintainer": "Joel Digitals <j-nicolay@joel-digitals.com>"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     }
   }
 }
