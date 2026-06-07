@@ -454,23 +454,7 @@ def _run_check(version: Version) -> bool:
             return True
 
         # Sofort veröffentlichen
-        log.append("  → Sofortige Veröffentlichung / Immediate release")
-        if notif_cfg and notif_cfg.email_notifications:
-            send_check_email(
-                user=dev.user,
-                subject_de=f"✓ Prüfung bestanden: {app.name} v{version.version_number}{tag_info}",
-                subject_en=f"✓ Review passed: {app.name} v{version.version_number}{tag_info}",
-                message_de=f"Version {version.version_number}{tag_info} von {app.name} wurde geprüft und gespeichert.",
-                message_en=f"Version {version.version_number}{tag_info} of {app.name} has been reviewed and stored.",
-                log_lines=log, app=app, version=version, level="success_1",
-            )
-        if notif_cfg and notif_cfg.push_notifications:
-            create_notification(
-                user=dev.user,
-                title=f"Prüfung bestanden: {app.name} v{version.version_number}",
-                message="Version wird jetzt veröffentlicht.",
-                app=app, version=version, level="success_1",
-            )
+        log.append("  \u2192 Sofortige Ver\u00f6ffentlichung / Immediate release")
         _do_publish(version)
         return True
 

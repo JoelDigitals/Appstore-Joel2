@@ -930,22 +930,7 @@ def app_detail_view(request, app_id):
         'user_installed_version': user_installed_version,
     })
 
-#Download NEW
-@login_required
-def download_file_view(request, version_id):
-    version = get_object_or_404(Version, id=version_id, approved=True)
-    app = version.app
-
-    # Tracking
-    VersionDownload.objects.create(user=request.user, version=version)
-    app.download_count = F('download_count') + 1
-    app.save(update_fields=["download_count"])
-
-    file_path = version.file.path
-    if not os.path.exists(file_path):
-        return HttpResponseNotFound("Datei nicht gefunden.")
-
-    return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
+# download_file_view – weiter unten definiert (JDS Cloud + Fallback)
 
 @csrf_exempt
 @login_required

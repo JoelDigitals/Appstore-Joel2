@@ -127,7 +127,7 @@
                     <button id="downloadBtn"
                             data-version-id="{{ latest_version.id }}"
                             data-mode="update"
-                            data-filename="{{ latest_version.file.name|default:'' }}"
+                            data-filename="{{ latest_version.original_filename|default:latest_version.file.name|default:'' }}"
                             class="group px-8 py-4 bg-gradient-to-r from-blue-500 to-primary hover:shadow-lg hover:shadow-primary/30 text-white rounded-full font-semibold flex items-center gap-2 transition-all duration-300 hover:scale-105">
                       <i class="bi bi-arrow-up-circle-fill text-xl"></i>
                       Aktualisieren
@@ -141,7 +141,7 @@
                     <button id="downloadBtn"
                             data-version-id="{{ latest_version.id }}"
                             data-mode="install"
-                            data-filename="{{ latest_version.file.name|default:'' }}"
+                            data-filename="{{ latest_version.original_filename|default:latest_version.file.name|default:'' }}"
                             class="group px-8 py-4 bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/30 text-white rounded-full font-semibold flex items-center gap-2 transition-all duration-300 hover:scale-105">
                       <i class="bi bi-download text-xl group-hover:animate-bounce"></i>
                       Jetzt herunterladen

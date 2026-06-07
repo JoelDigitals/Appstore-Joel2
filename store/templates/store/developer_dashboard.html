@@ -188,7 +188,7 @@
             <!-- Latest Version -->
             {% if entry.latest_version %}
             <div class="flex items-center gap-2 text-xs mb-4">
-              {% if entry.latest_version.checking_status == 'approved' %}
+              {% if entry.latest_version.checking_status == 'passed' %}
                 <span class="px-2 py-1 bg-green-500/20 text-green-400 rounded-full">
                   v{{ entry.latest_version.version_number }} freigegeben
                 </span>
