@@ -234,7 +234,7 @@ def _run_check(version: Version) -> bool:
             sha256.update(chunk)
     log.append(f"  SHA-256: {sha256.hexdigest()}")
 
-    # ── Step 2: Structure check ──────────────────────────────────────────────
+    # ── Step 2: Structure check (auf lokaler Datei – vor dem Upload) ────────
     progress(2, "▶ Schritt 2/5 – Strukturprüfung / Structure check")
 
     if ext in (".exe", ".msi"):
@@ -319,20 +319,55 @@ def _run_check(version: Version) -> bool:
     log.append(f"  Name: {result['name']}  ({result['size'] / (1024*1024):.2f} MB)")
     log.append(f"  URL:  {result['download_url']}")
 
-    # ── Step 4: Malware scan ─────────────────────────────────────────────────
+    # ── Step 4: Malware scan – auf der JDS Cloud URL (falls vorhanden) ───────
+    # Bevorzuge Cloud-URL; falle auf lokale Datei zurück wenn ClamAV
+    # remote scannen kann, sonst lokale Datei.
     progress(4, "▶ Schritt 4/5 – Virenscan / Malware scan")
+
+    cloud_url = version.jds_cloud_url or ""
+    scan_target = file_path  # Standard: lokale Datei
+
+    # Wenn Cloud-URL vorhanden: Datei temporär herunterladen für den Scan
+    if cloud_url:
+        log.append(f"  Lade Datei von JDS Cloud für Scan herunter…")
+        try:
+            import requests as _req, tempfile
+            with _req.get(cloud_url, timeout=300, stream=True) as r:
+                if r.status_code == 200:
+                    suffix = os.path.splitext(fname)[1]
+                    tmp_fd, tmp_path = tempfile.mkstemp(suffix=suffix)
+                    os.close(tmp_fd)
+                    with open(tmp_path, "wb") as tf:
+                        for chunk in r.iter_content(chunk_size=65536):
+                            tf.write(chunk)
+                    scan_target = tmp_path
+                    log.append(f"  ✓ Cloud-Datei heruntergeladen für Scan: {tmp_path}")
+                else:
+                    log.append(f"  ⚠ Cloud-Download für Scan fehlgeschlagen (HTTP {r.status_code}) – nutze lokale Datei")
+        except Exception as dl_err:
+            log.append(f"  ⚠ Cloud-Download Fehler: {dl_err} – nutze lokale Datei")
+
+    tmp_scan_path = scan_target if scan_target != file_path else None
 
     try:
         cd = pyclamd.ClamdNetworkSocket()
         if cd.ping():
-            scan = cd.scan_file(file_path)
+            scan = cd.scan_file(scan_target)
             if scan:
+                if tmp_scan_path:
+                    try: os.remove(tmp_scan_path)
+                    except: pass
                 return fail(f"Malware erkannt: {scan}", f"Malware detected: {scan}")
             log.append("  ✓ No malware found")
         else:
             log.append("  ⚠ ClamAV unavailable – scan skipped")
     except Exception as e:
         log.append(f"  ⚠ Scan error: {e} – continuing")
+    finally:
+        # Temporäre Scan-Datei aufräumen
+        if tmp_scan_path:
+            try: os.remove(tmp_scan_path)
+            except: pass
 
     # ── Step 5: Release / Schedule ───────────────────────────────────────────
     progress(5, "▶ Schritt 5/5 – Freigabe / Release")

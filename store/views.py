@@ -1027,14 +1027,30 @@ def download_app_start(request, version_id):
 def download_file_view(request, version_id):
     version = get_object_or_404(Version, id=version_id, approved=True)
 
-    file_path = version.file.path
+    # ── 1. Bevorzuge JDS Cloud URL (falls vorhanden) ──────────────────────
+    if version.jds_cloud_url:
+        # Redirect direkt zur Cloud-Download-URL – kein Proxy nötig
+        from django.http import HttpResponseRedirect
+        return HttpResponseRedirect(version.jds_cloud_url)
+
+    # ── 2. Fallback: lokale Mediendatei ───────────────────────────────────
+    try:
+        file_path = version.file.path
+    except Exception:
+        from django.http import HttpResponseNotFound
+        return HttpResponseNotFound("Datei nicht gefunden / File not found")
+
+    if not os.path.isfile(file_path):
+        from django.http import HttpResponseNotFound
+        return HttpResponseNotFound("Datei nicht gefunden / File not found")
+
     filename = os.path.basename(file_path)
 
     # MIME-Type bestimmen
     if filename.endswith('.apk'):
         content_type = 'application/vnd.android.package-archive'
     elif filename.endswith('.ipa'):
-        content_type = 'application/octet-stream'  # IPA hat keinen offiziellen MIME-Type, oft octet-stream
+        content_type = 'application/octet-stream'
     else:
         content_type = 'application/octet-stream'
 
@@ -1042,7 +1058,7 @@ def download_file_view(request, version_id):
         open(file_path, 'rb'),
         as_attachment=True,
         filename=filename,
-        content_type=content_type
+        content_type=content_type,
     )
     return response
 

@@ -90,140 +90,63 @@
         {% endif %}
       </div>
 
-      <!-- ── Release-Kanal (Dropdown) ───────────────── -->
-      <div class="space-y-2">
-        <label for="releaseTagSelect" class="block text-sm font-medium text-gray-300">
+      <!-- ── Release-Tag ────────────────────────────── -->
+      <div class="space-y-3">
+        <label class="block text-sm font-medium text-gray-300">
           Release-Kanal <span class="text-red-400">*</span>
         </label>
-        <p class="text-xs text-gray-500">Legt fest, über welchen Kanal diese Version veröffentlicht wird</p>
+        <p class="text-xs text-gray-500 -mt-1">Legt fest, über welchen Kanal diese Version veröffentlicht wird</p>
 
-        <!-- Custom Select Wrapper -->
-        <div class="relative" id="releaseTagDropdown">
-          <!-- Hidden real input for form submit -->
-          <input type="hidden" name="{{ form.release_tag.html_name }}" id="releaseTagValue" value="{{ form.release_tag.value|default:'stable' }}">
-
-          <!-- Trigger button -->
-          <button type="button" id="releaseTagTrigger"
-                  class="w-full flex items-center justify-between gap-3 bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100 hover:border-primary/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-left">
-            <div class="flex items-center gap-3" id="releaseTagDisplay">
-              <!-- filled by JS -->
+        <!-- Tag Buttons -->
+        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2" id="releaseTagGrid">
+          {% for value, label in form.fields.release_tag.choices %}
+            {% if value != 'custom' %}
+            <label class="release-tag-btn cursor-pointer">
+              <input type="radio" name="{{ form.release_tag.html_name }}" value="{{ value }}"
+                     class="hidden"
+                     {% if form.release_tag.value == value or forloop.first %}checked{% endif %}>
+              <div class="tag-pill px-3 py-2 rounded-xl text-center text-xs font-semibold border-2 transition-all
+                          {% if value == 'stable' %}border-emerald-500/50 text-emerald-400 bg-emerald-500/10
+                          {% elif value == 'beta' %}border-blue-500/50 text-blue-400 bg-blue-500/10
+                          {% elif value == 'alpha' %}border-orange-500/50 text-orange-400 bg-orange-500/10
+                          {% elif value == 'rc' %}border-violet-500/50 text-violet-400 bg-violet-500/10
+                          {% elif value == 'hotfix' %}border-red-500/50 text-red-400 bg-red-500/10
+                          {% elif value == 'nightly' %}border-gray-500/50 text-gray-400 bg-gray-500/10
+                          {% endif %}">
+                {% if value == 'stable' %}<i class="bi bi-shield-check block mb-1"></i>
+                {% elif value == 'beta' %}<i class="bi bi-lightning block mb-1"></i>
+                {% elif value == 'alpha' %}<i class="bi bi-flask block mb-1"></i>
+                {% elif value == 'rc' %}<i class="bi bi-check2-circle block mb-1"></i>
+                {% elif value == 'hotfix' %}<i class="bi bi-bandaid block mb-1"></i>
+                {% elif value == 'nightly' %}<i class="bi bi-moon-stars block mb-1"></i>
+                {% endif %}
+                {{ label }}
+              </div>
+            </label>
+            {% endif %}
+          {% endfor %}
+          <!-- Custom -->
+          <label class="release-tag-btn cursor-pointer">
+            <input type="radio" name="{{ form.release_tag.html_name }}" value="custom" class="hidden">
+            <div class="tag-pill px-3 py-2 rounded-xl text-center text-xs font-semibold border-2 transition-all border-gray-600/50 text-gray-400 bg-gray-500/10">
+              <i class="bi bi-pencil block mb-1"></i>
+              Custom
             </div>
-            <i class="bi bi-chevron-down text-gray-500 transition-transform duration-200" id="dropdownChevron"></i>
-          </button>
-
-          <!-- Dropdown panel -->
-          <div id="releaseTagPanel"
-               class="hidden absolute z-50 mt-2 w-full bg-slate-800 border border-gray-700 rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
-
-            <!-- Preset options -->
-            <div class="p-2 space-y-1">
-              <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-1">Kanäle</div>
-
-              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="stable">
-                <span class="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
-                  <i class="bi bi-shield-check text-emerald-400 text-sm"></i>
-                </span>
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm font-medium text-gray-100">Stable</div>
-                  <div class="text-xs text-gray-500">Produktionsreif, empfohlen für alle Nutzer</div>
-                </div>
-                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">stable</span>
-              </button>
-
-              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="beta">
-                <span class="w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
-                  <i class="bi bi-lightning text-blue-400 text-sm"></i>
-                </span>
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm font-medium text-gray-100">Beta</div>
-                  <div class="text-xs text-gray-500">Fast fertig, für Beta-Tester geeignet</div>
-                </div>
-                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30">beta</span>
-              </button>
-
-              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="alpha">
-                <span class="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/30 flex items-center justify-center flex-shrink-0">
-                  <i class="bi bi-flask text-orange-400 text-sm"></i>
-                </span>
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm font-medium text-gray-100">Alpha</div>
-                  <div class="text-xs text-gray-500">Frühe Entwicklungsphase, experimentell</div>
-                </div>
-                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-500/15 text-orange-400 border border-orange-500/30">alpha</span>
-              </button>
-
-              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="rc">
-                <span class="w-8 h-8 rounded-lg bg-violet-500/15 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
-                  <i class="bi bi-check2-circle text-violet-400 text-sm"></i>
-                </span>
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm font-medium text-gray-100">Release Candidate</div>
-                  <div class="text-xs text-gray-500">Kandidat für das finale Release</div>
-                </div>
-                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-500/15 text-violet-400 border border-violet-500/30">rc</span>
-              </button>
-
-              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="hotfix">
-                <span class="w-8 h-8 rounded-lg bg-red-500/15 border border-red-500/30 flex items-center justify-center flex-shrink-0">
-                  <i class="bi bi-bandaid text-red-400 text-sm"></i>
-                </span>
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm font-medium text-gray-100">Hotfix</div>
-                  <div class="text-xs text-gray-500">Kritische Fehlerbehebung, dringend</div>
-                </div>
-                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/30">hotfix</span>
-              </button>
-
-              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="nightly">
-                <span class="w-8 h-8 rounded-lg bg-gray-500/15 border border-gray-500/30 flex items-center justify-center flex-shrink-0">
-                  <i class="bi bi-moon-stars text-gray-400 text-sm"></i>
-                </span>
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm font-medium text-gray-100">Nightly</div>
-                  <div class="text-xs text-gray-500">Täglicher automatischer Build</div>
-                </div>
-                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/15 text-gray-400 border border-gray-500/30">nightly</span>
-              </button>
-            </div>
-
-            <!-- Divider + Custom -->
-            <div class="border-t border-gray-700/60 p-2">
-              <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-1">Eigener Tag</div>
-              <button type="button" class="release-option w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-700/60 transition-colors text-left" data-value="custom">
-                <span class="w-8 h-8 rounded-lg bg-gray-500/15 border border-gray-600/30 flex items-center justify-center flex-shrink-0">
-                  <i class="bi bi-pencil text-gray-400 text-sm"></i>
-                </span>
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm font-medium text-gray-100">Custom</div>
-                  <div class="text-xs text-gray-500">Eigenen Release-Tag eingeben</div>
-                </div>
-                <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-500/15 text-gray-400 border border-gray-600/30">custom</span>
-              </button>
-            </div>
-          </div>
+          </label>
         </div>
 
-        <!-- Custom Tag Input (conditionally shown) -->
-        <div id="customTagInput" class="hidden mt-2">
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <i class="bi bi-pencil text-gray-500"></i>
-            </div>
-            <input type="text"
-                   name="{{ form.release_tag_custom.html_name }}"
-                   id="{{ form.release_tag_custom.id_for_label }}"
-                   value="{{ form.release_tag_custom.value|default:'' }}"
-                   placeholder="z. B. v2.0-rc3 oder enterprise"
-                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono">
-          </div>
+        <!-- Custom Input (shown conditionally) -->
+        <div id="customTagInput" class="hidden">
+          <input type="text"
+                 name="{{ form.release_tag_custom.html_name }}"
+                 id="{{ form.release_tag_custom.id_for_label }}"
+                 value="{{ form.release_tag_custom.value|default:'' }}"
+                 placeholder="z. B. v2.0-rc3 oder enterprise"
+                 class="w-full bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono mt-2">
           {% if form.release_tag_custom.errors %}
             <p class="text-red-400 text-sm mt-1">{{ form.release_tag_custom.errors.0 }}</p>
           {% endif %}
         </div>
-
-        {% if form.release_tag.errors %}
-          <p class="text-red-400 text-sm">{{ form.release_tag.errors.0 }}</p>
-        {% endif %}
       </div>
 
       <!-- ── Datei-Upload ───────────────────────────── -->
@@ -255,6 +178,8 @@
               <p class="text-xs text-gray-600 mt-2">Die Datei wird verschlüsselt in der JDS Cloud gespeichert</p>
             </div>
           </div>
+
+          <!-- File Info -->
           <div id="fileInfo" class="hidden mt-4 p-4 bg-slate-800/50 rounded-xl border border-gray-700">
             <div class="flex items-center gap-3">
               <i class="bi bi-file-earmark-binary text-2xl text-primary"></i>
@@ -282,6 +207,8 @@
         <p class="text-xs text-gray-500 -mt-1">
           Leer lassen = sofort nach bestandener Prüfung veröffentlichen. Datum setzen = App wartet auf diesen Zeitpunkt.
         </p>
+
+        <!-- Toggle -->
         <div class="flex items-center gap-3">
           <button type="button" id="scheduleToggle"
                   class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-700 transition-colors focus:outline-none"
@@ -290,6 +217,8 @@
           </button>
           <span class="text-sm text-gray-400" id="scheduleLabel">Sofort veröffentlichen</span>
         </div>
+
+        <!-- Date picker (hidden by default) -->
         <div id="schedulePicker" class="hidden space-y-2">
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -326,22 +255,59 @@
       </div>
 
       <!-- ── Upload-Fortschritt ─────────────────────── -->
-      <div id="uploadProgress" class="hidden space-y-3 p-4 rounded-2xl bg-slate-800/50 border border-primary/20">
+      <div id="uploadProgress" class="hidden space-y-4 p-5 rounded-2xl bg-slate-800/50 border border-primary/20">
+
+        <!-- Phase Label + Icon -->
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-            <i class="bi bi-cloud-upload text-primary animate-pulse"></i>
+          <div class="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+            <i id="phaseIcon" class="bi bi-cloud-upload text-primary text-lg"></i>
           </div>
-          <div class="flex-1">
-            <div class="flex justify-between text-sm text-gray-300 mb-1">
-              <span id="uploadStatusText">Wird hochgeladen…</span>
-              <span id="progressPercent" class="font-mono">0%</span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2 mb-1.5">
+              <span id="uploadStatusText" class="text-sm text-gray-300 font-medium truncate">Wird vorbereitet…</span>
+              <span id="progressPercent" class="font-mono text-sm text-gray-300 flex-shrink-0">0%</span>
             </div>
-            <div class="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-              <div id="progressBar" class="bg-gradient-to-r from-primary to-secondary h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            <div class="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
+              <div id="progressBar" class="bg-gradient-to-r from-primary to-secondary h-full rounded-full transition-all duration-200" style="width: 0%"></div>
             </div>
           </div>
         </div>
-        <p class="text-xs text-gray-500 text-center">Die Datei wird in der JDS Cloud gespeichert und anschließend geprüft.</p>
+
+        <!-- Stats row -->
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div class="bg-slate-900/50 rounded-xl p-2.5">
+            <div class="text-xs text-gray-500 mb-0.5">Übertragen</div>
+            <div id="uploadedBytes" class="text-xs font-mono text-gray-300">–</div>
+          </div>
+          <div class="bg-slate-900/50 rounded-xl p-2.5">
+            <div class="text-xs text-gray-500 mb-0.5">Restzeit</div>
+            <div id="etaText" class="text-xs font-mono text-gray-300">–</div>
+          </div>
+          <div class="bg-slate-900/50 rounded-xl p-2.5">
+            <div class="text-xs text-gray-500 mb-0.5">Geschwindigkeit</div>
+            <div id="speedText" class="text-xs font-mono text-gray-300">–</div>
+          </div>
+        </div>
+
+        <!-- Phase Steps -->
+        <div class="flex items-center justify-between px-2">
+          <div class="phase-step active" data-p="1">
+            <div class="phase-dot"><i class="bi bi-cloud-arrow-up"></i></div>
+            <div class="phase-label">Upload</div>
+          </div>
+          <div class="phase-line" id="pline1"></div>
+          <div class="phase-step" data-p="2" id="phaseCheck">
+            <div class="phase-dot"><i class="bi bi-shield-check"></i></div>
+            <div class="phase-label">Prüfung</div>
+          </div>
+          <div class="phase-line" id="pline2"></div>
+          <div class="phase-step" data-p="3" id="phaseDone">
+            <div class="phase-dot"><i class="bi bi-check-circle"></i></div>
+            <div class="phase-label">Fertig</div>
+          </div>
+        </div>
+
+        <p class="text-xs text-gray-500 text-center">Die Datei wird zur <strong class="text-gray-400">JDS Cloud</strong> hochgeladen und dort automatisch geprüft.</p>
       </div>
 
       <!-- ── Buttons ────────────────────────────────── -->
@@ -394,133 +360,73 @@
 </div>
 
 <style>
-  /* Active option highlight */
-  .release-option.is-active {
-    background: rgba(99,102,241,0.12);
+  .release-tag-btn input:checked + .tag-pill {
+    border-width: 2px;
+    opacity: 1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+    transform: scale(1.04);
   }
-  .release-option.is-active .text-gray-100 {
-    color: #fff;
+  .tag-pill {
+    opacity: 0.65;
+    transition: all .2s;
+  }
+  .release-tag-btn:hover .tag-pill {
+    opacity: 1;
   }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  // ── Schedule Toggle ─────────────────────────────────────────────────
+  const schedToggle  = document.getElementById('scheduleToggle');
+  const schedThumb   = document.getElementById('scheduleThumb');
+  const schedLabel   = document.getElementById('scheduleLabel');
+  const schedPicker  = document.getElementById('schedulePicker');
+  const schedInput   = document.getElementById('{{ form.scheduled_release_at.id_for_label }}');
 
-  // ── Custom Release-Tag Dropdown ──────────────────────────────────────
-  const TAG_META = {
-    stable:  { icon: 'bi-shield-check',  color: 'emerald', label: 'Stable'            },
-    beta:    { icon: 'bi-lightning',      color: 'blue',    label: 'Beta'              },
-    alpha:   { icon: 'bi-flask',          color: 'orange',  label: 'Alpha'             },
-    rc:      { icon: 'bi-check2-circle',  color: 'violet',  label: 'Release Candidate' },
-    hotfix:  { icon: 'bi-bandaid',        color: 'red',     label: 'Hotfix'            },
-    nightly: { icon: 'bi-moon-stars',     color: 'gray',    label: 'Nightly'           },
-    custom:  { icon: 'bi-pencil',         color: 'gray',    label: 'Custom'            },
-  };
-
-  const COLOR_MAP = {
-    emerald: { bg: 'bg-emerald-500/15', border: 'border-emerald-500/30', text: 'text-emerald-400' },
-    blue:    { bg: 'bg-blue-500/15',    border: 'border-blue-500/30',    text: 'text-blue-400'    },
-    orange:  { bg: 'bg-orange-500/15',  border: 'border-orange-500/30',  text: 'text-orange-400'  },
-    violet:  { bg: 'bg-violet-500/15',  border: 'border-violet-500/30',  text: 'text-violet-400'  },
-    red:     { bg: 'bg-red-500/15',     border: 'border-red-500/30',     text: 'text-red-400'     },
-    gray:    { bg: 'bg-gray-500/15',    border: 'border-gray-600/30',    text: 'text-gray-400'    },
-  };
-
-  const trigger     = document.getElementById('releaseTagTrigger');
-  const panel       = document.getElementById('releaseTagPanel');
-  const chevron     = document.getElementById('dropdownChevron');
-  const display     = document.getElementById('releaseTagDisplay');
-  const hiddenInput = document.getElementById('releaseTagValue');
-  const customBox   = document.getElementById('customTagInput');
-
-  function renderTrigger(value) {
-    const meta  = TAG_META[value] || TAG_META.custom;
-    const color = COLOR_MAP[meta.color];
-    display.innerHTML = `
-      <span class="w-7 h-7 rounded-lg ${color.bg} border ${color.border} flex items-center justify-center flex-shrink-0">
-        <i class="bi ${meta.icon} ${color.text} text-sm"></i>
-      </span>
-      <span class="text-sm font-medium text-gray-100">${meta.label}</span>
-      <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${color.bg} ${color.text} border ${color.border} ml-1">${value}</span>
-    `;
-  }
-
-  function selectTag(value) {
-    hiddenInput.value = value;
-    renderTrigger(value);
-    customBox.classList.toggle('hidden', value !== 'custom');
-    // Highlight active
-    document.querySelectorAll('.release-option').forEach(btn => {
-      btn.classList.toggle('is-active', btn.dataset.value === value);
+  if (schedToggle) {
+    schedToggle.addEventListener('click', () => {
+      const on = schedToggle.getAttribute('aria-checked') === 'true';
+      schedToggle.setAttribute('aria-checked', String(!on));
+      if (!on) {
+        schedToggle.classList.replace('bg-slate-700', 'bg-purple-600');
+        schedThumb.classList.replace('bg-gray-400', 'bg-white');
+        schedThumb.classList.replace('translate-x-1', 'translate-x-6');
+        schedLabel.textContent = 'Zeitgeplante Veröffentlichung';
+        schedPicker.classList.remove('hidden');
+        // Default: tomorrow same time
+        const d = new Date(); d.setDate(d.getDate() + 1);
+        schedInput.value = d.toISOString().slice(0,16);
+      } else {
+        schedToggle.classList.replace('bg-purple-600', 'bg-slate-700');
+        schedThumb.classList.replace('bg-white', 'bg-gray-400');
+        schedThumb.classList.replace('translate-x-6', 'translate-x-1');
+        schedLabel.textContent = 'Sofort veröffentlichen';
+        schedPicker.classList.add('hidden');
+        schedInput.value = '';
+      }
     });
-    closePanel();
   }
 
-  function openPanel() {
-    panel.classList.remove('hidden');
-    chevron.classList.add('rotate-180');
-    trigger.classList.add('border-primary', 'ring-1', 'ring-primary');
-  }
-  function closePanel() {
-    panel.classList.add('hidden');
-    chevron.classList.remove('rotate-180');
-    trigger.classList.remove('border-primary', 'ring-1', 'ring-primary');
-  }
-
-  trigger.addEventListener('click', () => {
-    panel.classList.contains('hidden') ? openPanel() : closePanel();
-  });
-
-  document.querySelectorAll('.release-option').forEach(btn => {
-    btn.addEventListener('click', () => selectTag(btn.dataset.value));
-  });
-
-  // Close on outside click
-  document.addEventListener('click', e => {
-    if (!document.getElementById('releaseTagDropdown').contains(e.target)) closePanel();
-  });
-
-  // Init with current/default value
-  selectTag(hiddenInput.value || 'stable');
-
-
-  // ── Schedule Toggle ──────────────────────────────────────────────────
-  const schedToggle = document.getElementById('scheduleToggle');
-  const schedThumb  = document.getElementById('scheduleThumb');
-  const schedLabel  = document.getElementById('scheduleLabel');
-  const schedPicker = document.getElementById('schedulePicker');
-  const schedInput  = document.getElementById('{{ form.scheduled_release_at.id_for_label }}');
-
-  schedToggle.addEventListener('click', () => {
-    const on = schedToggle.getAttribute('aria-checked') === 'true';
-    schedToggle.setAttribute('aria-checked', String(!on));
-    if (!on) {
-      schedToggle.classList.replace('bg-slate-700', 'bg-purple-600');
-      schedThumb.classList.replace('bg-gray-400', 'bg-white');
-      schedThumb.classList.replace('translate-x-1', 'translate-x-6');
-      schedLabel.textContent = 'Zeitgeplante Veröffentlichung';
-      schedPicker.classList.remove('hidden');
-      const d = new Date(); d.setDate(d.getDate() + 1);
-      schedInput.value = d.toISOString().slice(0, 16);
-    } else {
-      schedToggle.classList.replace('bg-purple-600', 'bg-slate-700');
-      schedThumb.classList.replace('bg-white', 'bg-gray-400');
-      schedThumb.classList.replace('translate-x-6', 'translate-x-1');
-      schedLabel.textContent = 'Sofort veröffentlichen';
-      schedPicker.classList.add('hidden');
-      schedInput.value = '';
+  // ── Release Tag ─────────────────────────────────────────────────────
+  const customInput = document.getElementById('customTagInput');
+  document.querySelectorAll('input[name="{{ form.release_tag.html_name }}"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      customInput.classList.toggle('hidden', radio.value !== 'custom');
+    });
+    if (radio.checked) {
+      customInput.classList.toggle('hidden', radio.value !== 'custom');
     }
   });
 
-
-  // ── File Upload ──────────────────────────────────────────────────────
+  // ── File Upload ─────────────────────────────────────────────────────
   const dropZone    = document.getElementById('dropZone');
   const fileInput   = dropZone.querySelector('input[type="file"]');
   const fileInfo    = document.getElementById('fileInfo');
   const fileNameEl  = document.getElementById('fileName');
   const fileSizeEl  = document.getElementById('fileSize');
   const removeBtn   = document.getElementById('removeFile');
-  const uploadForm  = document.getElementById('uploadForm');
+  const form        = document.getElementById('uploadForm');
   const progressBox = document.getElementById('uploadProgress');
   const progressBar = document.getElementById('progressBar');
   const progressPct = document.getElementById('progressPercent');
@@ -529,10 +435,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function formatSize(bytes) {
     if (!bytes) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB'];
+    const units = ['B','KB','MB','GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
   }
+
   function showFile(file) {
     fileNameEl.textContent = file.name;
     fileSizeEl.textContent = formatSize(file.size);
@@ -540,14 +447,23 @@ document.addEventListener('DOMContentLoaded', function () {
     fileInfo.classList.remove('hidden');
   }
 
-  fileInput.addEventListener('change', function () { if (this.files[0]) showFile(this.files[0]); });
-  removeBtn.addEventListener('click', () => {
+  fileInput.addEventListener('change', function () {
+    if (this.files[0]) showFile(this.files[0]);
+  });
+
+  removeBtn.addEventListener('click', function () {
     fileInput.value = '';
     fileInfo.classList.add('hidden');
     dropZone.classList.remove('hidden');
   });
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-primary', 'bg-primary/5'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-primary', 'bg-primary/5'));
+
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('border-primary', 'bg-primary/5');
+  });
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-primary', 'bg-primary/5');
+  });
   dropZone.addEventListener('drop', e => {
     e.preventDefault();
     dropZone.classList.remove('border-primary', 'bg-primary/5');
@@ -559,31 +475,133 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  uploadForm.addEventListener('submit', function (e) {
-    if (!fileInput.files.length) { e.preventDefault(); alert('Bitte wähle eine Datei aus.'); return; }
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  function setProgress(pct, text) {
+    progressBar.style.width = pct + '%';
+    progressPct.textContent = Math.round(pct) + '%';
+    if (text) statusText.textContent = text;
+  }
+
+  function formatBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+    return (b/(1024*1024)).toFixed(1) + ' MB';
+  }
+
+  function formatEta(secs) {
+    if (!isFinite(secs) || secs <= 0) return '–';
+    if (secs < 60) return Math.ceil(secs) + ' s';
+    if (secs < 3600) return Math.ceil(secs/60) + ' min';
+    return (secs/3600).toFixed(1) + ' h';
+  }
+
+  function setPhase(phase) {
+    // phase: 1=upload, 2=check, 3=done
+    document.querySelectorAll('.phase-step').forEach(el => {
+      const p = parseInt(el.dataset.p);
+      el.classList.toggle('active', p === phase);
+      el.classList.toggle('done', p < phase);
+    });
+    document.querySelectorAll('.phase-line').forEach((l, i) => {
+      l.classList.toggle('done', i < phase - 1);
+    });
+    const icon = document.getElementById('phaseIcon');
+    if (phase === 1) { icon.className = 'bi bi-cloud-upload text-primary text-lg'; }
+    else if (phase === 2) { icon.className = 'bi bi-shield-check text-violet-400 text-lg animate-pulse'; }
+    else { icon.className = 'bi bi-check-circle text-emerald-400 text-lg'; }
+  }
+
+  // ── XHR Upload mit echtem Fortschritt ────────────────────────────────────
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();  // immer abfangen – wir submiten per XHR
+
+    if (!fileInput.files.length) {
+      alert('Bitte wähle eine Datei aus.');
+      return;
+    }
+
     submitBtn.disabled = true;
     progressBox.classList.remove('hidden');
-    let pct = 0;
-    const steps = [
-      { to: 30, text: 'Datei wird hochgeladen…', ms: 600 },
-      { to: 55, text: 'Übertragung läuft…',      ms: 600 },
-      { to: 75, text: 'Fast fertig…',             ms: 500 },
-      { to: 90, text: 'Abschluss…',               ms: 400 },
-    ];
-    function runStep(i) {
-      if (i >= steps.length) return;
-      const s = steps[i];
-      statusText.textContent = s.text;
-      const delta = (s.to - pct) / 10;
-      const interval = setInterval(() => {
-        pct = Math.min(pct + delta, s.to);
-        progressBar.style.width = pct + '%';
-        progressPct.textContent = Math.round(pct) + '%';
-        if (pct >= s.to) { clearInterval(interval); setTimeout(() => runStep(i + 1), s.ms); }
-      }, 80);
-    }
-    runStep(0);
+    setPhase(1);
+    setProgress(0, 'Verbindung wird aufgebaut…');
+
+    const formData = new FormData(form);
+    const xhr = new XMLHttpRequest();
+
+    const startTime = Date.now();
+    let lastLoaded = 0;
+    let lastTime   = startTime;
+
+    // ── echte Upload-Fortschritt-Events ──────────────────────────────────
+    xhr.upload.addEventListener('progress', function(e) {
+      if (!e.lengthComputable) return;
+
+      const pct      = (e.loaded / e.total) * 95;  // max 95% beim Upload
+      const now      = Date.now();
+      const elapsed  = (now - startTime) / 1000;
+      const loaded   = e.loaded;
+      const total    = e.total;
+      const remaining = total - loaded;
+
+      // Geschwindigkeit (gleitend über letztes Intervall)
+      const dt    = (now - lastTime) / 1000;
+      const speed = dt > 0 ? (loaded - lastLoaded) / dt : 0;
+      const eta   = speed > 0 ? remaining / speed : Infinity;
+      lastLoaded  = loaded;
+      lastTime    = now;
+
+      setProgress(pct, `Zur JDS Cloud hochladen… (${formatBytes(loaded)} / ${formatBytes(total)})`);
+      document.getElementById('uploadedBytes').textContent = `${formatBytes(loaded)} / ${formatBytes(total)}`;
+      document.getElementById('etaText').textContent       = formatEta(eta);
+      document.getElementById('speedText').textContent     = speed > 0 ? formatBytes(speed) + '/s' : '–';
+    });
+
+    // ── Upload abgeschlossen → Prüfphase ─────────────────────────────────
+    xhr.addEventListener('load', function() {
+      setProgress(96, 'Upload abgeschlossen – Prüfung läuft…');
+      document.getElementById('uploadedBytes').textContent = '✓ Fertig';
+      document.getElementById('etaText').textContent       = '–';
+      document.getElementById('speedText').textContent     = '–';
+      setPhase(2);
+
+      // Seite hat nach dem Redirect die version_id – wir leiten einfach weiter
+      // Der Server antwortet mit einem Redirect auf version_status
+      if (xhr.status >= 200 && xhr.status < 400) {
+        setProgress(98, 'Weiterleitung zur Statusseite…');
+        setPhase(3);
+        // Folge dem Redirect der vom Server kommt
+        setTimeout(() => {
+          window.location.href = xhr.responseURL || xhr.getResponseHeader('Location') || window.location.href;
+        }, 800);
+      } else {
+        setProgress(100, '⚠ Fehler beim Upload');
+        statusText.style.color = '#f87171';
+        submitBtn.disabled = false;
+      }
+    });
+
+    xhr.addEventListener('error', function() {
+      setProgress(100, '⚠ Netzwerkfehler – bitte erneut versuchen');
+      statusText.style.color = '#f87171';
+      submitBtn.disabled = false;
+    });
+
+    xhr.open('POST', form.action || window.location.href);
+    xhr.send(formData);
   });
 });
+
+// Phase-Step Styles
+document.head.insertAdjacentHTML('beforeend', `<style>
+  .phase-step{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:56px}
+  .phase-dot{width:32px;height:32px;border-radius:50%;background:#1e293b;border:2px solid #475569;display:flex;align-items:center;justify-content:center;font-size:13px;color:#64748b;transition:all .4s}
+  .phase-step.active .phase-dot{background:rgba(99,102,241,.2);border-color:#6366f1;color:#818cf8;box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+  .phase-step.done   .phase-dot{background:#10b981;border-color:#10b981;color:#fff}
+  .phase-label{font-size:9px;color:#475569;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .phase-step.active .phase-label{color:#818cf8}
+  .phase-step.done   .phase-label{color:#34d399}
+  .phase-line{flex:1;height:2px;background:#1e293b;margin:0 4px;margin-bottom:16px;border-radius:1px;transition:background .4s}
+  .phase-line.done{background:#10b981}
+</style>`);
 </script>
 {% endblock %}
