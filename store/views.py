@@ -867,6 +867,8 @@ def developer_detail_view(request, name):
 
 @login_required
 def upload_version(request, app_id):
+    from .jds_cloud import upload_file as upload_to_jds_cloud
+    import re as _re
     app = get_object_or_404(App, id=app_id, developer=request.user.developer)
     if request.method == 'POST':
         form = VersionForm(request.POST, request.FILES)
@@ -880,6 +882,36 @@ def upload_version(request, app_id):
             if uploaded_file:
                 version.original_filename = uploaded_file.name
             version.save()
+
+            # ── Sofort zur JDS Cloud hochladen ──────────────────────────────
+            try:
+                local_path = version.file.path
+                if os.path.isfile(local_path):
+                    original_name = version.original_filename or os.path.basename(local_path)
+                    if original_name.lower().endswith('.tar.gz'):
+                        ext = '.tar.gz'
+                    else:
+                        ext = os.path.splitext(original_name)[1].lower()
+                    upload_name = _re.sub(r'[^A-Za-z0-9._\-]', '_',
+                                          f"{app.name}_{version.version_number}{ext}")
+                    result = upload_to_jds_cloud(local_path, upload_name)
+                    if result['success']:
+                        version.jds_cloud_file_id  = result['file_id']
+                        version.jds_cloud_url      = result['download_url']
+                        version.jds_cloud_view_url = result['view_url']
+                        version.save(update_fields=[
+                            'jds_cloud_file_id', 'jds_cloud_url', 'jds_cloud_view_url'
+                        ])
+                    else:
+                        messages.warning(request,
+                            f"JDS Cloud Upload fehlgeschlagen: {result.get('error', 'Unbekannt')}. "
+                            "Prüfung wird trotzdem gestartet."
+                        )
+            except Exception as _upload_err:
+                messages.warning(request,
+                    f"JDS Cloud Upload Fehler: {_upload_err}. Prüfung wird trotzdem gestartet."
+                )
+            # ────────────────────────────────────────────────────────────────
 
             try:
                 start_background_check.delay(version.id)
