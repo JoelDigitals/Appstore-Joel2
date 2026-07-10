@@ -289,9 +289,29 @@
         display: none !important;
       }
     }
+
+    /* Seiten-Ladebalken */
+    #pageLoadBar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      width: 0%;
+      background: linear-gradient(90deg, #0d6efd, #10b981);
+      z-index: 9999;
+      transition: width 0.3s ease, opacity 0.3s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #pageLoadBar.active {
+      opacity: 1;
+    }
   </style>
 </head>
 <body class="bg-slate-900 text-gray-100 antialiased transition-colors duration-300" id="body">
+
+  <!-- Seiten-Ladebalken -->
+  <div id="pageLoadBar"></div>
 
   <!-- Navigation -->
   <nav class="glass sticky top-0 z-50 border-b border-gray-700/50 transition-all duration-300">
@@ -711,6 +731,66 @@
 
   <!-- Scripts -->
   <script>
+    // ── Seiten-Ladebalken ──────────────────────────────────────────────────
+    (function () {
+      const bar = document.getElementById('pageLoadBar');
+      let progressTimer = null;
+
+      function startBar() {
+        clearInterval(progressTimer);
+        bar.style.transition = 'none';
+        bar.style.width = '0%';
+        // Force reflow, damit die nächste Transition greift
+        bar.offsetHeight;
+        bar.style.transition = '';
+        bar.classList.add('active');
+
+        let progress = 0;
+        progressTimer = setInterval(() => {
+          // Nähert sich 90% an, wird nie ganz fertig bis die Seite tatsächlich lädt
+          progress += (90 - progress) * 0.1;
+          bar.style.width = progress + '%';
+        }, 200);
+      }
+
+      function finishBar() {
+        clearInterval(progressTimer);
+        bar.style.width = '100%';
+        setTimeout(() => {
+          bar.classList.remove('active');
+          setTimeout(() => { bar.style.width = '0%'; }, 300);
+        }, 200);
+      }
+
+      // Beim ersten Laden der Seite
+      startBar();
+      window.addEventListener('load', finishBar);
+
+      // Bei jeder internen Navigation (Klick auf Links) und Formular-Submits
+      document.addEventListener('click', (e) => {
+        const link = e.target.closest('a[href]');
+        if (!link) return;
+        const url = link.href;
+        const isExternal = link.target === '_blank' || link.hasAttribute('download')
+          || url.startsWith('mailto:') || url.startsWith('tel:') || url.startsWith('javascript:');
+        const isSamePageAnchor = url.split('#')[0] === window.location.href.split('#')[0] && url.includes('#');
+        if (!isExternal && !isSamePageAnchor && !e.ctrlKey && !e.metaKey) {
+          startBar();
+        }
+      });
+
+      document.addEventListener('submit', (e) => {
+        if (e.target && e.target.tagName === 'FORM') {
+          startBar();
+        }
+      });
+
+      // Falls die Seite aus dem Back/Forward-Cache kommt
+      window.addEventListener('pageshow', (e) => {
+        if (e.persisted) finishBar();
+      });
+    })();
+
     // Dark Mode
     function toggleDarkMode() {
       const html = document.documentElement;

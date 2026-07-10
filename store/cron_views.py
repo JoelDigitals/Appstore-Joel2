@@ -5,13 +5,16 @@ HTTP-Endpoints die von einem externen Cron-Dienst aufgerufen werden.
 
 Empfohlene Dienste (kostenlos):
   • cron-job.org  – https://cron-job.org
+  • FastCron      – https://www.fastcron.com
   • EasyCron       – https://www.easycron.com
   • Railway Cron   – in railway.app direkt konfigurierbar
   • render.com     – Cron Jobs in der Dashboard-Oberfläche
 
 Endpoint:
-  POST  /api/cron/scheduled-releases/
-  Header:  X-Cron-Secret: <CRON_SECRET aus settings>
+  GET oder POST  /api/cron/scheduled-releases/
+  Secret entweder als Header  X-Cron-Secret: <CRON_SECRET>
+  oder als Query-Parameter    ?secret=<CRON_SECRET>
+  (viele einfache Cron-Dienste können nur GET ohne Custom-Header senden)
 
 Alle 5 Minuten aufrufen. Der Endpoint veröffentlicht automatisch alle
 Versionen, deren scheduled_release_at jetzt ≤ now() ist.
@@ -21,7 +24,7 @@ import json
 import logging
 from django.http  import JsonResponse
 from django.views.decorators.csrf  import csrf_exempt
-from django.views.decorators.http  import require_POST
+from django.views.decorators.http  import require_http_methods
 from django.conf  import settings
 from django.utils import timezone
 
@@ -29,20 +32,24 @@ logger = logging.getLogger(__name__)
 
 
 @csrf_exempt
-@require_POST
+@require_http_methods(["GET", "POST"])
 def cron_scheduled_releases(request):
     """
     Called every 5 minutes by an external cron service.
 
-    Security: checks the X-Cron-Secret header against
-    settings.CRON_SECRET  (add to your .env / environment variables).
+    Security: checks the secret (X-Cron-Secret header or ?secret= query
+    param) against settings.CRON_SECRET (add to your .env / environment
+    variables).
 
     Returns JSON with a summary of what was published.
     """
     # ── Auth ──────────────────────────────────────────────────────────────
     expected_secret = getattr(settings, "CRON_SECRET", None)
     if expected_secret:
-        provided = request.headers.get("X-Cron-Secret", "").strip()
+        provided = (
+            request.headers.get("X-Cron-Secret", "").strip()
+            or request.GET.get("secret", "").strip()
+        )
         if provided != expected_secret:
             logger.warning(
                 "cron_scheduled_releases: invalid secret from %s",
