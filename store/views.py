@@ -937,7 +937,9 @@ def app_detail_view(request, app_id):
         new_version=True
     ).order_by('-uploaded_at').first()
 
-
+    older_versions = app.versions.filter(approved=True).exclude(
+        id=latest_version.id if latest_version else None
+    ).order_by('-uploaded_at')
 
     suggestions = App.objects.filter(
         platform=app.platform,
@@ -958,6 +960,7 @@ def app_detail_view(request, app_id):
     return render(request, 'store/app_detail.html', {
         'app': app,
         'latest_version': latest_version,
+        'older_versions': older_versions,
         'suggestions': suggestions,
         'user_installed_version': user_installed_version,
     })
@@ -1121,6 +1124,33 @@ def download_complete_1(request):
         return JsonResponse({'status': 'ok'})
 
     return JsonResponse({'status': 'error'}, status=400)
+
+@login_required
+def save_onesignal_id(request):
+    """
+    Speichert die OneSignal Player-/Subscription-ID des eingeloggten Users
+    (Referenz). Der eigentliche Versand läuft über external_id = user.id,
+    die via `median.onesignal.login()` clientseitig gesetzt wird (base.html).
+    """
+    if request.method != "POST":
+        return JsonResponse({"status": "error"}, status=400)
+
+    from settings.models import UserProfile
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"status": "error", "error": "invalid json"}, status=400)
+
+    player_id = (data.get("onesignal_id") or "").strip()
+    if not player_id:
+        return JsonResponse({"status": "error", "error": "missing onesignal_id"}, status=400)
+
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    profile.onesignal_player_id = player_id
+    profile.onesignal_subscribed = True
+    profile.save(update_fields=["onesignal_player_id", "onesignal_subscribed"])
+    return JsonResponse({"status": "ok"})
+
 
 @csrf_exempt
 def save_push_subscription(request):

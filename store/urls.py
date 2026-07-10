@@ -63,6 +63,7 @@ urlpatterns = [
     path("info/", views.info_page, name="infopage"),
 
     path("save-subscription/", views.push_subscribe, name="push_subscribe"),
+    path("api/onesignal/register/", views.save_onesignal_id, name="save_onesignal_id"),
     path('notifications/check/', views.get_notifications_for_user, name='notifications_check'),
     path('notifications/', views.notifications_view, name='notifications_all'),
     path('notifications/subscribe/', views.subscribe_notifications, name='subscribe_notifications'),

@@ -23,11 +23,13 @@ import pefile
 import pyclamd
 from celery import shared_task
 from django.utils import timezone
+from django.conf import settings as django_settings
 from django.core.mail import EmailMultiAlternatives
-from .models import Version, Notification, App
+from .models import Version, Notification, App, VersionDownload
 from django.template.loader import render_to_string
 from settings.models import NotificationSettings
 from .jds_cloud import upload_file as upload_to_jds_cloud
+from . import onesignal
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +160,47 @@ def create_notification(user, title, message, app=None, version=None, level="inf
     )
 
 
+def _notify_installed_users_of_update(app: App, version: Version, tag_info: str) -> None:
+    """OneSignal-Push an alle User, die eine ältere Version dieser App installiert haben."""
+    user_ids = list(
+        VersionDownload.objects.filter(version__app=app)
+        .exclude(version=version)
+        .values_list("user_id", flat=True)
+        .distinct()
+    )
+    if not user_ids:
+        return
+    onesignal.send_to_users(
+        user_ids,
+        title=f"Update für {app.name}",
+        message=f"Version {version.version_number}{tag_info} ist verfügbar.",
+        url=f"{getattr(django_settings, 'SITE_URL', '')}/app/{app.id}/",
+        data={"type": "app_update", "app_id": app.id, "version_id": version.id},
+    )
+
+
+def _notify_recommendations(app: App) -> None:
+    """OneSignal-Push an User, die andere Apps derselben Kategorie/Plattform installiert haben."""
+    similar_apps = App.objects.filter(
+        platform=app.platform, category=app.category, published=True
+    ).exclude(id=app.id)
+    user_ids = list(
+        VersionDownload.objects.filter(version__app__in=similar_apps)
+        .exclude(user__in=VersionDownload.objects.filter(version__app=app).values("user"))
+        .values_list("user_id", flat=True)
+        .distinct()
+    )
+    if not user_ids:
+        return
+    onesignal.send_to_users(
+        user_ids,
+        title="Neue App-Empfehlung",
+        message=f"{app.name} könnte dir gefallen – jetzt entdecken.",
+        url=f"{getattr(django_settings, 'SITE_URL', '')}/app/{app.id}/",
+        data={"type": "recommendation", "app_id": app.id},
+    )
+
+
 def _do_publish(version: Version) -> None:
     app           = version.app
     dev           = app.developer
@@ -168,6 +211,10 @@ def _do_publish(version: Version) -> None:
     old_ver = app.versions.filter(
         approved=True, new_version=True
     ).exclude(id=version.id).order_by("-uploaded_at").first()
+
+    if old_ver:
+        old_ver.new_version = False
+        old_ver.save(update_fields=["new_version"])
 
     version.release_held = False
     version.new_version  = True
@@ -202,6 +249,19 @@ def _do_publish(version: Version) -> None:
             message=f"Version {version.version_number}{tag_info} ist veröffentlicht.",
             app=app, version=version, level="success_2",
         )
+
+    # ── OneSignal: userbezogene Push-Benachrichtigungen ──────────────────────
+    onesignal.send_to_user(
+        dev.user,
+        title=f"🚀 {app.name} ist jetzt live",
+        message=f"Version {version.version_number}{tag_info} ist veröffentlicht.",
+        url=f"{getattr(django_settings, 'SITE_URL', '')}/app/{app.id}/",
+        data={"type": "published", "app_id": app.id, "version_id": version.id},
+    )
+    if old_ver:
+        _notify_installed_users_of_update(app, version, tag_info)
+    else:
+        _notify_recommendations(app)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -428,6 +488,14 @@ def _run_check(version: Version) -> bool:
         version.checking_log      = "\n".join(log)
         version.checking_progress = 5
         version.save()
+
+        onesignal.send_to_user(
+            dev.user,
+            title=f"✓ Prüfung bestanden: {app.name}",
+            message=f"Version {version.version_number}{tag_info} hat die Prüfung bestanden.",
+            url=f"{getattr(django_settings, 'SITE_URL', '')}/developer/{version.id}/check/",
+            data={"type": "check_passed", "app_id": app.id, "version_id": version.id},
+        )
 
         # Geplantes Release?
         if version.scheduled_release_at and version.scheduled_release_at > timezone.now():

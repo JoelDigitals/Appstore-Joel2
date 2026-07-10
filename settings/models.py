@@ -20,7 +20,12 @@ class UserProfile(models.Model):
     social_links = models.JSONField(default=dict, blank=True)
     email = models.EmailField(blank=True)
     phone_number = models.CharField(max_length=15, blank=True)
-    
+
+    # OneSignal (userbezogene Push-Benachrichtigungen). Der Versand läuft über
+    # external_id = user.id, diese Felder dienen nur der Referenz/Anzeige.
+    onesignal_player_id = models.CharField(max_length=64, blank=True, default='')
+    onesignal_subscribed = models.BooleanField(default=False)
+
     # Erscheinungsbild Einstellungen
     THEME_CHOICES = [
         ('dark', 'Dunkel'),

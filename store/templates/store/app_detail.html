@@ -232,7 +232,7 @@
           <h3 class="text-lg font-semibold text-gray-200 flex items-center gap-2">
             <i class="bi bi-box-seam text-primary"></i> Versionen
           </h3>
-          {% if app.versions.count > 1 %}
+          {% if older_versions %}
           <button onclick="toggleVersions()"
                   class="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1.5 transition">
             <span id="versionsToggleText">Alle anzeigen</span>
@@ -270,10 +270,9 @@
         </div>
 
         <!-- Older -->
-        {% if app.versions.count > 1 %}
+        {% if older_versions %}
         <div id="olderVersions" class="hidden space-y-3">
-          {% for v in app.versions.all|dictsortreversed:"uploaded_at" %}
-          {% if v.id != latest_version.id %}
+          {% for v in older_versions %}
           <div class="flex items-center justify-between p-4 rounded-xl bg-slate-800/30 border border-gray-700/30">
             <div>
               <div class="flex items-center gap-2 mb-1">
@@ -292,7 +291,6 @@
           <div id="oldReleaseNotes{{ v.id }}" class="hidden p-4 text-sm text-gray-400 bg-slate-800/20 rounded-xl -mt-2 whitespace-pre-wrap leading-relaxed">
             {{ v.release_notes }}
           </div>
-          {% endif %}
           {% endif %}
           {% endfor %}
         </div>
@@ -572,6 +570,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     dlBtn.disabled = true;
     dlBtn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin mr-2"></i>' + (isUpdate ? 'Wird aktualisiert…' : 'Wird heruntergeladen…');
+
+    // ── In der Median-App (Android/iOS): natives Herunterladen + direktes
+    //    Öffnen des System-Installers (APK), statt manuellem Blob-Download
+    //    im Browser. Android verlangt weiterhin einen Bestätigungs-Tap im
+    //    Installer – ein automatischer Install ganz ohne Nutzerinteraktion
+    //    ist aus Sicherheitsgründen auch für Aptoide & Co. nicht möglich.
+    if (window.median && window.median.share && typeof window.median.share.downloadFile === 'function') {
+      showLoader(true);
+      setBar(20);
+      setStatus('Wird heruntergeladen…');
+      try {
+        await fetch(`/track-download/${vId}/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' }
+        });
+      } catch (e) { console.warn('Tracking:', e); }
+
+      try {
+        await window.median.share.downloadFile({ url: dlUrl, open: true });
+        setBar(100);
+        setStatus(isUpdate ? 'Update fertig!' : 'Download abgeschlossen!');
+        showLoader(false);
+        dlBtn.classList.remove('from-primary', 'to-secondary', 'from-blue-500', 'hover:scale-105');
+        dlBtn.classList.add('bg-green-500/20', 'text-green-400', 'border', 'border-green-500/25');
+        dlBtn.innerHTML = '<i class="bi bi-check-circle-fill mr-2"></i>' + (isUpdate ? 'Aktualisiert' : 'Heruntergeladen');
+        showToast(isUpdate ? '✓ Update heruntergeladen' : '✓ Download abgeschlossen', 'success');
+      } catch (err) {
+        console.error(err);
+        showLoader(false);
+        dlBtn.disabled = false;
+        dlBtn.innerHTML = '<i class="bi bi-download mr-2"></i>Erneut versuchen';
+        showToast('Download fehlgeschlagen: ' + (err && err.message ? err.message : err), 'error');
+      }
+      busy = false;
+      return;
+    }
+
     showLoader(true);
     setBar(4);
     setStatus('Verbindung wird hergestellt…');

@@ -99,6 +99,11 @@ DATABASES = {
 IMGBB_API_KEY = os.environ.get('IMGBB_API_KEY', '')  # Dein ImgBB API Key
 IMGBB_ENABLED = bool(IMGBB_API_KEY)
 
+# OneSignal Konfiguration (userbezogene Push-Benachrichtigungen)
+ONESIGNAL_APP_ID = os.environ.get('ONESIGNAL_APP_ID', '')
+ONESIGNAL_REST_API_KEY = os.environ.get('ONESIGNAL_REST_API_KEY', '')
+ONESIGNAL_ENABLED = bool(ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY)
+
 SITE_URL = 'https://jds-appstore.de'
 
 # Maximale Bildgröße für ImgBB (in Bytes)

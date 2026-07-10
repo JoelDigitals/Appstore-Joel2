@@ -1010,6 +1010,54 @@
     
     fetchNotifications();
     setInterval(fetchNotifications, 15000);
+
+    // ── OneSignal (userbezogene Push, via Median JS Bridge) ─────────────────
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function registerOneSignalWithBackend(playerId) {
+      if (!playerId) return;
+      fetch("{% url 'save_onesignal_id' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ onesignal_id: playerId })
+      }).catch(() => {});
+    }
+
+    function initOneSignalBridge() {
+      if (!window.median || !median.onesignal) return;
+      // Verknüpft die OneSignal-Subscription mit unserer Django User-ID,
+      // damit der Server Push gezielt an diesen User schicken kann.
+      median.onesignal.login('{{ user.id }}');
+
+      if (typeof median.onesignal.info === 'function') {
+        Promise.resolve(median.onesignal.info()).then(function (info) {
+          const playerId = info && (info.oneSignalId || info.subscriptionId || info.pushToken);
+          registerOneSignalWithBackend(playerId);
+        }).catch(() => {});
+      }
+    }
+
+    if (window.median) {
+      initOneSignalBridge();
+    } else {
+      window.median_library_ready = initOneSignalBridge;
+    }
     {% endif %}
   </script>
 
