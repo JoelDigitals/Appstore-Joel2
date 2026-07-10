@@ -1128,18 +1128,50 @@
       }).catch(() => {});
     }
 
+    // Extrahiert die ID egal ob v5- (oneSignalId/subscription.id) oder
+    // Legacy-Format (oneSignalUserId) zurückkommt.
+    function extractOneSignalId(info) {
+      if (!info) return null;
+      return info.oneSignalId
+        || (info.subscription && (info.subscription.id || info.subscription.token))
+        || info.oneSignalUserId
+        || info.oneSignalPushToken
+        || null;
+    }
+
+    let oneSignalRegisterAttempts = 0;
+    function tryRegisterOneSignalId() {
+      if (!window.median || !median.onesignal || typeof median.onesignal.info !== 'function') return;
+      oneSignalRegisterAttempts++;
+
+      Promise.resolve(median.onesignal.info()).then(function (info) {
+        const playerId = extractOneSignalId(info);
+        if (playerId) {
+          registerOneSignalWithBackend(playerId);
+        } else if (oneSignalRegisterAttempts < 10) {
+          // ID ist ggf. noch nicht zugewiesen (Subscription braucht kurz) -> erneut versuchen
+          setTimeout(tryRegisterOneSignalId, 3000);
+        } else {
+          console.warn('OneSignal: konnte keine Subscription-ID ermitteln nach mehreren Versuchen.', info);
+        }
+      }).catch(function (err) {
+        console.warn('OneSignal info() Fehler:', err);
+      });
+    }
+
+    // Fallback: falls Median den Callback-Stil statt Promises nutzt
+    window.median_onesignal_info = function (info) {
+      const playerId = extractOneSignalId(info);
+      if (playerId) registerOneSignalWithBackend(playerId);
+    };
+
     function initOneSignalBridge() {
       if (!window.median || !median.onesignal) return;
       // Verknüpft die OneSignal-Subscription mit unserer Django User-ID,
       // damit der Server Push gezielt an diesen User schicken kann.
       median.onesignal.login('{{ user.id }}');
-
-      if (typeof median.onesignal.info === 'function') {
-        Promise.resolve(median.onesignal.info()).then(function (info) {
-          const playerId = info && (info.oneSignalId || info.subscriptionId || info.pushToken);
-          registerOneSignalWithBackend(playerId);
-        }).catch(() => {});
-      }
+      oneSignalRegisterAttempts = 0;
+      tryRegisterOneSignalId();
     }
 
     if (window.median) {
