@@ -58,12 +58,7 @@
           </div>
           <div class="text-center px-6 py-4 glass rounded-2xl">
             <div class="text-2xl font-bold text-green-400">
-              {% with total_downloads=0 %}
-                {% for entry in apps_with_latest %}
-                  {% with total_downloads=total_downloads|add:entry.app.download_count %}{% endwith %}
-                {% endfor %}
-                {{ total_downloads|default:"0" }}
-              {% endwith %}
+              {{ total_downloads|default:"0" }}
             </div>
             <div class="text-xs text-gray-500 uppercase tracking-wider">Downloads</div>
           </div>

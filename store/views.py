@@ -20,6 +20,7 @@ from io import BytesIO
 from django.utils import timezone
 from django.db.models import F
 from django.db.models import Count
+from django.db.models import Sum
 from datetime import timedelta
 from django.db.models import Q
 from .utils import send_push_notification_to_admins
@@ -597,10 +598,13 @@ def developer_dashboard(request):
             'latest_version': latest_version
         })
 
+    total_downloads = apps.aggregate(total=Sum('download_count'))['total'] or 0
+
     return render(request, 'store/developer_dashboard.html', {
         'developer': developer,
         'apps_with_latest': apps_with_latest,
-        'query': query
+        'query': query,
+        'total_downloads': total_downloads,
     })
 
 @login_required
@@ -868,10 +872,12 @@ def developer_detail_view(request, name):
     # Name ggf. entschlüsseln/entschlacken
     developer = get_object_or_404(Developer, name__iexact=name)
     apps = App.objects.filter(developer=developer, published=True)
+    total_downloads = apps.aggregate(total=Sum('download_count'))['total'] or 0
 
     return render(request, 'store/developer_detail.html', {
         'developer': developer,
         'apps': apps,
+        'total_downloads': total_downloads,
     })
 
 def _upload_version_to_cloud_and_check(request, app, version):
@@ -1259,7 +1265,9 @@ def jds_appstore_apps(request):
 
 @login_required
 def developer_list(request):
-    developers = Developer.objects.all().order_by('name')
+    developers = Developer.objects.annotate(
+        total_downloads=Sum('apps__download_count', filter=Q(apps__published=True))
+    ).order_by('name')
     return render(request, 'store/developer_list.html', {'developers': developers})
 
 
