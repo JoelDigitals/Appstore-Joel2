@@ -93,6 +93,11 @@
 
     <!-- Content -->
     <div class="p-6 md:p-8">
+      {% if notification.get_image_url %}
+      <img src="{{ notification.get_image_url }}" alt=""
+           class="w-full max-h-64 object-cover rounded-2xl mb-6 bg-slate-800">
+      {% endif %}
+
       <div class="prose prose-invert max-w-none">
         <div class="text-gray-100 leading-relaxed text-lg">
           {{ notification.message|safe }}
@@ -103,8 +108,8 @@
       {% if notification.app %}
       <div class="mt-8 p-4 bg-slate-800/50 rounded-2xl border border-gray-700/50">
         <div class="flex items-center gap-4">
-          {% if notification.app.icon %}
-            <img src="{{ notification.app.icon.url }}" alt="{{ notification.app.name }}" class="w-14 h-14 object-contain rounded-xl bg-slate-800 p-2">
+          {% if notification.app.get_icon_url %}
+            <img src="{{ notification.app.get_icon_url }}" alt="{{ notification.app.name }}" class="w-14 h-14 object-contain rounded-xl bg-slate-800 p-2">
           {% else %}
             <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
               <span class="text-xl font-bold text-white">{{ notification.app.name|slice:":1"|upper }}</span>

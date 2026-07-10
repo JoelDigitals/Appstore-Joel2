@@ -157,6 +157,14 @@ def change_password_view(request):
         request.user.set_password(new_password)
         request.user.save()
         update_session_auth_hash(request, request.user)  # Session beibehalten
+
+        from store.tasks import notify_security_event
+        notify_security_event(
+            request.user,
+            title="Passwort geändert",
+            message="Das Passwort für dein Konto wurde soeben geändert. Warst du das nicht, kontaktiere umgehend den Support.",
+        )
+
         messages.success(request, "Passwort erfolgreich geändert.")
         return redirect('user_settings')
     

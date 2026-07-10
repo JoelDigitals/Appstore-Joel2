@@ -85,10 +85,14 @@
             {% endif %}
           </div>
 
+          {% if n.get_image_url %}
+          <img src="{{ n.get_image_url }}" alt="" class="w-12 h-12 rounded-xl object-contain bg-slate-800 p-1 flex-shrink-0">
+          {% endif %}
+
           <!-- Content -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-1">
-              <span class="text-xs font-medium px-2 py-0.5 rounded-full 
+              <span class="text-xs font-medium px-2 py-0.5 rounded-full
                 {% if n.type == 'update' %}
                   bg-green-500/10 text-green-400 border border-green-500/20
                 {% elif n.type == 'security' %}

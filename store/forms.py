@@ -1,5 +1,5 @@
 from django import forms
-from .models import App, Version, Developer, AppScreenshot, ImgBBUploader
+from .models import App, Version, Developer, AppScreenshot, ImgBBUploader, AppReview
 from django.conf import settings
 
 class AppWithVersionForm(forms.ModelForm):
@@ -294,4 +294,21 @@ class CustomUserCreationForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields['password1'].widget.attrs['placeholder'] = 'Passwort'
         self.fields['password2'].widget.attrs['placeholder'] = 'Passwort bestätigen'
-    
+
+
+class AppReviewForm(forms.ModelForm):
+    class Meta:
+        model = AppReview
+        fields = ['rating', 'comment']
+        widgets = {
+            'rating': forms.RadioSelect(),
+            'comment': forms.Textarea(attrs={
+                'rows': 3, 'placeholder': 'Was gefällt dir (nicht)? (optional)',
+                'class': 'w-full bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['comment'].required = False
+

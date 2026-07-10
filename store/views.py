@@ -4,9 +4,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
-from .models import App, Version, PushSubscription, Developer, VersionDownload, Notification, EmailVerificationCode, AppUpdate, RoadmapItem, User
-from .forms import AppWithVersionForm, VersionForm, DeveloperForm, AppEditForm, CustomUserCreationForm
-from .tasks import start_background_check, start_background_check_version
+from .models import App, Version, PushSubscription, Developer, VersionDownload, Notification, EmailVerificationCode, AppUpdate, RoadmapItem, User, AppReview
+from .forms import AppWithVersionForm, VersionForm, DeveloperForm, AppEditForm, CustomUserCreationForm, AppReviewForm
+from .tasks import start_background_check, start_background_check_version, notify_security_event
+from settings.models import record_login_session
 from django.http import FileResponse, JsonResponse, HttpResponse, FileResponse, HttpResponseNotFound, HttpResponseForbidden
 import json
 from django.views.decorators.csrf import csrf_exempt
@@ -316,6 +317,13 @@ def login_view(request):
 
                 # User ist aktiv -> normaler Login
                 login(request, user)
+                is_new_device = record_login_session(user, request)
+                if is_new_device:
+                    notify_security_event(
+                        user,
+                        title="Neue Anmeldung erkannt",
+                        message=f"Dein Konto wurde von einem neuen Gerät aus angemeldet ({request.META.get('REMOTE_ADDR', 'unbekannte IP')}). Warst du das nicht, ändere sofort dein Passwort.",
+                    )
                 messages.success(request, f'Willkommen zurück, {user.username}!')
                 return redirect(next_url or 'home')
             else:
@@ -966,13 +974,44 @@ def app_detail_view(request, app_id):
         if vd:
             user_installed_version = vd.version
 
+    reviews = app.reviews.select_related('user').exclude(user=request.user if request.user.is_authenticated else None)
+    user_review = None
+    if request.user.is_authenticated:
+        user_review = app.reviews.filter(user=request.user).first()
+    review_form = AppReviewForm(instance=user_review)
+
     return render(request, 'store/app_detail.html', {
         'app': app,
         'latest_version': latest_version,
         'older_versions': older_versions,
         'suggestions': suggestions,
         'user_installed_version': user_installed_version,
+        'reviews': reviews,
+        'user_review': user_review,
+        'review_form': review_form,
     })
+
+
+@login_required
+def submit_review(request, app_id):
+    app = get_object_or_404(App, id=app_id, published=True)
+    existing = AppReview.objects.filter(app=app, user=request.user).first()
+
+    if request.method == 'POST':
+        form = AppReviewForm(request.POST, instance=existing)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.app = app
+            review.user = request.user
+            review.save()
+            if not existing:
+                from .tasks import notify_new_review
+                notify_new_review(review)
+            messages.success(request, 'Danke für deine Bewertung!')
+        else:
+            messages.error(request, 'Bitte gib eine gültige Bewertung ab.')
+
+    return redirect('app_detail', app_id=app.id)
 
 # download_file_view – weiter unten definiert (JDS Cloud + Fallback)
 
@@ -999,9 +1038,11 @@ def api_increment_download(request):
         version_id = data.get('version_id')
         version = get_object_or_404(Version, id=version_id, approved=True)
         app = version.app
-        VersionDownload.objects.create(user=request.user, version=version)
-        app.download_count = F('download_count') + 1
-        app.save(update_fields=['download_count'])
+        VersionDownload.objects.get_or_create(user=request.user, version=version)
+        App.objects.filter(id=app.id).update(download_count=F('download_count') + 1)
+        app.refresh_from_db(fields=['download_count', 'last_download_milestone'])
+        from .tasks import notify_download_milestone
+        notify_download_milestone(app)
         return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'error'}, status=400)
 
@@ -1304,15 +1345,18 @@ from .models import VersionDownload, Version
 @login_required
 def track_download(request, version_id):
     try:
-        version = Version.objects.get(id=version_id)
+        version = Version.objects.select_related('app').get(id=version_id)
         # Verhindere doppelte Einträge durch unique_together Constraint
         VersionDownload.objects.get_or_create(
             user=request.user,
             version=version
         )
-        # Erhöhe den Download-Counter der App
-        version.app.download_count += 1
-        version.app.save()
+        # Erhöhe den Download-Counter der App atomar (verhindert Race Conditions
+        # bei gleichzeitigen Downloads, die sonst Zählungen verlieren würden)
+        App.objects.filter(id=version.app_id).update(download_count=F('download_count') + 1)
+        version.app.refresh_from_db(fields=['download_count', 'last_download_milestone'])
+        from .tasks import notify_download_milestone
+        notify_download_milestone(version.app)
         return JsonResponse({'success': True})
     except Version.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Version nicht gefunden'}, status=404)
@@ -1474,6 +1518,7 @@ def sso_callback(request):
 
             print(f"\n🔓 Logge User ein...")
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            record_login_session(user, request)
             print(f"✅ User eingeloggt: {user.email}")
 
             # Session cleanup
@@ -1487,12 +1532,18 @@ def sso_callback(request):
             print("=" * 80 + "\n")
 
             return redirect('/')  # Zur Startseite oder Dashboard
-        
+
         # User einloggen
         print(f"\n🔓 Logge User ein...")
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        if record_login_session(user, request):
+            notify_security_event(
+                user,
+                title="Neue Anmeldung erkannt",
+                message=f"Dein Konto wurde per Joel Digitals SSO von einem neuen Gerät aus angemeldet ({request.META.get('REMOTE_ADDR', 'unbekannte IP')}). Warst du das nicht, ändere sofort dein Passwort.",
+            )
         print(f"✅ User eingeloggt: {user.email}")
-        
+
         # Session cleanup
         if 'sso_state' in request.session:
             del request.session['sso_state']

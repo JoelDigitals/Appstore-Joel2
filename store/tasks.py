@@ -153,15 +153,89 @@ def send_check_email(user, subject_de, subject_en, message_de, message_en,
     msg.send()
 
 
-def create_notification(user, title, message, app=None, version=None, level="info"):
+def create_notification(user, title, message, app=None, version=None, level="info", image_url=None, type="general"):
     Notification.objects.create(
         user=user, title=title, message=message,
         app=app, version=version, level=level,
+        image_url=image_url or "", type=type,
+    )
+
+
+NOTIFICATIONS_URL = f"{getattr(django_settings, 'SITE_URL', '')}/notifications/"
+
+
+def notify_security_event(user, title: str, message: str) -> None:
+    """Erstellt eine In-App-Benachrichtigung + OneSignal-Push für ein Sicherheitsereignis
+    (neues Gerät, Passwortänderung, ...)."""
+    create_notification(user=user, title=title, message=message, type="security")
+    onesignal.send_to_user(
+        user, title=title, message=message,
+        url=NOTIFICATIONS_URL,
+        data={"type": "security"},
+    )
+
+DOWNLOAD_MILESTONES = [10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
+
+
+def notify_new_review(review) -> None:
+    """Benachrichtigt den Entwickler über eine neue Bewertung/Kommentar zu seiner App."""
+    app = review.app
+    dev = app.developer
+    icon = app.get_icon_url()
+    stars = "★" * review.rating + "☆" * (5 - review.rating)
+    title = f"Neue Bewertung für {app.name}"
+    message = f"{review.user.username} hat {stars} vergeben."
+    if review.comment:
+        message += f' "{review.comment}"'
+    create_notification(
+        user=dev.user, title=title, message=message,
+        app=app, level="info", image_url=icon, type="general",
+    )
+    onesignal.send_to_user(
+        dev.user, title=title, message=message,
+        url=NOTIFICATIONS_URL,
+        data={"type": "new_review", "app_id": app.id},
+        image_url=icon,
+    )
+
+
+def notify_download_milestone(app: App) -> None:
+    """
+    Benachrichtigt den Entwickler, wenn der Download-Zähler der App einen neuen
+    Meilenstein (10/50/100/500/1000/... Downloads) erreicht oder überschritten hat.
+    """
+    reached = [m for m in DOWNLOAD_MILESTONES if m <= app.download_count]
+    if not reached:
+        return
+    milestone = max(reached)
+    if milestone <= app.last_download_milestone:
+        return
+
+    # Atomar markieren, damit parallele Downloads nicht mehrfach benachrichtigen
+    updated = App.objects.filter(
+        id=app.id, last_download_milestone__lt=milestone
+    ).update(last_download_milestone=milestone)
+    if not updated:
+        return
+
+    dev = app.developer
+    icon = app.get_icon_url()
+    title = f"🎉 {app.name}: {milestone:,} Downloads".replace(",", ".")
+    message = f"{app.name} hat {milestone:,} Downloads erreicht!".replace(",", ".")
+    create_notification(
+        user=dev.user, title=title, message=message,
+        app=app, level="success_2", image_url=icon, type="general",
+    )
+    onesignal.send_to_user(
+        dev.user, title=title, message=message,
+        url=NOTIFICATIONS_URL,
+        data={"type": "download_milestone", "app_id": app.id, "milestone": milestone},
+        image_url=icon,
     )
 
 
 def _notify_installed_users_of_update(app: App, version: Version, tag_info: str) -> None:
-    """OneSignal-Push an alle User, die eine ältere Version dieser App installiert haben."""
+    """Benachrichtigt + pusht an alle User, die eine ältere Version dieser App installiert haben."""
     user_ids = list(
         VersionDownload.objects.filter(version__app=app)
         .exclude(version=version)
@@ -170,17 +244,30 @@ def _notify_installed_users_of_update(app: App, version: Version, tag_info: str)
     )
     if not user_ids:
         return
+
+    icon = app.get_icon_url()
+    title = f"Update für {app.name}"
+    message = f"Version {version.version_number}{tag_info} ist verfügbar."
+    Notification.objects.bulk_create([
+        Notification(
+            user_id=uid, title=title, message=message,
+            app=app, version=version, level="info", image_url=icon or "",
+            type="update",
+        )
+        for uid in user_ids
+    ])
     onesignal.send_to_users(
         user_ids,
-        title=f"Update für {app.name}",
-        message=f"Version {version.version_number}{tag_info} ist verfügbar.",
-        url=f"{getattr(django_settings, 'SITE_URL', '')}/app/{app.id}/",
+        title=title,
+        message=message,
+        url=NOTIFICATIONS_URL,
         data={"type": "app_update", "app_id": app.id, "version_id": version.id},
+        image_url=icon,
     )
 
 
 def _notify_recommendations(app: App) -> None:
-    """OneSignal-Push an User, die andere Apps derselben Kategorie/Plattform installiert haben."""
+    """Benachrichtigt + pusht an User, die andere Apps derselben Kategorie/Plattform installiert haben."""
     similar_apps = App.objects.filter(
         platform=app.platform, category=app.category, published=True
     ).exclude(id=app.id)
@@ -192,12 +279,25 @@ def _notify_recommendations(app: App) -> None:
     )
     if not user_ids:
         return
+
+    icon = app.get_icon_url()
+    title = "Neue App-Empfehlung"
+    message = f"{app.name} könnte dir gefallen – jetzt entdecken."
+    Notification.objects.bulk_create([
+        Notification(
+            user_id=uid, title=title, message=message,
+            app=app, level="info", image_url=icon or "",
+            type="general",
+        )
+        for uid in user_ids
+    ])
     onesignal.send_to_users(
         user_ids,
-        title="Neue App-Empfehlung",
-        message=f"{app.name} könnte dir gefallen – jetzt entdecken.",
-        url=f"{getattr(django_settings, 'SITE_URL', '')}/app/{app.id}/",
+        title=title,
+        message=message,
+        url=NOTIFICATIONS_URL,
         data={"type": "recommendation", "app_id": app.id},
+        image_url=icon,
     )
 
 
@@ -242,12 +342,14 @@ def _do_publish(version: Version) -> None:
             ),
             log_lines=log, app=app, version=version, level="success_2",
         )
+    icon = app.get_icon_url()
     if notif_cfg and notif_cfg.push_notifications:
         create_notification(
             user=dev.user,
             title=f"🚀 {app.name} ist jetzt live",
             message=f"Version {version.version_number}{tag_info} ist veröffentlicht.",
-            app=app, version=version, level="success_2",
+            app=app, version=version, level="success_2", image_url=icon,
+            type="update",
         )
 
     # ── OneSignal: userbezogene Push-Benachrichtigungen ──────────────────────
@@ -255,8 +357,9 @@ def _do_publish(version: Version) -> None:
         dev.user,
         title=f"🚀 {app.name} ist jetzt live",
         message=f"Version {version.version_number}{tag_info} ist veröffentlicht.",
-        url=f"{getattr(django_settings, 'SITE_URL', '')}/app/{app.id}/",
+        url=NOTIFICATIONS_URL,
         data={"type": "published", "app_id": app.id, "version_id": version.id},
+        image_url=icon,
     )
     if old_ver:
         _notify_installed_users_of_update(app, version, tag_info)
@@ -301,7 +404,16 @@ def _run_check(version: Version) -> bool:
                 user=dev.user,
                 title=f"Prüfung fehlgeschlagen: {app.name}",
                 message=msg_de, app=app, version=version, level="error",
+                image_url=app.get_icon_url(), type="security",
             )
+        onesignal.send_to_user(
+            dev.user,
+            title=f"✗ Prüfung fehlgeschlagen: {app.name}",
+            message=msg_de,
+            url=NOTIFICATIONS_URL,
+            data={"type": "check_failed", "app_id": app.id, "version_id": version.id},
+            image_url=app.get_icon_url(),
+        )
         return False
 
     # ── Init ─────────────────────────────────────────────────────────────────
@@ -489,12 +601,22 @@ def _run_check(version: Version) -> bool:
         version.checking_progress = 5
         version.save()
 
+        check_icon = app.get_icon_url()
+        if notif_cfg and notif_cfg.push_notifications:
+            create_notification(
+                user=dev.user,
+                title=f"✓ Prüfung bestanden: {app.name}",
+                message=f"Version {version.version_number}{tag_info} hat die Prüfung bestanden.",
+                app=app, version=version, level="success_1", image_url=check_icon,
+                type="system",
+            )
         onesignal.send_to_user(
             dev.user,
             title=f"✓ Prüfung bestanden: {app.name}",
             message=f"Version {version.version_number}{tag_info} hat die Prüfung bestanden.",
-            url=f"{getattr(django_settings, 'SITE_URL', '')}/developer/{version.id}/check/",
+            url=NOTIFICATIONS_URL,
             data={"type": "check_passed", "app_id": app.id, "version_id": version.id},
+            image_url=check_icon,
         )
 
         # Geplantes Release?
@@ -517,7 +639,8 @@ def _run_check(version: Version) -> bool:
                     user=dev.user,
                     title=f"Prüfung bestanden – Release am {rel_dt}",
                     message=f"{app.name} v{version.version_number}{tag_info} wird am {rel_dt} UTC veröffentlicht.",
-                    app=app, version=version, level="success_1",
+                    app=app, version=version, level="success_1", image_url=check_icon,
+                    type="system",
                 )
             return True
 

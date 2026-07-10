@@ -47,6 +47,7 @@ urlpatterns = [
 
     path('app/<int:app_id>/', views.app_detail_view, name='app_detail'),
     path('app/<int:app_id>/upload-version/', views.upload_version, name='upload_version'),
+    path('app/<int:app_id>/review/', views.submit_review, name='submit_review'),
 
     #download new urls
     path("api/download/<int:version_id>/", views.download_file_view, name="download_file_view"),

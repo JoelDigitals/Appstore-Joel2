@@ -128,6 +128,9 @@ class App(models.Model):
     published = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True)
     download_count = models.PositiveIntegerField(default=0)
+    last_download_milestone = models.PositiveIntegerField(
+        default=0, help_text="Höchster bereits benachrichtigter Download-Meilenstein"
+    )
 
     def __str__(self):
         return f"{self.name} ({self.developer.name}) - {self.platform}"
@@ -142,6 +145,13 @@ class App(models.Model):
         if self.icon:
             return self.icon.url
         return '/static/images/default_app_icon.png'
+
+    def average_rating(self):
+        result = self.reviews.aggregate(models.Avg('rating'))['rating__avg']
+        return round(result, 1) if result else None
+
+    def review_count(self):
+        return self.reviews.count()
 
 
 class VersionDownload(models.Model):
@@ -259,6 +269,32 @@ class AppWarning(models.Model):
         return f"{self.get_warning_type_display()} bei {self.app.name}"
 
 
+class AppReview(models.Model):
+    app = models.ForeignKey(App, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='app_reviews')
+    rating = models.PositiveSmallIntegerField(
+        choices=[(i, str(i)) for i in range(1, 6)], help_text="1 bis 5 Sterne"
+    )
+    comment = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('app', 'user')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} bewertet {self.app.name} mit {self.rating}/5"
+
+
+NOTIFICATION_TYPES = [
+    ('update', 'Update'),
+    ('security', 'Sicherheit'),
+    ('system', 'System'),
+    ('general', 'Allgemein'),
+]
+
+
 class Notification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     title = models.CharField(max_length=200)
@@ -269,10 +305,20 @@ class Notification(models.Model):
     app = models.ForeignKey('App', on_delete=models.CASCADE, null=True, blank=True)
     version = models.ForeignKey('Version', on_delete=models.CASCADE, null=True, blank=True)
     level = models.CharField(max_length=20, default='info')
+    type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='general')
     timestamp = models.DateTimeField(default=timezone.now)
+    image_url = models.URLField(blank=True, default='', help_text="Eigenes Bild für die Benachrichtigung (optional)")
 
     def __str__(self):
         return f'{self.title} -> {"Alle" if not self.user else self.user.username}'
+
+    def get_image_url(self):
+        """Eigenes Bild, sonst Icon der verknüpften App, sonst None."""
+        if self.image_url:
+            return self.image_url
+        if self.app:
+            return self.app.get_icon_url()
+        return None
 
 
 class PushSubscription(models.Model):

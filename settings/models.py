@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from datetime import timedelta
 import secrets
 import string
 
@@ -120,6 +121,68 @@ class UserSession(models.Model):
         """Session beenden"""
         self.is_active = False
         self.save()
+
+
+def _parse_device_info(user_agent: str):
+    """Sehr einfache Geräteerkennung aus dem User-Agent (ohne externe Abhängigkeit)."""
+    ua = (user_agent or "").lower()
+    if "android" in ua:
+        device_type = "Android"
+    elif "iphone" in ua or "ipad" in ua:
+        device_type = "iOS"
+    elif "macintosh" in ua:
+        device_type = "macOS"
+    elif "windows" in ua:
+        device_type = "Windows"
+    elif "linux" in ua:
+        device_type = "Linux"
+    else:
+        device_type = "Unbekannt"
+
+    if "edg/" in ua:
+        browser = "Edge"
+    elif "chrome/" in ua:
+        browser = "Chrome"
+    elif "firefox/" in ua:
+        browser = "Firefox"
+    elif "safari/" in ua:
+        browser = "Safari"
+    else:
+        browser = "Browser"
+
+    return f"{browser} auf {device_type}", device_type
+
+
+def record_login_session(user, request) -> bool:
+    """
+    Legt für die aktuelle Session einen UserSession-Eintrag an (für die
+    Geräteverwaltung) und meldet zurück, ob dieses Gerät für den User neu ist
+    (kein bisheriger aktiver Eintrag mit demselben device_name).
+    """
+    if not request.session.session_key:
+        request.session.create()
+
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    ip_address = request.META.get('REMOTE_ADDR')
+    device_name, device_type = _parse_device_info(user_agent)
+
+    is_new_device = not UserSession.objects.filter(
+        user=user, device_name=device_name, is_active=True
+    ).exists()
+
+    UserSession.objects.update_or_create(
+        session_key=request.session.session_key,
+        defaults={
+            'user': user,
+            'device_name': device_name,
+            'device_type': device_type,
+            'ip_address': ip_address,
+            'user_agent': user_agent,
+            'expires_at': timezone.now() + timedelta(days=30),
+            'is_active': True,
+        },
+    )
+    return is_new_device
 
 
 class APIToken(models.Model):

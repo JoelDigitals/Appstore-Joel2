@@ -648,9 +648,7 @@
           &copy; 2025-2026 Joel Digitals. Alle Rechte vorbehalten.
         </div>
         <div class="flex items-center space-x-4">
-          <span class="text-xs text-gray-600 bg-slate-800 px-3 py-1 rounded-full">Version 1.0.0.0</span>
-          <a href="#" class="text-gray-400 hover:text-primary transition text-xl"><i class="bi bi-github"></i></a>
-          <a href="#" class="text-gray-400 hover:text-primary transition text-xl"><i class="bi bi-twitter-x"></i></a>
+          <span class="text-xs text-gray-600 bg-slate-800 px-3 py-1 rounded-full">Version 2.0.0</span>
         </div>
       </div>
     </div>
@@ -735,9 +733,11 @@
     (function () {
       const bar = document.getElementById('pageLoadBar');
       let progressTimer = null;
+      let maxTimer = null;
 
       function startBar() {
         clearInterval(progressTimer);
+        clearTimeout(maxTimer);
         bar.style.transition = 'none';
         bar.style.width = '0%';
         // Force reflow, damit die nächste Transition greift
@@ -751,10 +751,16 @@
           progress += (90 - progress) * 0.1;
           bar.style.width = progress + '%';
         }, 200);
+
+        // Sicherheitsnetz: Falls keine echte Navigation folgt (z.B. Klick auf
+        // ein Dropdown/Accordion mit href="#"), feuert 'load' nie erneut und
+        // der Balken würde sonst für immer hängen bleiben.
+        maxTimer = setTimeout(finishBar, 4000);
       }
 
       function finishBar() {
         clearInterval(progressTimer);
+        clearTimeout(maxTimer);
         bar.style.width = '100%';
         setTimeout(() => {
           bar.classList.remove('active');

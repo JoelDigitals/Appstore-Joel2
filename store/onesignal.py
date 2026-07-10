@@ -41,10 +41,14 @@ def _post(payload: dict) -> dict:
         return {"success": False, "error": str(e)}
 
 
-def send_to_users(user_ids, title: str, message: str, url: str = None, data: dict = None) -> dict:
+def send_to_users(user_ids, title: str, message: str, url: str = None, data: dict = None,
+                   image_url: str = None) -> dict:
     """
     Sendet eine Push-Benachrichtigung an eine Liste von Django User-IDs.
     Nutzt OneSignal 'include_aliases' mit external_id = str(user.id).
+
+    image_url wird als Bild in der Push-Benachrichtigung angezeigt
+    (Android Big Picture, iOS Attachment, Web/Chrome Image).
     """
     user_ids = [str(uid) for uid in user_ids]
     if not user_ids:
@@ -60,10 +64,15 @@ def send_to_users(user_ids, title: str, message: str, url: str = None, data: dic
         payload["url"] = url
     if data:
         payload["data"] = data
+    if image_url:
+        payload["big_picture"] = image_url          # Android
+        payload["ios_attachments"] = {"media": image_url}  # iOS
+        payload["chrome_web_image"] = image_url      # Web Push
 
     return _post(payload)
 
 
-def send_to_user(user, title: str, message: str, url: str = None, data: dict = None) -> dict:
+def send_to_user(user, title: str, message: str, url: str = None, data: dict = None,
+                  image_url: str = None) -> dict:
     """Sendet eine Push-Benachrichtigung an genau einen Django User."""
-    return send_to_users([user.id], title, message, url=url, data=data)
+    return send_to_users([user.id], title, message, url=url, data=data, image_url=image_url)
