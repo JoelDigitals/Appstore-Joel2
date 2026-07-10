@@ -55,8 +55,40 @@
           </select>
         </div>
 
-        <!-- Weitere Felder... -->
-        <!-- Language, Age Rating, Category, Subcategory, Description -->
+        <!-- Sprache -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-gray-300">Sprache <span class="text-red-400">*</span></label>
+          {{ form.language }}
+          {% if form.language.errors %}<p class="text-red-400 text-sm">{{ form.language.errors.0 }}</p>{% endif %}
+        </div>
+
+        <!-- Altersfreigabe -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-gray-300">Altersfreigabe <span class="text-red-400">*</span></label>
+          {{ form.age_rating }}
+          {% if form.age_rating.errors %}<p class="text-red-400 text-sm">{{ form.age_rating.errors.0 }}</p>{% endif %}
+        </div>
+
+        <!-- Kategorie -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-gray-300">Kategorie <span class="text-red-400">*</span></label>
+          {{ form.category }}
+          {% if form.category.errors %}<p class="text-red-400 text-sm">{{ form.category.errors.0 }}</p>{% endif %}
+        </div>
+
+        <!-- Unterkategorie -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-gray-300">Unterkategorie</label>
+          {{ form.subcategory }}
+          {% if form.subcategory.errors %}<p class="text-red-400 text-sm">{{ form.subcategory.errors.0 }}</p>{% endif %}
+        </div>
+
+        <!-- Beschreibung -->
+        <div class="space-y-2 md:col-span-2">
+          <label class="block text-sm font-medium text-gray-300">Beschreibung <span class="text-red-400">*</span></label>
+          {{ form.description }}
+          {% if form.description.errors %}<p class="text-red-400 text-sm">{{ form.description.errors.0 }}</p>{% endif %}
+        </div>
       </div>
 
       <!-- Icon Upload mit ImgBB Option -->
@@ -128,6 +160,13 @@
           <textarea name="release_notes" rows="4"
                     class="w-full bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 text-gray-100"
                     placeholder="Was ist neu in dieser Version?"></textarea>
+        </div>
+
+        <div class="space-y-2 md:col-span-2">
+          <label class="block text-sm font-medium text-gray-300">Geplantes Release-Datum</label>
+          {{ form.scheduled_release_at }}
+          <p class="text-xs text-gray-500">Optional: Veröffentlichung erst zu diesem Zeitpunkt nach bestandener Prüfung. Leer lassen für sofortige Veröffentlichung.</p>
+          {% if form.scheduled_release_at.errors %}<p class="text-red-400 text-sm">{{ form.scheduled_release_at.errors.0 }}</p>{% endif %}
         </div>
       </div>
     </div>

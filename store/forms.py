@@ -6,43 +6,62 @@ class AppWithVersionForm(forms.ModelForm):
     version_number = forms.CharField(max_length=50, label="Versionsnummer")
     file = forms.FileField(label="App-Datei")
     release_notes = forms.CharField(widget=forms.Textarea, required=False, label="Release Notes")
-    
+    scheduled_release_at = forms.DateTimeField(
+        required=False,
+        label="Geplantes Release-Datum",
+        help_text="Optional: Zeitpunkt der Veröffentlichung nach bestandener Prüfung (leer = sofort)",
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+    )
+
     # ImgBB Upload Option
     use_imgbb = forms.BooleanField(
-        required=False, 
+        required=False,
         initial=True,
         label="Bild zu ImgBB hochladen",
         help_text="Wenn aktiviert, wird das Icon zu ImgBB hochgeladen (schnellerer Zugriff). Bei Fehler wird lokal gespeichert."
     )
-    
+
     class Meta:
         model = App
-        fields = ['name', 'description', 'language', 'platform', 'age_rating', 
+        fields = ['name', 'description', 'language', 'platform', 'age_rating',
                   'category', 'subcategory', 'icon']
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['icon'].required = False
         self.fields['use_imgbb'].widget = forms.CheckboxInput(attrs={
             'class': 'w-5 h-5 rounded border-gray-600 text-primary bg-slate-700 focus:ring-primary'
         })
-    
+        input_css = ('w-full bg-slate-800/50 border border-gray-700 rounded-xl px-4 py-3 '
+                     'text-gray-100 focus:outline-none focus:border-primary focus:ring-1 '
+                     'focus:ring-primary transition-all')
+        for field_name in ('description', 'language', 'age_rating', 'category',
+                           'subcategory', 'release_notes', 'scheduled_release_at'):
+            self.fields[field_name].widget.attrs['class'] = input_css
+        self.fields['description'].widget.attrs['rows'] = 4
+
     def clean(self):
         cleaned_data = super().clean()
         icon = cleaned_data.get('icon')
-        
+
         if not icon:
             raise forms.ValidationError("Bitte lade ein Icon hoch.")
-        
+
+        scheduled = cleaned_data.get('scheduled_release_at')
+        if scheduled:
+            from django.utils import timezone as tz
+            if scheduled < tz.now():
+                self.add_error('scheduled_release_at', 'Das Release-Datum muss in der Zukunft liegen.')
+
         return cleaned_data
-    
+
     def save(self, developer, commit=True):
         app = super().save(commit=False)
         app.developer = developer
-        
+
         icon = self.cleaned_data.get('icon')
         use_imgbb = self.cleaned_data.get('use_imgbb', True)
-        
+
         # Versuche ImgBB Upload wenn aktiviert und API Key vorhanden
         if use_imgbb and settings.IMGBB_API_KEY and icon:
             result = ImgBBUploader.upload_image(icon)
@@ -57,19 +76,26 @@ class AppWithVersionForm(forms.ModelForm):
             # Lokales Speichern
             app.icon = icon
             app.icon_url = ''
-        
+
         if commit:
             app.save()
-        
-        # Version erstellen
+
+        return app
+
+    def save_version(self, app):
+        """Erstellt die erste Version der App (gleiche Pipeline wie spätere Uploads: Prüfung + JDS Cloud)."""
+        uploaded_file = self.cleaned_data['file']
         version = Version.objects.create(
             app=app,
             version_number=self.cleaned_data['version_number'],
-            file=self.cleaned_data['file'],
-            release_notes=self.cleaned_data['release_notes']
+            file=uploaded_file,
+            original_filename=uploaded_file.name,
+            release_notes=self.cleaned_data['release_notes'],
+            scheduled_release_at=self.cleaned_data.get('scheduled_release_at'),
+            checking_status='pending',
+            approved=False,
         )
-        
-        return app
+        return version
 
 
 class AppEditForm(forms.ModelForm):
