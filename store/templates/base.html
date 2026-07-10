@@ -1060,6 +1060,15 @@
       });
     });
 
+    // OneSignal-Zuordnung nach Logout aufheben (z.B. bei geteilten Geräten)
+    if (window.location.search.includes('onesignal_logout=1')) {
+      if (window.median && median.onesignal && typeof median.onesignal.logout === 'function') {
+        median.onesignal.logout();
+      }
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+
     {% if user.is_authenticated %}
     // Fetch Notifications
     async function fetchNotifications() {

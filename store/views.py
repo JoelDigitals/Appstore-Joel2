@@ -495,7 +495,7 @@ def register_view(request):
 
 def logout_view(request):
     logout(request)
-    return redirect('home')
+    return redirect('/?onesignal_logout=1')
     
 @login_required
 def create_app_view(request):
