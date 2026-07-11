@@ -331,6 +331,27 @@ class PushSubscription(models.Model):
         return self.endpoint[:40]
 
 
+class OneSignalDevice(models.Model):
+    """
+    Verknüpft ein OneSignal-Gerät mit JEDEM User, der sich dort jemals
+    angemeldet hat. `median.onesignal.login()` bei OneSignal selbst kennt
+    immer nur den aktuell aktiven User pro Gerät (der letzte Login überschreibt
+    die Zuordnung) - hier merken wir uns die volle Historie, damit ein Gerät
+    Push-Nachrichten für ALLE seine Accounts bekommt, unabhängig davon, wer
+    zuletzt eingeloggt war.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='onesignal_devices')
+    onesignal_id = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'onesignal_id')
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.onesignal_id}"
+
+
 class AppInfo(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()

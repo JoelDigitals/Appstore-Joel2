@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
-from .models import App, Version, PushSubscription, Developer, VersionDownload, Notification, EmailVerificationCode, AppUpdate, RoadmapItem, User, AppReview
+from .models import App, Version, PushSubscription, Developer, VersionDownload, Notification, EmailVerificationCode, AppUpdate, RoadmapItem, User, AppReview, OneSignalDevice
 from .forms import AppWithVersionForm, VersionForm, DeveloperForm, AppEditForm, CustomUserCreationForm, AppReviewForm
 from .tasks import start_background_check, start_background_check_version, notify_security_event
 from settings.models import record_login_session
@@ -503,6 +503,21 @@ def register_view(request):
     return render(request, 'store/register.html', {'form': form})
 
 def logout_view(request):
+    if request.user.is_authenticated:
+        try:
+            from settings.models import UserProfile
+            profile = UserProfile.objects.filter(user=request.user).first()
+            if profile and profile.onesignal_player_id:
+                # Zuordnung Gerät <-> dieser User entfernen, damit nach dem
+                # Logout keine Push-Benachrichtigungen für diesen Account
+                # mehr auf diesem Gerät ankommen (siehe OneSignalDevice).
+                OneSignalDevice.objects.filter(
+                    user=request.user, onesignal_id=profile.onesignal_player_id
+                ).delete()
+                profile.onesignal_subscribed = False
+                profile.save(update_fields=["onesignal_subscribed"])
+        except Exception:
+            pass
     logout(request)
     return redirect('/?onesignal_logout=1')
     
@@ -1184,9 +1199,12 @@ def download_complete_1(request):
 @login_required
 def save_onesignal_id(request):
     """
-    Speichert die OneSignal Player-/Subscription-ID des eingeloggten Users
-    (Referenz). Der eigentliche Versand läuft über external_id = user.id,
-    die via `median.onesignal.login()` clientseitig gesetzt wird (base.html).
+    Speichert die OneSignal Player-/Subscription-ID des eingeloggten Users.
+    Der Versand nutzt sowohl external_id = user.id (via median.onesignal.login())
+    als auch diese Zuordnung (OneSignalDevice) als Fallback - letztere merkt sich
+    ALLE User, die je auf diesem Gerät eingeloggt waren, nicht nur den zuletzt
+    aktiven, damit z.B. ein Entwickler- und ein Privat-Account auf demselben
+    Gerät beide ihre Pushes bekommen.
     """
     if request.method != "POST":
         return JsonResponse({"status": "error"}, status=400)
@@ -1205,6 +1223,9 @@ def save_onesignal_id(request):
     profile.onesignal_player_id = player_id
     profile.onesignal_subscribed = True
     profile.save(update_fields=["onesignal_player_id", "onesignal_subscribed"])
+
+    OneSignalDevice.objects.get_or_create(user=request.user, onesignal_id=player_id)
+
     return JsonResponse({"status": "ok"})
 
 

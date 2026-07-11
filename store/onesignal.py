@@ -45,17 +45,36 @@ def send_to_users(user_ids, title: str, message: str, url: str = None, data: dic
                    image_url: str = None) -> dict:
     """
     Sendet eine Push-Benachrichtigung an eine Liste von Django User-IDs.
-    Nutzt OneSignal 'include_aliases' mit external_id = str(user.id).
+
+    Zielt sowohl auf external_id = str(user.id) (via median.onesignal.login(),
+    kennt aber nur den zuletzt auf einem Gerät aktiven User) als auch auf alle
+    onesignal_id's, die je über OneSignalDevice mit diesen Usern verknüpft
+    wurden. Letzteres stellt sicher, dass ein Gerät Pushes für JEDEN seiner
+    Accounts bekommt, auch wenn zwischenzeitlich ein anderer Account auf
+    demselben Gerät eingeloggt war und die OneSignal-eigene external_id-
+    Zuordnung überschrieben hat.
 
     image_url wird als Bild in der Push-Benachrichtigung angezeigt
     (Android Big Picture, iOS Attachment, Web/Chrome Image).
     """
+    from .models import OneSignalDevice
+
     user_ids = [str(uid) for uid in user_ids]
     if not user_ids:
         return {"success": False, "error": "Keine Empfänger."}
 
+    onesignal_ids = list(
+        OneSignalDevice.objects.filter(user_id__in=user_ids)
+        .values_list("onesignal_id", flat=True)
+        .distinct()
+    )
+
+    aliases = {"external_id": user_ids}
+    if onesignal_ids:
+        aliases["onesignal_id"] = onesignal_ids
+
     payload = {
-        "include_aliases": {"external_id": user_ids},
+        "include_aliases": aliases,
         "target_channel": "push",
         "headings": {"de": title, "en": title},
         "contents": {"de": message, "en": message},
