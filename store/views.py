@@ -503,21 +503,9 @@ def register_view(request):
     return render(request, 'store/register.html', {'form': form})
 
 def logout_view(request):
-    if request.user.is_authenticated:
-        try:
-            from settings.models import UserProfile
-            profile = UserProfile.objects.filter(user=request.user).first()
-            if profile and profile.onesignal_player_id:
-                # Zuordnung Gerät <-> dieser User entfernen, damit nach dem
-                # Logout keine Push-Benachrichtigungen für diesen Account
-                # mehr auf diesem Gerät ankommen (siehe OneSignalDevice).
-                OneSignalDevice.objects.filter(
-                    user=request.user, onesignal_id=profile.onesignal_player_id
-                ).delete()
-                profile.onesignal_subscribed = False
-                profile.save(update_fields=["onesignal_subscribed"])
-        except Exception:
-            pass
+    # Hinweis: Die OneSignalDevice-Zuordnung bleibt beim Logout bewusst
+    # bestehen - ein Gerät soll Push-Benachrichtigungen für JEDEN Account
+    # bekommen, der dort je eingeloggt war (mehrere Accounts auf einem Gerät).
     logout(request)
     return redirect('/?onesignal_logout=1')
     
@@ -975,7 +963,7 @@ def app_detail_view(request, app_id):
         new_version=True
     ).order_by('-uploaded_at').first()
 
-    older_versions = app.versions.filter(approved=True).exclude(
+    older_versions = app.versions.filter(approved=True, release_held=False).exclude(
         id=latest_version.id if latest_version else None
     ).order_by('-uploaded_at')
 

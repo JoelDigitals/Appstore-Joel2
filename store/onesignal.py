@@ -46,13 +46,14 @@ def send_to_users(user_ids, title: str, message: str, url: str = None, data: dic
     """
     Sendet eine Push-Benachrichtigung an eine Liste von Django User-IDs.
 
-    Zielt sowohl auf external_id = str(user.id) (via median.onesignal.login(),
-    kennt aber nur den zuletzt auf einem Gerät aktiven User) als auch auf alle
-    onesignal_id's, die je über OneSignalDevice mit diesen Usern verknüpft
-    wurden. Letzteres stellt sicher, dass ein Gerät Pushes für JEDEN seiner
-    Accounts bekommt, auch wenn zwischenzeitlich ein anderer Account auf
-    demselben Gerät eingeloggt war und die OneSignal-eigene external_id-
-    Zuordnung überschrieben hat.
+    Zielt auf zwei Wegen gleichzeitig:
+    - external_id = str(user.id), gesetzt via median.onesignal.login(). Das ist
+      immer nur der GERADE aktive Account auf einem Gerät (login() hängt die
+      Geräte-Subscription auf die neue Identität um).
+    - die stabilen Subscription-IDs aus OneSignalDevice. Diese Subscription-ID
+      gehört zur Geräte-Installation selbst und bleibt beim Account-Wechsel
+      unverändert - dadurch bekommt ein Gerät Pushes für JEDEN Account, der
+      dort je eingeloggt war, nicht nur den aktuell aktiven.
 
     image_url wird als Bild in der Push-Benachrichtigung angezeigt
     (Android Big Picture, iOS Attachment, Web/Chrome Image).
@@ -63,22 +64,20 @@ def send_to_users(user_ids, title: str, message: str, url: str = None, data: dic
     if not user_ids:
         return {"success": False, "error": "Keine Empfänger."}
 
-    onesignal_ids = list(
+    subscription_ids = list(
         OneSignalDevice.objects.filter(user_id__in=user_ids)
         .values_list("onesignal_id", flat=True)
         .distinct()
     )
 
-    aliases = {"external_id": user_ids}
-    if onesignal_ids:
-        aliases["onesignal_id"] = onesignal_ids
-
     payload = {
-        "include_aliases": aliases,
+        "include_aliases": {"external_id": user_ids},
         "target_channel": "push",
         "headings": {"de": title, "en": title},
         "contents": {"de": message, "en": message},
     }
+    if subscription_ids:
+        payload["include_subscription_ids"] = subscription_ids
     if url:
         payload["url"] = url
     if data:

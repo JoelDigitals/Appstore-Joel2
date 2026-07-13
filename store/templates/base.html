@@ -1134,12 +1134,14 @@
       }).catch(() => {});
     }
 
-    // Extrahiert die ID egal ob v5- (oneSignalId/subscription.id) oder
-    // Legacy-Format (oneSignalUserId) zurückkommt.
+    // Extrahiert die stabile Subscription-ID des Geräts (bleibt beim
+    // Account-Wechsel/erneuten Login unverändert - im Gegensatz zur
+    // oneSignalId/externalId, die pro median.onesignal.login() neu vergeben
+    // bzw. umgehängt wird). Fällt nur wenn nötig auf ältere Felder zurück.
     function extractOneSignalId(info) {
       if (!info) return null;
-      return info.oneSignalId
-        || (info.subscription && (info.subscription.id || info.subscription.token))
+      return (info.subscription && (info.subscription.id || info.subscription.token))
+        || info.oneSignalId
         || info.oneSignalUserId
         || info.oneSignalPushToken
         || null;
