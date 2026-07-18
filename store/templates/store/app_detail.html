@@ -620,7 +620,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const rawFname  = dlBtn.dataset.filename || '';
   const fileExt   = rawFname.split('.').pop().toLowerCase();
   const fileName  = '{{ app.name|slugify }}-v{{ latest_version.version_number|default:"1.0" }}.' + fileExt;
-  const dlUrl     = "{% url 'download_file_view' 0 %}".replace('0', vId);
+  const dlUrl      = "{% url 'download_file_view' 0 %}".replace('0', vId);
+  const tokenUrl   = "{% url 'get_download_token' 0 %}".replace('0', vId);
 
   let busy = false;
 
@@ -648,7 +649,16 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e) { console.warn('Tracking:', e); }
 
       try {
-        await window.median.share.downloadFile({ url: dlUrl, open: true });
+        // Natives Downloaden läuft über eine eigene HTTP-Schicht, die die
+        // Session-Cookies der WebView nicht zwangsläufig mitschickt. Daher
+        // erst ein kurzlebiges Download-Token holen (per WebView-fetch, das
+        // die Session-Cookies noch hat) und an die Download-URL anhängen.
+        const tokenResp = await fetch(tokenUrl);
+        if (!tokenResp.ok) throw new Error('Token-Anfrage fehlgeschlagen (HTTP ' + tokenResp.status + ')');
+        const { token } = await tokenResp.json();
+        const nativeDlUrl = dlUrl + (dlUrl.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(token);
+
+        await window.median.share.downloadFile({ url: nativeDlUrl, open: true });
         setBar(100);
         setStatus(isUpdate ? 'Update fertig!' : 'Download abgeschlossen!');
         showLoader(false);

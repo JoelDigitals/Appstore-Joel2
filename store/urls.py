@@ -51,6 +51,7 @@ urlpatterns = [
 
     #download new urls
     path("api/download/<int:version_id>/", views.download_file_view, name="download_file_view"),
+    path("api/download-token/<int:version_id>/", views.get_download_token, name="get_download_token"),
     path('api/download_complete/', views.download_complete, name='download_complete'),
     path('api/increment-download/', views.api_increment_download, name='api_increment_download'),
 

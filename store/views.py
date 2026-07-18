@@ -9,6 +9,7 @@ from .forms import AppWithVersionForm, VersionForm, DeveloperForm, AppEditForm, 
 from .tasks import start_background_check, start_background_check_version, notify_security_event
 from settings.models import record_login_session
 from django.http import FileResponse, JsonResponse, HttpResponse, FileResponse, HttpResponseNotFound, HttpResponseForbidden
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 import json
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
@@ -1106,7 +1107,26 @@ def download_app_start(request, version_id):
 
 
 
+DOWNLOAD_TOKEN_SALT = 'store.download-token'
+DOWNLOAD_TOKEN_MAX_AGE = 300  # 5 Minuten
+
+
 @login_required
+def get_download_token(request, version_id):
+    """
+    Liefert ein kurzlebiges, signiertes Token für download_file_view.
+
+    Natives Downloaden (z.B. Medians window.median.share.downloadFile) läuft
+    über eine eigene HTTP-Schicht, die die Session-Cookies der WebView nicht
+    zwangsläufig mitschickt. Das Token erlaubt den Download dieser einen
+    Version, ohne sich auf Session-Cookies verlassen zu müssen.
+    """
+    get_object_or_404(Version, id=version_id)
+    signer = TimestampSigner(salt=DOWNLOAD_TOKEN_SALT)
+    token = signer.sign(str(version_id))
+    return JsonResponse({'token': token})
+
+
 def download_file_view(request, version_id):
     """
     Download einer App-Version.
@@ -1114,6 +1134,20 @@ def download_file_view(request, version_id):
     - Wenn approved=False: Bestätigungsseite zeigen (ungeprüfte Datei)
     """
     version = get_object_or_404(Version, id=version_id)
+
+    authorized = request.user.is_authenticated
+    if not authorized:
+        token = request.GET.get('token')
+        if token:
+            signer = TimestampSigner(salt=DOWNLOAD_TOKEN_SALT)
+            try:
+                authorized = signer.unsign(token, max_age=DOWNLOAD_TOKEN_MAX_AGE) == str(version_id)
+            except (BadSignature, SignatureExpired):
+                authorized = False
+
+    if not authorized:
+        from django.contrib.auth.views import redirect_to_login
+        return redirect_to_login(request.get_full_path())
 
     # ── Ungeprüfte Version: Bestätigung einholen ──────────────────────────
     if not version.approved:
