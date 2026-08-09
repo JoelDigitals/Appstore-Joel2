@@ -15,7 +15,11 @@ urlpatterns = [
     
     # Sicherheit
     path('settings/security/', views.security_settings, name='security_settings'),
-    
+    path('settings/security/2fa/check-link/', views.tfa_check_link, name='tfa_check_link'),
+    path('settings/security/2fa/pairing-test/', views.tfa_pairing_test, name='tfa_pairing_test'),
+    path('settings/security/2fa/pairing-status/', views.tfa_pairing_status, name='tfa_pairing_status'),
+    path('settings/security/2fa/enable/', views.tfa_enable, name='tfa_enable'),
+
     # Passwort ändern
     path('settings/password/', views.change_password_view, name='change_password'),
     

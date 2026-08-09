@@ -73,10 +73,17 @@ urlpatterns = [
     path('notifications/<int:pk>/', views.notification_detail, name='notification_detail'),
     path('notifications/mark-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
 
-    path('accounts/login/', views.login_view, name='login'),    
+    path('accounts/login/', views.login_view, name='login'),
     path('accounts/register/sso/', views.sso_connect, name='sso_connect'),
     path('accounts/register/callback/', views.sso_callback, name='sso_callback'),
     path('auth/sso/login/', views.sso_login, name='sso_login'),
+
+    # 2FA-Login-Bestaetigung ueber die Joel Digitals App (siehe
+    # store/login_approval_client.py)
+    path('accounts/login/2fa/pending/', views.two_factor_pending_view, name='two_factor_pending'),
+    path('accounts/login/2fa/status/', views.two_factor_status_api, name='two_factor_status_api'),
+    path('accounts/login/2fa/confirm/', views.two_factor_confirm_api, name='two_factor_confirm_api'),
+    path('accounts/login/2fa/resend/', views.two_factor_resend_api, name='two_factor_resend_api'),
 
     path("status/api/<int:version_id>/", views.version_status_api, name="version_status_api"),
 

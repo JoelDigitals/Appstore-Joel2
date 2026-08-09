@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.contrib.auth import logout, authenticate, update_session_auth_hash
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -128,10 +129,80 @@ def security_settings(request):
             messages.success(request, "Konto gelöscht.")
             return redirect('home')
 
+        elif action == 'disable_2fa':
+            security.two_factor_enabled = False
+            security.save()
+            messages.success(request, "Zwei-Faktor-Authentifizierung deaktiviert.")
+            return redirect('security_settings')
+
     return render(request, 'settings/security_settings.html', {
         'security': security,
         'recent_sessions': recent_sessions
     })
+
+
+@login_required
+@require_POST
+def tfa_check_link(request):
+    """Prueft, OHNE etwas anzulegen, ob dieses Konto mit einer Joel Digitals
+    App verknuepft und per Push erreichbar ist - Voraussetzung, bevor 2FA
+    ueberhaupt aktivierbar gemacht wird (verhindert Selbstaussperrung)."""
+    from store.login_approval_client import check_account_link_status
+    status_code, body = check_account_link_status(request.user.email)
+    if status_code != 200:
+        return JsonResponse({'error': 'connection_failed'}, status=502)
+    return JsonResponse(body)
+
+
+@login_required
+@require_POST
+def tfa_pairing_test(request):
+    """Loest einen echten Push-Bestaetigungs-Roundtrip aus (purpose=
+    pairing_test), bevor 2FA scharf geschaltet wird."""
+    from store.login_approval_client import create_login_approval_request
+    from store.views import get_client_ip
+    status_code, body = create_login_approval_request(
+        email=request.user.email, purpose='pairing_test',
+        ip=get_client_ip(request) or '', context='JDS AppStore Geräte-Verknüpfung',
+    )
+    if status_code != 200:
+        return JsonResponse(body, status=status_code if status_code < 500 else 502)
+    request.session['pending_pairing_token'] = body['token']
+    return JsonResponse(body)
+
+
+@login_required
+def tfa_pairing_status(request):
+    from store.login_approval_client import check_login_approval_status
+    token = request.session.get('pending_pairing_token')
+    if not token:
+        return JsonResponse({'error': 'no_pending_request'}, status=400)
+    status_code, body = check_login_approval_status(token)
+    if status_code != 200:
+        return JsonResponse({'status': 'error'})
+    return JsonResponse(body)
+
+
+@login_required
+@require_POST
+def tfa_enable(request):
+    """Aktiviert 2FA erst, nachdem der Pairing-Test-Token server-seitig
+    erneut als 'approved' bestaetigt wurde - kein Vertrauen in den
+    Client-Status."""
+    from store.login_approval_client import check_login_approval_status
+    token = request.session.get('pending_pairing_token')
+    if not token:
+        return JsonResponse({'error': 'no_pending_request'}, status=400)
+
+    status_code, body = check_login_approval_status(token)
+    if status_code != 200 or body.get('status') != 'approved':
+        return JsonResponse({'error': 'not_approved'}, status=409)
+
+    security, _ = UserSecurity.objects.get_or_create(user=request.user)
+    security.two_factor_enabled = True
+    security.save(update_fields=['two_factor_enabled'])
+    request.session.pop('pending_pairing_token', None)
+    return JsonResponse({'enabled': True})
 
 
 @login_required

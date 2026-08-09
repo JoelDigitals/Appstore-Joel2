@@ -37,6 +37,8 @@ from django.core.mail import send_mail
 from django.urls import reverse
 import secrets
 from settings.models import UserSecurity
+from .login_approval_client import create_login_approval_request, check_login_approval_status
+from django.views.decorators.http import require_POST
 from . import models
 
 app_celery = Celery()
@@ -317,7 +319,36 @@ def login_view(request):
                         redirect_target = f'/verify-email/?next={next_url}'
                     return redirect(redirect_target)
 
-                # User ist aktiv -> normaler Login
+                # 2FA per Joel Digitals App aktiv? -> Login erst nach
+                # Push-Bestaetigung abschliessen statt sofort (siehe
+                # store.login_approval_client). Diese Pruefung liegt bewusst
+                # HINTER der erfolgreichen Passwortpruefung oben - wer das
+                # Passwort nicht kennt, kann so nie einen Push beim
+                # eigentlichen Kontoinhaber ausloesen.
+                security, _ = UserSecurity.objects.get_or_create(user=user)
+                if security.two_factor_enabled:
+                    status_code, body = create_login_approval_request(
+                        email=user.email, purpose='login',
+                        ip=get_client_ip(request) or '', context='JDS AppStore Login',
+                    )
+                    if status_code == 200:
+                        request.session['pending_2fa_token'] = body['token']
+                        request.session['pending_2fa_user_id'] = user.id
+                        if next_url:
+                            request.session['next_url_after_2fa'] = next_url
+                        return redirect('two_factor_pending')
+
+                    tfa_error_messages = {
+                        'no_joel_digitals_account': "Dein Konto ist nicht mit Joel Digitals verknüpft. Bitte kontaktiere den Support.",
+                        'device_not_linked': "Deine Joel Digitals App ist nicht erreichbar. Bitte kontaktiere den Support.",
+                        'rate_limited': "Es läuft bereits eine Bestätigungsanfrage. Bitte prüfe deine Joel Digitals App.",
+                    }
+                    messages.error(request, tfa_error_messages.get(
+                        body.get('error'), "Zwei-Faktor-Bestätigung momentan nicht verfügbar. Bitte versuche es später erneut."
+                    ))
+                    return render(request, 'store/login.html', {'form': AuthenticationForm(request), 'next': next_url})
+
+                # User ist aktiv, 2FA nicht aktiv -> normaler Login
                 login(request, user)
                 is_new_device = record_login_session(user, request)
                 if is_new_device:
@@ -341,6 +372,71 @@ def login_view(request):
         form = AuthenticationForm()
 
     return render(request, 'store/login.html', {'form': form, 'next': next_url})
+
+
+def two_factor_pending_view(request):
+    """Wartebildschirm nach erfolgreicher Passwortpruefung, solange die
+    Login-Bestaetigung in der Joel Digitals App noch aussteht. Bewusst kein
+    @login_required - der User ist zu diesem Zeitpunkt noch nicht
+    eingeloggt (gleiches Prinzip wie verify_email_view oben)."""
+    if not request.session.get('pending_2fa_token'):
+        return redirect('login')
+    return render(request, 'store/two_factor_pending.html', {})
+
+
+def two_factor_status_api(request):
+    token = request.session.get('pending_2fa_token')
+    if not token:
+        return JsonResponse({'error': 'no_pending_request'}, status=400)
+    status_code, body = check_login_approval_status(token)
+    if status_code != 200:
+        return JsonResponse({'status': 'error'}, status=200)
+    return JsonResponse({'status': body.get('status', 'error')})
+
+
+@require_POST
+def two_factor_confirm_api(request):
+    """Schliesst den Login erst ab, nachdem der Status server-seitig erneut
+    als 'approved' bestaetigt wurde - der Client-Status wird nie blind
+    vertraut."""
+    token = request.session.get('pending_2fa_token')
+    user_id = request.session.get('pending_2fa_user_id')
+    if not token or not user_id:
+        return JsonResponse({'error': 'no_pending_request'}, status=400)
+
+    status_code, body = check_login_approval_status(token)
+    if status_code != 200 or body.get('status') != 'approved':
+        return JsonResponse({'error': 'not_approved', 'status': body.get('status')}, status=409)
+
+    user = get_object_or_404(User, id=user_id)
+    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    is_new_device = record_login_session(user, request)
+    if is_new_device:
+        notify_security_event(
+            user,
+            title="Neue Anmeldung erkannt",
+            message="Dein Konto wurde per Joel-Digitals-App-Bestätigung angemeldet.",
+        )
+    next_url = request.session.pop('next_url_after_2fa', '')
+    request.session.pop('pending_2fa_token', None)
+    request.session.pop('pending_2fa_user_id', None)
+    messages.success(request, f'Willkommen zurück, {user.username}!')
+    return JsonResponse({'redirect': next_url or '/'})
+
+
+@require_POST
+def two_factor_resend_api(request):
+    user_id = request.session.get('pending_2fa_user_id')
+    if not user_id:
+        return JsonResponse({'error': 'no_pending_request'}, status=400)
+    user = get_object_or_404(User, id=user_id)
+    status_code, body = create_login_approval_request(
+        email=user.email, purpose='login', ip=get_client_ip(request) or '', context='JDS AppStore Login',
+    )
+    if status_code != 200:
+        return JsonResponse(body, status=status_code if status_code < 500 else 502)
+    request.session['pending_2fa_token'] = body['token']
+    return JsonResponse({'status': 'pending'})
 
 
 def verify_email_view(request):

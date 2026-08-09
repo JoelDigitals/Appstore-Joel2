@@ -58,20 +58,56 @@
         </div>
         <div>
           <h3 class="font-semibold text-gray-100">Zwei-Faktor-Authentifizierung</h3>
-          <p class="text-sm text-gray-400">Zusätzliche Sicherheitsebene für dein Konto</p>
+          <p class="text-sm text-gray-400">Bestätige neue Logins per Push in der Joel Digitals App</p>
         </div>
       </div>
-      <span class="px-3 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
-        Demnächst
+      {% if security.two_factor_enabled %}
+      <span class="px-3 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+        Aktiv
       </span>
+      {% else %}
+      <span id="tfa-status-badge" class="px-3 py-1 rounded-full text-xs font-medium bg-slate-700/30 text-gray-400 border border-gray-600/20">
+        Nicht aktiv
+      </span>
+      {% endif %}
     </div>
-    
-    <div class="p-4 bg-slate-800/30 rounded-xl border border-gray-700/30">
-      <div class="flex items-center gap-3 text-sm text-gray-400">
-        <i class="bi bi-clock-history text-primary"></i>
-        <span>Die 2FA-Funktion wird in Kürze verfügbar sein. Wir benachrichtigen dich, sobald sie aktiv ist.</span>
+
+    {% if security.two_factor_enabled %}
+    <div class="p-4 bg-green-500/5 rounded-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-3 text-sm text-gray-300">
+        <i class="bi bi-check-circle text-green-400"></i>
+        <span>Logins müssen in deiner Joel Digitals App bestätigt werden.</span>
+      </div>
+      <button type="button" onclick="openModal('disable2faModal')"
+              class="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all text-sm font-medium border border-red-500/20 whitespace-nowrap">
+        Deaktivieren
+      </button>
+    </div>
+    {% else %}
+    <div id="tfa-setup" class="p-4 bg-slate-800/30 rounded-xl border border-gray-700/30">
+      <div id="tfa-step-start">
+        <p class="text-sm text-gray-400 mb-3">Aktiviere die Zwei-Faktor-Authentifizierung, um Logins über deine Joel Digitals App zu bestätigen.</p>
+        <button type="button" id="tfa-start-btn" class="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all text-sm font-medium border border-primary/20">
+          <i class="bi bi-shield-plus"></i> 2FA aktivieren
+        </button>
+        <p id="tfa-error" class="text-sm text-red-400 mt-3 hidden"></p>
+      </div>
+
+      <div id="tfa-step-pairing" class="hidden">
+        <div class="flex items-center gap-3 text-sm text-gray-300">
+          <i class="bi bi-arrow-repeat animate-spin text-primary"></i>
+          <span>Bitte bestätige die Verknüpfung in deiner Joel Digitals App …</span>
+        </div>
+      </div>
+
+      <div id="tfa-step-success" class="hidden">
+        <div class="flex items-center gap-3 text-sm text-green-400">
+          <i class="bi bi-check-circle"></i>
+          <span>Zwei-Faktor-Authentifizierung aktiviert.</span>
+        </div>
       </div>
     </div>
+    {% endif %}
   </div>
 
   <!-- Login History -->
@@ -194,6 +230,53 @@
   </div>
 </div>
 
+<!-- Disable 2FA Modal -->
+<div id="disable2faModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('disable2faModal')"></div>
+  <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+    <div class="glass rounded-3xl p-6 max-w-md w-full border border-red-500/20 shadow-2xl transform scale-95 opacity-0 transition-all duration-300" id="disable2faModalContent">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center">
+          <i class="bi bi-shield-x text-2xl text-red-400"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold text-gray-100">2FA deaktivieren</h3>
+          <p class="text-sm text-gray-400">Logins werden dann nicht mehr bestätigt</p>
+        </div>
+      </div>
+
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="disable_2fa">
+
+        <div class="p-4 bg-red-500/5 rounded-xl border border-red-500/20">
+          <p class="text-sm text-gray-300 mb-3">Gib dein Passwort ein, um die Deaktivierung zu bestätigen:</p>
+          <div class="relative">
+            <i class="bi bi-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input type="password"
+                   name="password"
+                   class="w-full bg-slate-800/50 border border-gray-700 rounded-xl pl-11 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+                   placeholder="Dein Passwort"
+                   required>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <button type="button"
+                  onclick="closeModal('disable2faModal')"
+                  class="flex-1 px-4 py-3 glass hover:bg-gray-700/50 text-gray-300 rounded-xl transition-all">
+            Abbrechen
+          </button>
+          <button type="submit"
+                  class="flex-1 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 rounded-xl transition-all font-medium">
+            Deaktivieren
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Delete Modal -->
 <div id="deleteModal" class="fixed inset-0 z-50 hidden">
   <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('deleteModal')"></div>
@@ -282,7 +365,103 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeModal('deactivateModal');
         closeModal('deleteModal');
+        closeModal('disable2faModal');
     }
 });
 </script>
+
+{% if not security.two_factor_enabled %}
+<script>
+function tfaCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        for (let cookie of document.cookie.split(";")) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function tfaShowStep(step) {
+    ['start', 'pairing', 'success'].forEach(function (s) {
+        document.getElementById('tfa-step-' + s).classList.toggle('hidden', s !== step);
+    });
+}
+
+function tfaShowError(message) {
+    var el = document.getElementById('tfa-error');
+    el.textContent = message;
+    el.classList.remove('hidden');
+    tfaShowStep('start');
+}
+
+function tfaPost(url) {
+    return fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': tfaCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded' },
+    }).then(function (r) { return r.json(); });
+}
+
+function tfaPollPairing() {
+    fetch("{% url 'tfa_pairing_status' %}")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.status === 'approved') {
+                tfaPost("{% url 'tfa_enable' %}").then(function (data2) {
+                    if (data2.enabled) {
+                        tfaShowStep('success');
+                        setTimeout(function () { window.location.reload(); }, 1200);
+                    } else {
+                        tfaShowError('Aktivierung fehlgeschlagen. Bitte erneut versuchen.');
+                    }
+                });
+            } else if (data.status === 'denied') {
+                tfaShowError('Verknüpfung in der Joel Digitals App abgelehnt.');
+            } else if (data.status === 'expired') {
+                tfaShowError('Zeit abgelaufen. Bitte erneut versuchen.');
+            } else if (data.status === 'pending') {
+                setTimeout(tfaPollPairing, 2500);
+            } else {
+                tfaShowError('Verknüpfung konnte nicht geprüft werden.');
+            }
+        })
+        .catch(function () { tfaShowError('Verbindungsfehler.'); });
+}
+
+document.getElementById('tfa-start-btn').addEventListener('click', function () {
+    var btn = this;
+    btn.disabled = true;
+    document.getElementById('tfa-error').classList.add('hidden');
+
+    tfaPost("{% url 'tfa_check_link' %}").then(function (data) {
+        if (!data.linked) {
+            tfaShowError('Kein Joel Digitals Konto mit dieser E-Mail-Adresse gefunden.');
+            btn.disabled = false;
+            return;
+        }
+        if (!data.reachable) {
+            tfaShowError('Deine Joel Digitals App ist nicht erreichbar. Bitte öffne die App und erlaube Push-Benachrichtigungen.');
+            btn.disabled = false;
+            return;
+        }
+        tfaPost("{% url 'tfa_pairing_test' %}").then(function (data2) {
+            btn.disabled = false;
+            if (data2.token) {
+                tfaShowStep('pairing');
+                tfaPollPairing();
+            } else {
+                tfaShowError('Bestätigungsanfrage konnte nicht gestartet werden.');
+            }
+        });
+    }).catch(function () {
+        tfaShowError('Verbindungsfehler.');
+        btn.disabled = false;
+    });
+});
+</script>
+{% endif %}
 {% endblock %}
