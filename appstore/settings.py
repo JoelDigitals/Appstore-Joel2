@@ -30,7 +30,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = 'django-insecure-xf2h1hg21d-1k1t_5j&jgpnso_qclrvff(#^g5994y06=ct-s-'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=False)
 
 ALLOWED_HOSTS = ['jds-appstore.onrender.com',
                  'jds-appstore.de',
