@@ -46,7 +46,8 @@
             50% { transform: scale(1.06); opacity: 0.85; }
         }
         h2 { font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-bottom: 0.5rem; }
-        p.subtitle { color: #94a3b8; font-size: 0.9375rem; margin-bottom: 1.75rem; }
+        p.subtitle { color: #94a3b8; font-size: 0.9375rem; margin-bottom: 0.75rem; }
+        .tfa-code { font-family: monospace; font-size: 2.5rem; font-weight: 700; letter-spacing: 4px; color: #a5b4fc; margin-bottom: 1.5rem; }
         .tfa-state { display: none; }
         .tfa-state.active { display: block; }
         .tfa-btn {
@@ -78,7 +79,8 @@
     <div id="tfa-state-pending" class="tfa-state active">
         <div class="tfa-icon pulse"><i class="bi bi-phone"></i></div>
         <h2>Bestätigung ausstehend</h2>
-        <p class="subtitle">Öffne deine Joel Digitals App und bestätige die Anmeldung.</p>
+        <p class="subtitle">Öffne deine Joel Digitals App und wähle diese Zahl aus:</p>
+        <div id="tfa-display-code" class="tfa-code">{{ display_code }}</div>
         <div style="color:#64748b;font-size:0.875rem;"><i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite;display:inline-block;"></i> Warte auf Bestätigung …</div>
     </div>
 
@@ -177,6 +179,7 @@ document.getElementById('tfa-resend-btn').addEventListener('click', function () 
         .then(function (data) {
             btn.disabled = false;
             if (data.status === 'pending') {
+                document.getElementById('tfa-display-code').textContent = data.display_code || '';
                 tfaShowState('pending');
                 tfaCheckStatus();
             } else {

@@ -328,9 +328,10 @@ def login_view(request):
                 security, _ = UserSecurity.objects.get_or_create(user=user)
                 if security.two_factor_enabled:
                     # security.joel_digitals_email statt user.email - nur die
-                    # ueber tfa_link_start bestaetigte Adresse ist ein echter
-                    # Nachweis, dass dieses Konto ein Joel-Digitals-Konto
-                    # kontrolliert (siehe UserSecurity.joel_digitals_email).
+                    # ueber die Pairing-Code-Verknuepfung bestaetigte Adresse
+                    # ist ein echter Nachweis, dass dieses Konto ein
+                    # Joel-Digitals-Konto kontrolliert (siehe
+                    # UserSecurity.joel_digitals_email).
                     status_code, body = create_login_approval_request(
                         email=security.joel_digitals_email, purpose='login',
                         ip=get_client_ip(request) or '', context='JDS AppStore Login',
@@ -338,6 +339,7 @@ def login_view(request):
                     if status_code == 200:
                         request.session['pending_2fa_token'] = body['token']
                         request.session['pending_2fa_user_id'] = user.id
+                        request.session['pending_2fa_display_code'] = body.get('display_code', '')
                         if next_url:
                             request.session['next_url_after_2fa'] = next_url
                         return redirect('two_factor_pending')
@@ -385,7 +387,9 @@ def two_factor_pending_view(request):
     eingeloggt (gleiches Prinzip wie verify_email_view oben)."""
     if not request.session.get('pending_2fa_token'):
         return redirect('login')
-    return render(request, 'store/two_factor_pending.html', {})
+    return render(request, 'store/two_factor_pending.html', {
+        'display_code': request.session.get('pending_2fa_display_code', ''),
+    })
 
 
 def two_factor_status_api(request):
@@ -424,6 +428,7 @@ def two_factor_confirm_api(request):
     next_url = request.session.pop('next_url_after_2fa', '')
     request.session.pop('pending_2fa_token', None)
     request.session.pop('pending_2fa_user_id', None)
+    request.session.pop('pending_2fa_display_code', None)
     messages.success(request, f'Willkommen zurück, {user.username}!')
     return JsonResponse({'redirect': next_url or '/'})
 
@@ -434,13 +439,15 @@ def two_factor_resend_api(request):
     if not user_id:
         return JsonResponse({'error': 'no_pending_request'}, status=400)
     user = get_object_or_404(User, id=user_id)
+    security, _ = UserSecurity.objects.get_or_create(user=user)
     status_code, body = create_login_approval_request(
-        email=user.email, purpose='login', ip=get_client_ip(request) or '', context='JDS AppStore Login',
+        email=security.joel_digitals_email, purpose='login', ip=get_client_ip(request) or '', context='JDS AppStore Login',
     )
     if status_code != 200:
         return JsonResponse(body, status=status_code if status_code < 500 else 502)
     request.session['pending_2fa_token'] = body['token']
-    return JsonResponse({'status': 'pending'})
+    request.session['pending_2fa_display_code'] = body.get('display_code', '')
+    return JsonResponse({'status': 'pending', 'display_code': body.get('display_code', '')})
 
 
 def verify_email_view(request):
