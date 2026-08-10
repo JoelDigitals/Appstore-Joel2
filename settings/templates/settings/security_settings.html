@@ -76,20 +76,29 @@
     <div class="p-4 bg-green-500/5 rounded-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div class="flex items-center gap-3 text-sm text-gray-300">
         <i class="bi bi-check-circle text-green-400"></i>
-        <span>Logins müssen in deiner Joel Digitals App bestätigt werden.</span>
+        <span>Logins müssen in deiner Joel Digitals App bestätigt werden.{% if security.joel_digitals_email %} Verknüpft mit <strong>{{ security.joel_digitals_email }}</strong>.{% endif %}</span>
       </div>
       <button type="button" onclick="openModal('disable2faModal')"
               class="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all text-sm font-medium border border-red-500/20 whitespace-nowrap">
         Deaktivieren
       </button>
     </div>
+    {% elif not security.joel_digitals_email %}
+    <div class="p-4 bg-slate-800/30 rounded-xl border border-gray-700/30">
+      <p class="text-sm text-gray-400 mb-3">Verknüpfe zuerst dein Joel-Digitals-Konto, um Logins über die Joel Digitals App zu bestätigen. Das funktioniert unabhängig davon, ob du dich hier per SSO oder mit lokalem Passwort registriert hast.</p>
+      <a href="{% url 'tfa_link_start' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all text-sm font-medium border border-primary/20">
+        <i class="bi bi-link-45deg"></i> Mit Joel Digitals verknüpfen
+      </a>
+    </div>
     {% else %}
     <div id="tfa-setup" class="p-4 bg-slate-800/30 rounded-xl border border-gray-700/30">
       <div id="tfa-step-start">
+        <p class="text-sm text-gray-400 mb-1">Verknüpft mit <strong>{{ security.joel_digitals_email }}</strong>.</p>
         <p class="text-sm text-gray-400 mb-3">Aktiviere die Zwei-Faktor-Authentifizierung, um Logins über deine Joel Digitals App zu bestätigen.</p>
         <button type="button" id="tfa-start-btn" class="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all text-sm font-medium border border-primary/20">
           <i class="bi bi-shield-plus"></i> 2FA aktivieren
         </button>
+        <a href="{% url 'tfa_link_start' %}" class="ml-2 text-sm text-gray-400 hover:text-gray-300">Anderes Konto verknüpfen</a>
         <p id="tfa-error" class="text-sm text-red-400 mt-3 hidden"></p>
       </div>
 
@@ -370,7 +379,7 @@ document.addEventListener('keydown', (e) => {
 });
 </script>
 
-{% if not security.two_factor_enabled %}
+{% if not security.two_factor_enabled and security.joel_digitals_email %}
 <script>
 function tfaCookie(name) {
     let cookieValue = null;

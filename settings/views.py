@@ -144,11 +144,16 @@ def security_settings(request):
 @login_required
 @require_POST
 def tfa_check_link(request):
-    """Prueft, OHNE etwas anzulegen, ob dieses Konto mit einer Joel Digitals
-    App verknuepft und per Push erreichbar ist - Voraussetzung, bevor 2FA
+    """Prueft, OHNE etwas anzulegen, ob das VERKNUEPFTE Joel-Digitals-Konto
+    (security.joel_digitals_email, bestaetigt via tfa_link_start - NICHT
+    request.user.email) per Push erreichbar ist - Voraussetzung, bevor 2FA
     ueberhaupt aktivierbar gemacht wird (verhindert Selbstaussperrung)."""
+    security, _ = UserSecurity.objects.get_or_create(user=request.user)
+    if not security.joel_digitals_email:
+        return JsonResponse({'linked': False, 'reachable': False})
+
     from store.login_approval_client import check_account_link_status
-    status_code, body = check_account_link_status(request.user.email)
+    status_code, body = check_account_link_status(security.joel_digitals_email)
     if status_code != 200:
         return JsonResponse({'error': 'connection_failed'}, status=502)
     return JsonResponse(body)
@@ -158,11 +163,16 @@ def tfa_check_link(request):
 @require_POST
 def tfa_pairing_test(request):
     """Loest einen echten Push-Bestaetigungs-Roundtrip aus (purpose=
-    pairing_test), bevor 2FA scharf geschaltet wird."""
+    pairing_test) an das verknuepfte Konto, bevor 2FA scharf geschaltet
+    wird."""
+    security, _ = UserSecurity.objects.get_or_create(user=request.user)
+    if not security.joel_digitals_email:
+        return JsonResponse({'error': 'not_linked'}, status=409)
+
     from store.login_approval_client import create_login_approval_request
     from store.views import get_client_ip
     status_code, body = create_login_approval_request(
-        email=request.user.email, purpose='pairing_test',
+        email=security.joel_digitals_email, purpose='pairing_test',
         ip=get_client_ip(request) or '', context='JDS AppStore Geräte-Verknüpfung',
     )
     if status_code != 200:

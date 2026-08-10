@@ -92,7 +92,15 @@ class UserSecurity(models.Model):
     is_deactivated = models.BooleanField(default=False)
     two_factor_enabled = models.BooleanField(default=False)
     two_factor_secret = models.CharField(max_length=32, blank=True)
-    
+    # E-Mail des verknuepften Joel-Digitals-Kontos, bestaetigt ueber einen
+    # echten SSO-Login-Roundtrip (siehe store.views.tfa_link_start/
+    # _handle_tfa_link_callback) - NICHT einfach user.email, da dieses Konto
+    # auch ganz ohne SSO (lokales Passwort) registriert worden sein kann und
+    # user.email dann keinerlei Nachweis ist, dass diese Adresse wirklich zu
+    # einem Joel-Digitals-Konto gehoert. 2FA nutzt ausschliesslich dieses
+    # Feld als Ziel-E-Mail fuer die Login-Approval-API, nie user.email.
+    joel_digitals_email = models.EmailField(blank=True)
+
     def __str__(self):
         return f"Sicherheitseinstellungen für {self.user.username}"
 
