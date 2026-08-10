@@ -15,6 +15,8 @@ urlpatterns = [
     
     # Sicherheit
     path('settings/security/', views.security_settings, name='security_settings'),
+    path('settings/security/2fa/link/create/', views.tfa_link_create, name='tfa_link_create'),
+    path('settings/security/2fa/link/status/', views.tfa_link_status, name='tfa_link_status'),
     path('settings/security/2fa/check-link/', views.tfa_check_link, name='tfa_check_link'),
     path('settings/security/2fa/pairing-test/', views.tfa_pairing_test, name='tfa_pairing_test'),
     path('settings/security/2fa/pairing-status/', views.tfa_pairing_status, name='tfa_pairing_status'),

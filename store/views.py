@@ -1573,72 +1573,8 @@ def sso_connect(request):
     return response
 
 
-@login_required
-def tfa_link_start(request):
-    """Verknuepft das aktuelle (bereits eingeloggte) AppStore-Konto mit einem
-    Joel-Digitals-Konto ueber einen echten SSO-Login-Roundtrip - Voraussetzung
-    fuer 2FA, AUCH wenn dieses AppStore-Konto nie ueber SSO registriert
-    wurde. Ein reiner E-Mail-Abgleich (user.email) waere kein Nachweis, dass
-    der Kontoinhaber diese Adresse bei Joel Digitals wirklich kontrolliert -
-    hier muss er sich tatsaechlich dort einloggen.
-
-    Nutzt denselben Redirect-Aufbau wie sso_connect (gleicher Client, gleiche
-    Callback-URL - SSOClient in joel_digitals erlaubt nur genau EINE
-    registrierte Callback-URL), markiert die Session aber als 'nur
-    verknuepfen', damit sso_callback unten den eingeloggten AppStore-User
-    dabei nicht wechselt oder neu anlegt (siehe _handle_tfa_link_callback)."""
-    request.session['tfa_linking'] = True
-    return sso_connect(request)
-
-
-def _handle_tfa_link_callback(request):
-    """Zweig von sso_callback fuer die reine Konto-Verknuepfung (siehe
-    tfa_link_start) - loggt NIE ein/aus und wechselt nie den User, sondern
-    validiert nur den Token und speichert die bestaetigte E-Mail auf
-    UserSecurity.joel_digitals_email des bereits eingeloggten Users."""
-    if not request.user.is_authenticated:
-        messages.error(request, "Bitte melde dich zuerst im AppStore an.")
-        return redirect('login')
-
-    token = request.GET.get('token')
-    state = request.GET.get('state')
-    stored_state = request.session.pop('sso_state', None)
-
-    if not token or state != stored_state:
-        messages.error(request, "Verknüpfung fehlgeschlagen (ungültiger Status). Bitte erneut versuchen.")
-        return redirect('security_settings')
-
-    try:
-        resp = requests.post(
-            f"{settings.SSO_PROVIDER_URL}/api/sso/validate/",
-            data={'token': token, 'client_id': settings.SSO_CLIENT_ID, 'client_secret': settings.SSO_CLIENT_SECRET},
-            timeout=10,
-        )
-    except requests.RequestException:
-        messages.error(request, "Verbindung zu Joel Digitals fehlgeschlagen. Bitte erneut versuchen.")
-        return redirect('security_settings')
-
-    if resp.status_code != 200:
-        messages.error(request, "Verknüpfung fehlgeschlagen. Bitte erneut versuchen.")
-        return redirect('security_settings')
-
-    email = resp.json().get('email')
-    if not email:
-        messages.error(request, "Keine E-Mail-Adresse von Joel Digitals erhalten.")
-        return redirect('security_settings')
-
-    security, _ = UserSecurity.objects.get_or_create(user=request.user)
-    security.joel_digitals_email = email
-    security.save(update_fields=['joel_digitals_email'])
-    messages.success(request, f"Mit Joel Digitals verknüpft ({email}).")
-    return redirect('security_settings')
-
-
 def sso_callback(request):
     """Empfängt SSO Token und erstellt/logged User ein"""
-    if request.session.pop('tfa_linking', False):
-        return _handle_tfa_link_callback(request)
-
     print("\n" + "=" * 80)
     print("🔙 SSO CALLBACK - START")
     print("=" * 80)

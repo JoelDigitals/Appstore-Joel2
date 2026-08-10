@@ -54,3 +54,17 @@ def create_login_approval_request(email, purpose='login', ip='', context=''):
 def check_login_approval_status(token):
     """Gibt (status_code, {'status': 'pending'|'approved'|'denied'|'expired'}) zurueck."""
     return _post('/api/login-approval/status/', token=token)
+
+
+def create_app_link_code():
+    """Kontoverknuepfung per Pairing-Code/QR statt SSO-Redirect: legt einen
+    kurzen Code an, den der User in seiner bereits eingeloggten Joel
+    Digitals App eintippt/scannt (siehe main.models.AppLinkCode). Gibt
+    (status_code, {'code': ..., 'expires_at': ...}) zurueck."""
+    return _post('/api/app-link/create/')
+
+
+def check_app_link_status(code):
+    """Gibt (status_code, {'status': ..., 'email': ...}) zurueck - 'email'
+    ist nur gesetzt, sobald status == 'confirmed'."""
+    return _post('/api/app-link/status/', code=code)

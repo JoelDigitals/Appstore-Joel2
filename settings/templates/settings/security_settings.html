@@ -85,10 +85,34 @@
     </div>
     {% elif not security.joel_digitals_email %}
     <div class="p-4 bg-slate-800/30 rounded-xl border border-gray-700/30">
-      <p class="text-sm text-gray-400 mb-3">Verknüpfe zuerst dein Joel-Digitals-Konto, um Logins über die Joel Digitals App zu bestätigen. Das funktioniert unabhängig davon, ob du dich hier per SSO oder mit lokalem Passwort registriert hast.</p>
-      <a href="{% url 'tfa_link_start' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all text-sm font-medium border border-primary/20">
-        <i class="bi bi-link-45deg"></i> Mit Joel Digitals verknüpfen
-      </a>
+      <div id="link-step-start">
+        <p class="text-sm text-gray-400 mb-3">Verknüpfe zuerst dein Joel-Digitals-Konto, um Logins über die Joel Digitals App zu bestätigen. Das funktioniert unabhängig davon, ob du dich hier per SSO oder mit lokalem Passwort registriert hast.</p>
+        <button type="button" id="link-start-btn" class="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all text-sm font-medium border border-primary/20">
+          <i class="bi bi-link-45deg"></i> Code anzeigen
+        </button>
+        <p id="link-error" class="text-sm text-red-400 mt-3 hidden"></p>
+      </div>
+
+      <div id="link-step-code" class="hidden">
+        <p class="text-sm text-gray-400 mb-3">Öffne die Joel Digitals App → <em>Gerät verknüpfen</em>, und gib diesen Code ein oder scanne den QR-Code:</p>
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+          <div id="link-qr" class="bg-white p-3 rounded-xl inline-block"></div>
+          <div>
+            <div id="link-code-display" class="text-2xl font-mono font-bold tracking-widest text-gray-100 mb-2"></div>
+            <div class="flex items-center gap-2 text-sm text-gray-400">
+              <i class="bi bi-arrow-repeat animate-spin"></i>
+              <span>Warte auf Bestätigung …</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="link-step-confirmed" class="hidden">
+        <div class="flex items-center gap-3 text-sm text-green-400">
+          <i class="bi bi-check-circle"></i>
+          <span>Verknüpft! Lade neu …</span>
+        </div>
+      </div>
     </div>
     {% else %}
     <div id="tfa-setup" class="p-4 bg-slate-800/30 rounded-xl border border-gray-700/30">
@@ -98,7 +122,6 @@
         <button type="button" id="tfa-start-btn" class="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all text-sm font-medium border border-primary/20">
           <i class="bi bi-shield-plus"></i> 2FA aktivieren
         </button>
-        <a href="{% url 'tfa_link_start' %}" class="ml-2 text-sm text-gray-400 hover:text-gray-300">Anderes Konto verknüpfen</a>
         <p id="tfa-error" class="text-sm text-red-400 mt-3 hidden"></p>
       </div>
 
@@ -378,6 +401,92 @@ document.addEventListener('keydown', (e) => {
     }
 });
 </script>
+
+{% if not security.two_factor_enabled and not security.joel_digitals_email %}
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script>
+function linkCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        for (let cookie of document.cookie.split(";")) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function linkPost(url) {
+    return fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': linkCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded' },
+    }).then(function (r) { return r.json(); });
+}
+
+function linkShowStep(step) {
+    ['start', 'code', 'confirmed'].forEach(function (s) {
+        document.getElementById('link-step-' + s).classList.toggle('hidden', s !== step);
+    });
+}
+
+function linkShowError(message) {
+    var el = document.getElementById('link-error');
+    el.textContent = message;
+    el.classList.remove('hidden');
+    linkShowStep('start');
+}
+
+function linkRenderQr(code) {
+    var url = "https://www.joel-digitals.de/de/app/link-device/?code=" + encodeURIComponent(code);
+    var qr = qrcode(0, 'M');
+    qr.addData(url);
+    qr.make();
+    document.getElementById('link-qr').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2 });
+}
+
+function linkPollStatus() {
+    fetch("{% url 'tfa_link_status' %}")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.status === 'confirmed') {
+                linkShowStep('confirmed');
+                setTimeout(function () { window.location.reload(); }, 1000);
+            } else if (data.status === 'expired') {
+                linkShowError('Der Code ist abgelaufen. Bitte erneut versuchen.');
+            } else if (data.status === 'pending') {
+                setTimeout(linkPollStatus, 2500);
+            } else {
+                linkShowError('Verknüpfung konnte nicht geprüft werden.');
+            }
+        })
+        .catch(function () { linkShowError('Verbindungsfehler.'); });
+}
+
+document.getElementById('link-start-btn').addEventListener('click', function () {
+    var btn = this;
+    btn.disabled = true;
+    document.getElementById('link-error').classList.add('hidden');
+
+    linkPost("{% url 'tfa_link_create' %}").then(function (data) {
+        btn.disabled = false;
+        if (!data.code) {
+            linkShowError('Code konnte nicht erstellt werden.');
+            return;
+        }
+        document.getElementById('link-code-display').textContent = data.code;
+        linkRenderQr(data.code);
+        linkShowStep('code');
+        linkPollStatus();
+    }).catch(function () {
+        btn.disabled = false;
+        linkShowError('Verbindungsfehler.');
+    });
+});
+</script>
+{% endif %}
 
 {% if not security.two_factor_enabled and security.joel_digitals_email %}
 <script>

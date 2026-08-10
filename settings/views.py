@@ -143,11 +143,52 @@ def security_settings(request):
 
 @login_required
 @require_POST
+def tfa_link_create(request):
+    """Startet die Kontoverknuepfung per Pairing-Code/QR (siehe
+    main.models.AppLinkCode) statt eines SSO-Redirects: legt einen kurzen
+    Code an, den der User in seiner bereits eingeloggten Joel Digitals App
+    eintippt oder per QR scannt. Das Beanspruchen dort (nicht hier) ist der
+    eigentliche Besitznachweis - kein Passwort-Redirect in diesem Browser
+    noetig."""
+    from store.login_approval_client import create_app_link_code
+    status_code, body = create_app_link_code()
+    if status_code != 200:
+        return JsonResponse({'error': 'connection_failed'}, status=502)
+    request.session['pending_link_code'] = body['code']
+    return JsonResponse(body)
+
+
+@login_required
+def tfa_link_status(request):
+    """Pollt, ob der in tfa_link_create angelegte Code in der Joel Digitals
+    App beansprucht wurde. Speichert die bestaetigte E-Mail erst hier, aus
+    der Server-Antwort - nie aus einem client-seitigen Wert."""
+    from store.login_approval_client import check_app_link_status
+    code = request.session.get('pending_link_code')
+    if not code:
+        return JsonResponse({'error': 'no_pending_request'}, status=400)
+
+    status_code, body = check_app_link_status(code)
+    if status_code != 200:
+        return JsonResponse({'status': 'error'})
+
+    if body.get('status') == 'confirmed' and body.get('email'):
+        security, _ = UserSecurity.objects.get_or_create(user=request.user)
+        security.joel_digitals_email = body['email']
+        security.save(update_fields=['joel_digitals_email'])
+        request.session.pop('pending_link_code', None)
+
+    return JsonResponse(body)
+
+
+@login_required
+@require_POST
 def tfa_check_link(request):
     """Prueft, OHNE etwas anzulegen, ob das VERKNUEPFTE Joel-Digitals-Konto
-    (security.joel_digitals_email, bestaetigt via tfa_link_start - NICHT
-    request.user.email) per Push erreichbar ist - Voraussetzung, bevor 2FA
-    ueberhaupt aktivierbar gemacht wird (verhindert Selbstaussperrung)."""
+    (security.joel_digitals_email, bestaetigt via tfa_link_create/
+    tfa_link_status - NICHT request.user.email) per Push erreichbar ist -
+    Voraussetzung, bevor 2FA ueberhaupt aktivierbar gemacht wird (verhindert
+    Selbstaussperrung)."""
     security, _ = UserSecurity.objects.get_or_create(user=request.user)
     if not security.joel_digitals_email:
         return JsonResponse({'linked': False, 'reachable': False})

@@ -77,7 +77,6 @@ urlpatterns = [
     path('accounts/register/sso/', views.sso_connect, name='sso_connect'),
     path('accounts/register/callback/', views.sso_callback, name='sso_callback'),
     path('auth/sso/login/', views.sso_login, name='sso_login'),
-    path('accounts/2fa/link/', views.tfa_link_start, name='tfa_link_start'),
 
     # 2FA-Login-Bestaetigung ueber die Joel Digitals App (siehe
     # store/login_approval_client.py)
