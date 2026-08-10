@@ -1266,9 +1266,30 @@ def download_file_view(request, version_id):
             })
 
     # ── 1. Bevorzuge JDS Cloud URL (falls vorhanden) ──────────────────────
+    # Kein HttpResponseRedirect: die JDS-Cloud-URL selbst leitet nochmal
+    # weiter (Edge Function → signierte Storage-URL), macht 2 Cross-Domain-
+    # Redirects. Medians natives downloadFile folgt dieser Kette nicht
+    # zuverlässig. Stattdessen lösen wir die Kette hier auf und liefern die
+    # Datei direkt mit einer einzigen 200-Antwort von unserer eigenen Domain.
     if version.jds_cloud_url:
-        from django.http import HttpResponseRedirect
-        return HttpResponseRedirect(version.jds_cloud_url)
+        import requests
+        from django.http import StreamingHttpResponse
+        try:
+            upstream = requests.get(version.jds_cloud_url, stream=True, timeout=30)
+            upstream.raise_for_status()
+        except requests.RequestException:
+            return HttpResponseNotFound("Datei konnte nicht von der JDS Cloud geladen werden.")
+
+        response = StreamingHttpResponse(
+            upstream.iter_content(chunk_size=64 * 1024),
+            content_type=upstream.headers.get('Content-Type', 'application/octet-stream'),
+        )
+        response['Content-Disposition'] = upstream.headers.get(
+            'Content-Disposition', f'attachment; filename="{os.path.basename(version.jds_cloud_url)}"'
+        )
+        if upstream.headers.get('Content-Length'):
+            response['Content-Length'] = upstream.headers['Content-Length']
+        return response
 
     # ── 2. Fallback: lokale Mediendatei ───────────────────────────────────
     file_path = None
