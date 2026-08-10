@@ -128,6 +128,9 @@
       <div id="tfa-step-pairing" class="hidden">
         <p class="text-sm text-gray-300 mb-2">Wähle in deiner Joel Digitals App diese Zahl aus:</p>
         <div id="tfa-pairing-code" class="text-2xl font-mono font-bold tracking-widest text-primary mb-2"></div>
+        <p id="tfa-no-push-hint" class="text-xs text-yellow-400/90 mb-2 hidden">
+          <i class="bi bi-info-circle"></i> Push-Benachrichtigung evtl. nicht möglich - öffne die Joel Digitals App manuell, um die Anfrage zu sehen.
+        </p>
         <div class="flex items-center gap-3 text-sm text-gray-400">
           <i class="bi bi-arrow-repeat animate-spin text-primary"></i>
           <span>Warte auf Bestätigung …</span>
@@ -563,11 +566,11 @@ document.getElementById('tfa-start-btn').addEventListener('click', function () {
             btn.disabled = false;
             return;
         }
-        if (!data.reachable) {
-            tfaShowError('Deine Joel Digitals App ist nicht erreichbar. Bitte öffne die App und erlaube Push-Benachrichtigungen.');
-            btn.disabled = false;
-            return;
-        }
+        // Push ist ein Nice-to-have, keine Voraussetzung mehr - die Joel
+        // Digitals App zeigt eine offene Anfrage auch beim naechsten manuellen
+        // Oeffnen automatisch an (Auto-Popup). Ohne erreichbare Player-ID
+        // geht es trotzdem weiter, nur mit einem Hinweis statt einer Sperre.
+        document.getElementById('tfa-no-push-hint').classList.toggle('hidden', !!data.reachable);
         tfaPost("{% url 'tfa_pairing_test' %}").then(function (data2) {
             btn.disabled = false;
             if (data2.token) {

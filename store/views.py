@@ -346,7 +346,6 @@ def login_view(request):
 
                     tfa_error_messages = {
                         'no_joel_digitals_account': "Dein Konto ist nicht mit Joel Digitals verknüpft. Bitte kontaktiere den Support.",
-                        'device_not_linked': "Deine Joel Digitals App ist nicht erreichbar. Bitte kontaktiere den Support.",
                         'rate_limited': "Es läuft bereits eine Bestätigungsanfrage. Bitte prüfe deine Joel Digitals App.",
                     }
                     messages.error(request, tfa_error_messages.get(
