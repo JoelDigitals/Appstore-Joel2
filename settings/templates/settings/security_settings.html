@@ -73,16 +73,32 @@
     </div>
 
     {% if security.two_factor_enabled %}
-    <div class="p-4 bg-green-500/5 rounded-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div class="flex items-center gap-3 text-sm text-gray-300">
-        <i class="bi bi-check-circle text-green-400"></i>
-        <span>Logins müssen in deiner Joel Digitals App bestätigt werden.{% if security.joel_digitals_email %} Verknüpft mit <strong>{{ security.joel_digitals_email }}</strong>.{% endif %}</span>
+      {% if disable_pending_code %}
+      <div class="p-4 bg-slate-800/30 rounded-xl border border-gray-700/30" id="tfa-disable-pending" data-code="{{ disable_pending_code }}">
+        <p class="text-sm text-gray-300 mb-2">Wähle in deiner Joel Digitals App diese Zahl aus, um die Deaktivierung zu bestätigen:</p>
+        <div class="text-2xl font-mono font-bold tracking-widest text-red-400 mb-2">{{ disable_pending_code }}</div>
+        <div class="flex items-center gap-3 text-sm text-gray-400 mb-3">
+          <i class="bi bi-arrow-repeat animate-spin text-red-400"></i>
+          <span>Warte auf Bestätigung …</span>
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="cancel_disable_2fa">
+          <button type="submit" class="text-sm text-gray-400 hover:text-gray-300">Abbrechen</button>
+        </form>
       </div>
-      <button type="button" onclick="openModal('disable2faModal')"
-              class="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all text-sm font-medium border border-red-500/20 whitespace-nowrap">
-        Deaktivieren
-      </button>
-    </div>
+      {% else %}
+      <div class="p-4 bg-green-500/5 rounded-xl border border-green-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3 text-sm text-gray-300">
+          <i class="bi bi-check-circle text-green-400"></i>
+          <span>Logins müssen in deiner Joel Digitals App bestätigt werden.{% if security.joel_digitals_email %} Verknüpft mit <strong>{{ security.joel_digitals_email }}</strong>.{% endif %}</span>
+        </div>
+        <button type="button" onclick="openModal('disable2faModal')"
+                class="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all text-sm font-medium border border-red-500/20 whitespace-nowrap">
+          Deaktivieren
+        </button>
+      </div>
+      {% endif %}
     {% elif not security.joel_digitals_email %}
     <div class="p-4 bg-slate-800/30 rounded-xl border border-gray-700/30">
       <div id="link-step-start">
@@ -278,7 +294,7 @@
         </div>
         <div>
           <h3 class="text-xl font-bold text-gray-100">2FA deaktivieren</h3>
-          <p class="text-sm text-gray-400">Logins werden dann nicht mehr bestätigt</p>
+          <p class="text-sm text-gray-400">Passwort + Bestätigung in der Joel Digitals App nötig</p>
         </div>
       </div>
 
@@ -287,7 +303,7 @@
         <input type="hidden" name="action" value="disable_2fa">
 
         <div class="p-4 bg-red-500/5 rounded-xl border border-red-500/20">
-          <p class="text-sm text-gray-300 mb-3">Gib dein Passwort ein, um die Deaktivierung zu bestätigen:</p>
+          <p class="text-sm text-gray-300 mb-3">Gib dein Passwort ein. Danach musst du die Deaktivierung zusätzlich in deiner Joel Digitals App per Zahlenabgleich bestätigen.</p>
           <div class="relative">
             <i class="bi bi-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
             <input type="password"
@@ -306,7 +322,7 @@
           </button>
           <button type="submit"
                   class="flex-1 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 rounded-xl transition-all font-medium">
-            Deaktivieren
+            Weiter
           </button>
         </div>
       </form>
@@ -586,6 +602,61 @@ document.getElementById('tfa-start-btn').addEventListener('click', function () {
         btn.disabled = false;
     });
 });
+</script>
+{% endif %}
+
+{% if disable_pending_code %}
+<script>
+function disableCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        for (let cookie of document.cookie.split(";")) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function disablePost(url) {
+    return fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': disableCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded' },
+    }).then(function (r) { return r.json(); });
+}
+
+function pollDisableStatus() {
+    fetch("{% url 'tfa_disable_status' %}")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.status === 'approved') {
+                disablePost("{% url 'tfa_disable_confirm' %}").then(function () {
+                    window.location.reload();
+                });
+            } else if (data.status === 'denied' || data.status === 'expired') {
+                // Session-Eintrag serverseitig aufraeumen (gleicher Zweck wie
+                // der "Abbrechen"-Button) und dann neu laden.
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{% url 'security_settings' %}";
+                var csrf = document.createElement('input');
+                csrf.type = 'hidden'; csrf.name = 'csrfmiddlewaretoken'; csrf.value = disableCookie('csrftoken');
+                var action = document.createElement('input');
+                action.type = 'hidden'; action.name = 'action'; action.value = 'cancel_disable_2fa';
+                form.appendChild(csrf); form.appendChild(action);
+                document.body.appendChild(form);
+                form.submit();
+            } else if (data.status === 'pending') {
+                setTimeout(pollDisableStatus, 2500);
+            }
+        })
+        .catch(function () { setTimeout(pollDisableStatus, 4000); });
+}
+
+pollDisableStatus();
 </script>
 {% endif %}
 {% endblock %}

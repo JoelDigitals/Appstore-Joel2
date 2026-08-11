@@ -21,6 +21,8 @@ urlpatterns = [
     path('settings/security/2fa/pairing-test/', views.tfa_pairing_test, name='tfa_pairing_test'),
     path('settings/security/2fa/pairing-status/', views.tfa_pairing_status, name='tfa_pairing_status'),
     path('settings/security/2fa/enable/', views.tfa_enable, name='tfa_enable'),
+    path('settings/security/2fa/disable-status/', views.tfa_disable_status, name='tfa_disable_status'),
+    path('settings/security/2fa/disable-confirm/', views.tfa_disable_confirm, name='tfa_disable_confirm'),
 
     # Passwort ändern
     path('settings/password/', views.change_password_view, name='change_password'),

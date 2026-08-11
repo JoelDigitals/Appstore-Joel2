@@ -130,14 +130,42 @@ def security_settings(request):
             return redirect('home')
 
         elif action == 'disable_2fa':
-            security.two_factor_enabled = False
-            security.save()
-            messages.success(request, "Zwei-Faktor-Authentifizierung deaktiviert.")
+            # Passwort (oben bereits geprueft) reicht allein nicht mehr aus -
+            # zusaetzlich muss die Deaktivierung ueber die Joel Digitals App
+            # per Zahlenabgleich bestaetigt werden, sonst koennte jemand mit
+            # nur dem Passwort (z.B. Phishing) den Schutz aushebeln.
+            if not security.joel_digitals_email:
+                # Kann laut UI eigentlich nicht passieren (2FA erfordert eine
+                # Verknuepfung), aber ohne verknuepftes Konto ist keine
+                # App-Bestaetigung moeglich - dann einfach direkt deaktivieren.
+                security.two_factor_enabled = False
+                security.save()
+                messages.success(request, "Zwei-Faktor-Authentifizierung deaktiviert.")
+                return redirect('security_settings')
+
+            from store.login_approval_client import create_login_approval_request
+            from store.views import get_client_ip
+            status_code, body = create_login_approval_request(
+                email=security.joel_digitals_email, purpose='disable_2fa',
+                ip=get_client_ip(request) or '', context='JDS AppStore – 2FA deaktivieren',
+            )
+            if status_code != 200:
+                messages.error(request, "Bestätigungsanfrage konnte nicht gestartet werden. Bitte versuche es erneut.")
+                return redirect('security_settings')
+
+            request.session['pending_disable_token'] = body['token']
+            request.session['pending_disable_code'] = body.get('display_code', '')
+            return redirect('security_settings')
+
+        elif action == 'cancel_disable_2fa':
+            request.session.pop('pending_disable_token', None)
+            request.session.pop('pending_disable_code', None)
             return redirect('security_settings')
 
     return render(request, 'settings/security_settings.html', {
         'security': security,
-        'recent_sessions': recent_sessions
+        'recent_sessions': recent_sessions,
+        'disable_pending_code': request.session.get('pending_disable_code', ''),
     })
 
 
@@ -254,6 +282,42 @@ def tfa_enable(request):
     security.save(update_fields=['two_factor_enabled'])
     request.session.pop('pending_pairing_token', None)
     return JsonResponse({'enabled': True})
+
+
+@login_required
+def tfa_disable_status(request):
+    from store.login_approval_client import check_login_approval_status
+    token = request.session.get('pending_disable_token')
+    if not token:
+        return JsonResponse({'error': 'no_pending_request'}, status=400)
+    status_code, body = check_login_approval_status(token)
+    if status_code != 200:
+        return JsonResponse({'status': 'error'})
+    return JsonResponse(body)
+
+
+@login_required
+@require_POST
+def tfa_disable_confirm(request):
+    """Deaktiviert 2FA erst, nachdem die Anfrage server-seitig erneut als
+    'approved' bestaetigt wurde - Passwort (siehe security_settings) allein
+    reicht nicht mehr aus, es muss zusaetzlich in der Joel Digitals App per
+    Zahlenabgleich bestaetigt werden."""
+    from store.login_approval_client import check_login_approval_status
+    token = request.session.get('pending_disable_token')
+    if not token:
+        return JsonResponse({'error': 'no_pending_request'}, status=400)
+
+    status_code, body = check_login_approval_status(token)
+    if status_code != 200 or body.get('status') != 'approved':
+        return JsonResponse({'error': 'not_approved', 'status': body.get('status')}, status=409)
+
+    security, _ = UserSecurity.objects.get_or_create(user=request.user)
+    security.two_factor_enabled = False
+    security.save(update_fields=['two_factor_enabled'])
+    request.session.pop('pending_disable_token', None)
+    request.session.pop('pending_disable_code', None)
+    return JsonResponse({'disabled': True})
 
 
 @login_required
